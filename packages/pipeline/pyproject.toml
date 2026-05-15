@@ -1,0 +1,23 @@
+[project]
+name = "aidmi-pipeline"
+version = "0.1.0"
+description = "Pipeline package: dlt extract -> Postgres staging -> dbt transform -> dlt load"
+requires-python = ">=3.13"
+dependencies = [
+    "dlt[postgres,filesystem]>=1.0",
+    "dbt-core>=1.8",
+    "dbt-postgres>=1.8",
+    "typer>=0.12",
+    "pydantic>=2.7",
+    "psycopg2-binary>=2.9",
+]
+
+[project.scripts]
+aidmi-pipeline = "aidmi_pipeline.cli:app"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/aidmi_pipeline"]
