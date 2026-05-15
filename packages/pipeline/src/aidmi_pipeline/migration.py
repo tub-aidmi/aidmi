@@ -62,8 +62,40 @@ def extract_source(run: MigrationRun) -> ExtractResult:
     )
 
 
+def _outcome_to_model(outcome) -> DbtModelOutcome:
+    raw_status = getattr(outcome, "status", "error")
+    status: Literal["success", "error", "skipped"] = (
+        raw_status if raw_status in {"success", "error", "skipped"} else "error"
+    )
+    return DbtModelOutcome(
+        model_name=getattr(outcome, "model_name", "<unknown>"),
+        status=status,
+        error_message=getattr(outcome, "message", None) if status != "success" else None,
+        rows_affected=None,
+        execution_time_seconds=float(getattr(outcome, "time", 0.0) or 0.0),
+    )
+
+
+def _overall_status(models: list[DbtModelOutcome]) -> Literal["success", "partial", "error"]:
+    statuses = {m.status for m in models}
+    if statuses == {"success"} or not statuses:
+        return "success"
+    if "success" in statuses:
+        return "partial"
+    return "error"
+
+
 def transform(run: MigrationRun) -> TransformResult:
-    raise NotImplementedError
+    pipeline = dlt.pipeline(
+        pipeline_name=f"dbt_{run.staging.dataset_name}",
+        destination=dlt.destinations.postgres(run.staging.db_url),
+        dataset_name=run.staging.dataset_name,
+    )
+    venv = dlt.dbt.get_venv(pipeline)
+    runner = dlt.dbt.package(pipeline, str(run.dbt_project_path), venv=venv)
+    outcomes = runner.run_all()
+    models = [_outcome_to_model(o) for o in outcomes]
+    return TransformResult(models=models, overall_status=_overall_status(models))
 
 
 def load_target(run: MigrationRun) -> LoadResult:
