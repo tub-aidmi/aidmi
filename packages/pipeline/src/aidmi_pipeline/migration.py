@@ -98,8 +98,38 @@ def transform(run: MigrationRun) -> TransformResult:
     return TransformResult(models=models, overall_status=_overall_status(models))
 
 
+def _count_table_rows(db_url: str, dataset: str, table: str) -> int:
+    import psycopg2
+    with psycopg2.connect(db_url) as conn:
+        with conn.cursor() as cur:
+            cur.execute(f'SELECT COUNT(*) FROM "{dataset}"."{table}"')
+            return cur.fetchone()[0]
+
+
 def load_target(run: MigrationRun) -> LoadResult:
-    raise NotImplementedError
+    from dlt.sources.sql_database import sql_table
+
+    pipeline = dlt.pipeline(
+        pipeline_name=f"load_{run.target_dataset}",
+        destination=run.target,
+        dataset_name=run.target_dataset,
+    )
+    total_rows = 0
+    for table in run.target_tables:
+        rows_in_staging = _count_table_rows(
+            run.staging.db_url, run.staging.dataset_name, table
+        )
+        pipeline.run(
+            sql_table(
+                credentials=run.staging.db_url,
+                schema=run.staging.dataset_name,
+                table=table,
+            ),
+            write_disposition="replace",
+            loader_file_format="jsonl",
+        )
+        total_rows += rows_in_staging
+    return LoadResult(rows_loaded=total_rows)
 
 
 def run_migration(run: MigrationRun) -> MigrationResult:
