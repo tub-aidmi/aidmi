@@ -100,10 +100,16 @@ def transform(run: MigrationRun) -> TransformResult:
 
 def _count_table_rows(db_url: str, dataset: str, table: str) -> int:
     import psycopg2
-    with psycopg2.connect(db_url) as conn:
-        with conn.cursor() as cur:
-            cur.execute(f'SELECT COUNT(*) FROM "{dataset}"."{table}"')
-            return cur.fetchone()[0]
+    try:
+        with psycopg2.connect(db_url) as conn:
+            with conn.cursor() as cur:
+                cur.execute(f'SELECT COUNT(*) FROM "{dataset}"."{table}"')
+                return cur.fetchone()[0]
+    except psycopg2.errors.UndefinedTable as e:
+        raise ValueError(
+            f"table {dataset}.{table} not found in staging — "
+            f"was it produced by the transform phase?"
+        ) from e
 
 
 def load_target(run: MigrationRun) -> LoadResult:
