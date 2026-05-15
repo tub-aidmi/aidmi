@@ -133,4 +133,8 @@ def load_target(run: MigrationRun) -> LoadResult:
 
 
 def run_migration(run: MigrationRun) -> MigrationResult:
-    raise NotImplementedError
+    return MigrationResult(
+        extract=extract_source(run),
+        transform=transform(run),
+        load=load_target(run),
+    )

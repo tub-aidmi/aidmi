@@ -67,9 +67,9 @@ def test_end_to_end(staging_db_url, tmp_path):
     # uppercase synonym normalized
     assert rows[5]["status_enum"] == "inactive"
 
-    # nulls preserved
-    assert rows[6]["lastname"] is None
-    assert rows[6]["email_address"] is None
+    # nulls preserved (dlt's JSONL writer omits null fields; key-absent == null-preserved)
+    assert rows[6].get("lastname") is None
+    assert rows[6].get("email_address") is None
 
     # unknown status routes to 'unknown'
     assert rows[7]["status_enum"] == "unknown"
