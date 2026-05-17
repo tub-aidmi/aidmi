@@ -1,0 +1,91 @@
+"""Pricing lookup. LiteLLM's model_cost table is the default source; a JSON
+override file can shadow or add entries.
+
+Override file format: a single JSON object mapping `"provider/model_name"` to
+`{"input_cost_per_token": float, "output_cost_per_token": float,
+"cached_input_cost_per_token": float | None}`.
+"""
+from __future__ import annotations
+import json
+from dataclasses import dataclass
+from pathlib import Path
+
+
+@dataclass
+class PriceInfo:
+    input_cost_per_token: float
+    output_cost_per_token: float
+    cached_input_cost_per_token: float | None = None
+
+
+def load_overrides(path: Path | None) -> dict[str, PriceInfo]:
+    if path is None or not path.exists():
+        return {}
+    raw = json.loads(path.read_text(encoding="utf-8"))
+    return {
+        key: PriceInfo(
+            input_cost_per_token=v["input_cost_per_token"],
+            output_cost_per_token=v["output_cost_per_token"],
+            cached_input_cost_per_token=v.get("cached_input_cost_per_token"),
+        )
+        for key, v in raw.items()
+    }
+
+
+def _load_litellm_table() -> dict:
+    try:
+        import litellm
+        return getattr(litellm, "model_cost", {})
+    except (ImportError, Exception):
+        pass
+    import importlib.util
+    spec = importlib.util.find_spec("litellm")
+    if spec is None or spec.origin is None:
+        return {}
+    pkg_dir = Path(spec.origin).parent
+    for candidate in ["model_prices_and_context_window.json",
+                      "model_prices_and_context_window_backup.json"]:
+        p = pkg_dir / candidate
+        if p.exists():
+            try:
+                return json.loads(p.read_text(encoding="utf-8"))
+            except Exception:
+                continue
+    return {}
+
+
+def _from_litellm(provider: str, model_name: str) -> PriceInfo | None:
+    table = _load_litellm_table()
+    if not table:
+        return None
+
+    # Spike R3 confirmed: LiteLLM keys are bare names (e.g., "gpt-4o-mini"),
+    # but provider-prefixed forms also appear for some entries. Try both.
+    candidates = [
+        model_name,
+        f"{provider}/{model_name}",
+    ]
+    for key in candidates:
+        if key in table:
+            entry = table[key]
+            return PriceInfo(
+                input_cost_per_token=float(entry.get("input_cost_per_token", 0.0)),
+                output_cost_per_token=float(entry.get("output_cost_per_token", 0.0)),
+                cached_input_cost_per_token=(
+                    float(entry["cache_read_input_token_cost"])
+                    if "cache_read_input_token_cost" in entry else None
+                ),
+            )
+    return None
+
+
+def lookup_price(
+    provider: str,
+    model_name: str,
+    overrides: dict[str, PriceInfo] | None = None,
+) -> PriceInfo | None:
+    overrides = overrides or {}
+    key = f"{provider}/{model_name}"
+    if key in overrides:
+        return overrides[key]
+    return _from_litellm(provider, model_name)
