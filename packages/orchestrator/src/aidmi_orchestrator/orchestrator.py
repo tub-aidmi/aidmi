@@ -47,7 +47,7 @@ async def run_orchestrator(
     trace = TraceSink(run_dir / "trace.jsonl")
     target_schema = _load_target_schema(fixture.target_schema_path)
 
-    staging = StagingConfig(db_url=staging_db_url, dataset_name=f"src_{run_id}")
+    staging = StagingConfig(db_url=staging_db_url, dataset_name=f"src_{run_id.lower()}")
     pipeline_run = MigrationRun(
         source=fixture.source_factory(),
         staging=staging,
