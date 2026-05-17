@@ -1,0 +1,33 @@
+[project]
+name = "aidmi-orchestrator"
+version = "0.1.0"
+description = "AI orchestrator: LLM-driven dbt mapping generation + benchmark harness"
+requires-python = ">=3.13"
+dependencies = [
+    "aidmi-pipeline",
+    "pydantic-ai>=0.0.20",
+    "litellm>=1.40",
+    "pydantic>=2.7",
+    "typer>=0.12",
+    "pyyaml>=6.0",
+    "python-ulid>=3.0",
+    "psycopg2-binary>=2.9",
+]
+
+[project.scripts]
+aidmi-orchestrator = "aidmi_orchestrator.cli:app"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/aidmi_orchestrator"]
+
+[tool.uv.sources]
+aidmi-pipeline = { workspace = true }
+
+[tool.pytest.ini_options]
+markers = [
+    "requires_llm: tests that hit a real LLM endpoint; skipped unless API keys are present",
+]
