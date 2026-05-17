@@ -1,0 +1,22 @@
+fixture: sp1_users
+runs_per_cell: 1
+cells:
+  - strategy: mock
+    config:
+      mapping_source: src/aidmi_orchestrator/fixtures/sp1_users/mock_mapping.json
+  - strategy: structured_per_table
+    config:
+      writer_model:
+        provider: openai
+        model_name: gpt-4o-mini
+        api_key_env: OPENAI_API_KEY
+      context_mode: [metadata_only, metadata_plus_samples, live_query_tool]
+      samples_per_table: 3
+  - strategy: write_tools_freeform
+    config:
+      writer_model:
+        provider: anthropic
+        model_name: claude-3-5-sonnet-latest
+        api_key_env: ANTHROPIC_API_KEY
+      context_mode: metadata_plus_samples
+      enable_self_correction: [false, true]
