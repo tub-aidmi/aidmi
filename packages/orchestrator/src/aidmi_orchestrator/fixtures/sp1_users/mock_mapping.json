@@ -1,0 +1,18 @@
+{
+  "tables": {
+    "users": {
+      "sql": "{{ config(materialized='table') }}\n\nSELECT\n    id                                          AS user_id,\n    INITCAP(first_name)                         AS firstname,\n    INITCAP(last_name)                          AS lastname,\n    LOWER(TRIM(email))                          AS email_address,\n    phone                                       AS phone_number,\n    CASE LOWER(TRIM(status_text))\n        WHEN 'active'   THEN 'active'\n        WHEN 'inactive' THEN 'inactive'\n        WHEN 'archived' THEN 'archived'\n        ELSE 'unknown'\n    END                                         AS status_enum,\n    created_at\nFROM {{ source('source_crm', 'contacts') }}\n",
+      "source_tables": [["source_crm", "contacts"]],
+      "column_notes": [
+        {"target_column": "user_id", "source_columns": ["id"], "explanation": "Pass-through"},
+        {"target_column": "firstname", "source_columns": ["first_name"], "explanation": "Title-case via INITCAP"},
+        {"target_column": "lastname", "source_columns": ["last_name"], "explanation": "Title-case via INITCAP"},
+        {"target_column": "email_address", "source_columns": ["email"], "explanation": "Trim + lowercase"},
+        {"target_column": "phone_number", "source_columns": ["phone"], "explanation": "Pass-through"},
+        {"target_column": "status_enum", "source_columns": ["status_text"], "explanation": "Normalize to enum domain"},
+        {"target_column": "created_at", "source_columns": ["created_at"], "explanation": "Pass-through"}
+      ],
+      "reasoning": "Static mapping equivalent to the SP1 hand-crafted reference."
+    }
+  }
+}
