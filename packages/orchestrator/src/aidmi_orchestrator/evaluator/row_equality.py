@@ -129,11 +129,29 @@ class RowEqualityEvaluator:
             if not row_count_match or diff_count > 0:
                 any_mismatch = True
 
+            n_comparable = min(len(produced_sorted), len(reference_sorted))
+            if n_comparable == 0:
+                column_value_match_rate = None
+            else:
+                all_cols: set[str] = set()
+                for row in produced_sorted[:n_comparable]:
+                    all_cols.update(row.keys())
+                for row in reference_sorted[:n_comparable]:
+                    all_cols.update(row.keys())
+                column_value_match_rate = {}
+                for col in all_cols:
+                    matches = sum(
+                        1 for p, r in zip(produced_sorted[:n_comparable], reference_sorted[:n_comparable])
+                        if p.get(col) == r.get(col)
+                    )
+                    column_value_match_rate[col] = matches / n_comparable
+
             per_table[tname] = {
                 "row_count_match": row_count_match,
                 "row_set_diff_count": diff_count,
                 "produced_rows": len(produced_sorted),
                 "reference_rows": len(reference_sorted),
+                "column_value_match_rate": column_value_match_rate,
             }
 
         return {

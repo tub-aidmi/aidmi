@@ -36,7 +36,7 @@ def _load_litellm_table() -> dict:
     try:
         import litellm
         return getattr(litellm, "model_cost", {})
-    except (ImportError, Exception):
+    except ImportError:
         pass
     import importlib.util
     spec = importlib.util.find_spec("litellm")

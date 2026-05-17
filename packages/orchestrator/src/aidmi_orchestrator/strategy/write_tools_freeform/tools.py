@@ -62,8 +62,14 @@ def make_query_postgres(api, row_cap: int):
     return query_postgres
 
 
-def make_run_dbt(api):
+def make_run_dbt(api, max_passes: int = 3):
+    counter = {"n": 0}
+
     async def run_dbt() -> dict:
+        if counter["n"] >= max_passes:
+            return {"error": f"max_self_correction_passes={max_passes} reached"}
+        counter["n"] += 1
         result = await api.run_dbt()
         return result.model_dump()
+
     return run_dbt

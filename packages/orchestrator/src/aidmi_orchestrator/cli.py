@@ -47,21 +47,33 @@ def run(
 
 @app.command()
 def sweep(
-    fixture: Annotated[str, typer.Option(help="registered fixture name")],
     grid: Annotated[Path, typer.Option(help="path to a grid YAML")],
     out: Annotated[Path, typer.Option(help="results directory")],
-    runs_per_cell: Annotated[int, typer.Option(help="repetitions per cell")] = 1,
+    fixture: Annotated[str | None, typer.Option(help="registered fixture name (overrides grid YAML fixture key)")] = None,
+    runs_per_cell: Annotated[int, typer.Option(help="repetitions per cell (overrides grid YAML runs_per_cell key)")] = 1,
     workspace: Annotated[Path, typer.Option(help="workspace directory")] = Path("./aidmi_workspace"),
 ):
-    """Sweep multiple (strategy, config) cells across a fixture."""
+    """Sweep multiple (strategy, config) cells across a fixture.
+
+    Fixture and runs_per_cell can be defined in the grid YAML. CLI flags take
+    precedence when explicitly provided; YAML values are used as defaults.
+    """
     grid_data = yaml.safe_load(grid.read_text(encoding="utf-8"))
+    resolved_fixture = fixture or grid_data.get("fixture")
+    if not resolved_fixture:
+        raise typer.BadParameter(
+            "provide --fixture or add a 'fixture' key to the grid YAML."
+        )
+    resolved_runs_per_cell = (
+        runs_per_cell if runs_per_cell != 1 else int(grid_data.get("runs_per_cell", runs_per_cell))
+    )
     cells_specs = expand_grid(grid_data)
     cells = [make_strategy(name, cfg) for name, cfg in cells_specs]
-    fx = get_fixture(fixture)
+    fx = get_fixture(resolved_fixture)
     bench = Benchmark(fx, workspace, _require_staging_url())
     out.mkdir(parents=True, exist_ok=True)
     (out / "sweep_config.yaml").write_text(grid.read_text(), encoding="utf-8")
-    results = asyncio.run(bench.sweep(cells, runs_per_cell=runs_per_cell, results_path=out / "results.jsonl"))
+    results = asyncio.run(bench.sweep(cells, runs_per_cell=resolved_runs_per_cell, results_path=out / "results.jsonl"))
     typer.echo(f"wrote {len(results)} result rows to {out / 'results.jsonl'}")
 
 

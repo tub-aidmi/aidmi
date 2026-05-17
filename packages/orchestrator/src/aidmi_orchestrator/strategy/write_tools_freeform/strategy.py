@@ -3,7 +3,7 @@ query + run_dbt for self-correction)."""
 from __future__ import annotations
 from typing import Literal
 from pydantic import BaseModel
-from pydantic_ai import Agent, Tool
+from pydantic_ai import Agent, Tool, UsageLimits
 
 from aidmi_orchestrator.domain import ModelSpec, StrategyResult
 from aidmi_orchestrator.strategy.base import build_context_prompt
@@ -22,6 +22,7 @@ class WriteToolsFreeformConfig(BaseModel):
     max_query_tool_rows: int = 100
     max_tool_turns: int = 20
     enable_self_correction: bool = False
+    max_self_correction_passes: int = 3
 
 
 class WriteToolsFreeform:
@@ -42,7 +43,7 @@ class WriteToolsFreeform:
                 name="query_postgres",
             ))
         if self.config.enable_self_correction:
-            tools.append(Tool(make_run_dbt(api), name="run_dbt"))
+            tools.append(Tool(make_run_dbt(api, self.config.max_self_correction_passes), name="run_dbt"))
 
         agent = Agent(
             traced_model,
@@ -53,7 +54,7 @@ class WriteToolsFreeform:
             api.source_summary, api.target_schema, self.config.context_mode,
             samples_per_table=self.config.samples_per_table,
         )
-        await agent.run(initial_user_prompt(context))
+        await agent.run(initial_user_prompt(context), usage_limits=UsageLimits(request_limit=self.config.max_tool_turns))
 
         models_dir = api.dbt_project_path / "models"
         produced = [

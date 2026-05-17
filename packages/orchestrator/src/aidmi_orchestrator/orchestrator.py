@@ -84,11 +84,8 @@ async def run_orchestrator(
     )
 
     # 4. run strategy
-    final_transform = None
     try:
         strategy_result = await strategy.generate(api)
-        # 5. final canonical dbt run
-        final_transform = await api.run_dbt()
     except Exception as e:
         trace.record(StrategyEvent(
             timestamp=datetime.utcnow(),
@@ -97,6 +94,17 @@ async def run_orchestrator(
         ))
         trace.close()
         raise StrategyExecutionError(run_id, e) from e
+
+    # 5. final canonical dbt run (best-effort — failures are observed, not raised)
+    final_transform = None
+    try:
+        final_transform = await api.run_dbt()
+    except Exception as e:
+        trace.record(StrategyEvent(
+            timestamp=datetime.utcnow(),
+            label="final_dbt_failed",
+            data={"error": repr(e), "type": type(e).__name__},
+        ))
 
     # 6. persist
     write_strategy_result(run_dir, strategy_result)

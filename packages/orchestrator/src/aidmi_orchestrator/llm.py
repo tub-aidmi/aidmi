@@ -116,8 +116,8 @@ class TracedModel(WrapperModel):
             timestamp=datetime.utcnow(),
             role=self._role,
             model_spec=self._spec,
-            messages=[{"content": str(m)} for m in messages],
-            response=str(response),
+            messages=[m.model_dump() if hasattr(m, "model_dump") else {"raw": str(m)} for m in messages],
+            response=(response.model_dump() if hasattr(response, "model_dump") else str(response)),
             usage=usage_dict,
             latency_ms=latency_ms,
         ))

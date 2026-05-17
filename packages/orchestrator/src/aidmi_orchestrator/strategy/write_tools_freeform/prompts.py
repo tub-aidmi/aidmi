@@ -6,7 +6,6 @@ You have these tools:
 - read_file(path) — read a file you've written
 - (optionally) query_postgres(sql) — run a read-only SELECT against staging
 - (optionally) run_dbt() — execute the dbt project and see the result
-- (optionally) finish() — declare you are done
 
 Layout you must produce:
 - models/<target_table>.sql — one per target table; use {{ source(...) }}.

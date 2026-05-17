@@ -70,6 +70,11 @@ def test_llm_usage_evaluator_aggregates_by_role():
     assert out["tokens_input_cached"] == 200
     assert out["tokens_output_total"] == 700
     assert 0 <= out["cache_hit_rate"] <= 1
+    assert out["latency_ms_total"] >= 0
+    assert "writer" in out["latency_ms_p50_by_role"]
+    assert out["latency_ms_p50_by_role"]["writer"] >= 0
+    assert "writer" in out["latency_ms_p95_by_role"]
+    assert out["latency_ms_p95_by_role"]["writer"] >= 0
 
 
 import psycopg2

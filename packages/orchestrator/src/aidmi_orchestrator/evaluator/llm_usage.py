@@ -1,5 +1,6 @@
 """LlmUsageEvaluator — token counts, cache rate, dollar cost (LiteLLM + override)."""
 from __future__ import annotations
+import statistics
 from collections import defaultdict
 from typing import Any
 
@@ -7,10 +8,10 @@ from aidmi_orchestrator.evaluator.base import (
     Evaluator, RunArtifacts, register_evaluator,
 )
 from aidmi_orchestrator.trace import LlmCallEvent
-from aidmi_orchestrator.pricing import lookup_price, load_overrides, PriceInfo
+from aidmi_orchestrator.pricing import lookup_price, load_overrides
 
 
-def _extract_cached_input(usage: dict, provider: str) -> int:
+def _extract_cached_input(usage: dict) -> int:
     # R8 spike: PydanticAI normalizes cache tokens from all providers into cache_read_tokens
     # before TracedModel sees them — no need for provider-specific parsing.
     return int(usage.get("cache_read_tokens", 0) or 0)
@@ -40,7 +41,7 @@ class LlmUsageEvaluator:
             usage = ev.usage or {}
             prompt = int(usage.get("input_tokens", 0) or 0)
             completion = int(usage.get("output_tokens", 0) or 0)
-            cached = _extract_cached_input(usage, ev.model_spec.provider)
+            cached = _extract_cached_input(usage)
             uncached = max(0, prompt - cached)
 
             calls_by_role[ev.role] += 1
@@ -60,6 +61,18 @@ class LlmUsageEvaluator:
                 cost_total += this_cost
                 cost_by_role[ev.role] += this_cost
 
+        def _p50(vals: list[float]) -> float:
+            return statistics.median(vals)
+
+        def _p95(vals: list[float]) -> float:
+            if len(vals) < 2:
+                return vals[0]
+            sorted_vals = sorted(vals)
+            idx = int(len(sorted_vals) * 0.95)
+            return sorted_vals[min(idx, len(sorted_vals) - 1)]
+
+        latency_ms_total = sum(sum(v) for v in latency_by_role.values())
+
         return {
             "llm_calls_total": sum(calls_by_role.values()),
             "llm_calls_by_role": dict(calls_by_role),
@@ -71,6 +84,9 @@ class LlmUsageEvaluator:
             "dollar_cost_total": cost_total,
             "dollar_cost_by_role": dict(cost_by_role),
             "latency_ms_by_role": {r: sum(v) / len(v) for r, v in latency_by_role.items()},
+            "latency_ms_total": latency_ms_total,
+            "latency_ms_p50_by_role": {r: _p50(v) for r, v in latency_by_role.items()},
+            "latency_ms_p95_by_role": {r: _p95(v) for r, v in latency_by_role.items()},
         }
 
 
