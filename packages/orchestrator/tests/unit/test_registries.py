@@ -62,12 +62,61 @@ def test_sf_pipedrive_fixture_registered():
     assert f.reference_dbt_path is None
 
 
-def test_sf_pipedrive_load_source_requires_env():
+def test_sf_pipedrive_load_source_requires_env(monkeypatch):
+    import os
+
     import aidmi_orchestrator.fixtures  # noqa: F401 — triggers registration
+
+    for k in list(os.environ):
+        if k.startswith("SF_"):
+            monkeypatch.delenv(k, raising=False)
 
     f = get_fixture("sf_pipedrive")
     with pytest.raises(RuntimeError, match="Missing Salesforce credentials"):
         f.source_factory()
+
+
+def test_sf_fixture_source_factory_requires_security_token(monkeypatch):
+    import os
+
+    for k in list(os.environ):
+        if k.startswith("SF_"):
+            monkeypatch.delenv(k, raising=False)
+    monkeypatch.setenv("SF_USERNAME", "u")
+    monkeypatch.setenv("SF_PASSWORD", "p")
+
+    import aidmi_orchestrator.fixtures  # noqa: F401
+
+    f = get_fixture("sf_pipedrive")
+    with pytest.raises(RuntimeError, match="Missing Salesforce credentials"):
+        f.source_factory()
+
+
+def test_sf_fixture_salesforce_explicit_credentials(monkeypatch):
+    import os
+    from unittest.mock import MagicMock, patch
+
+    for k in list(os.environ):
+        if k.startswith("SF_"):
+            monkeypatch.delenv(k, raising=False)
+    monkeypatch.setenv("SF_USERNAME", "u")
+    monkeypatch.setenv("SF_PASSWORD", "p")
+    monkeypatch.setenv("SF_SECURITY_TOKEN", "tok")
+
+    import aidmi_orchestrator.fixtures  # noqa: F401
+    import aidmi_orchestrator.fixtures.sf_pipedrive.salesforce.fixture_source as sf_mod
+
+    with patch.object(sf_mod, "Salesforce", autospec=False) as mock_salesforce:
+        mock_salesforce.return_value = MagicMock()
+        get_fixture("sf_pipedrive").source_factory()
+        assert mock_salesforce.call_args.kwargs["username"] == "u"
+        assert mock_salesforce.call_args.kwargs["password"] == "p"
+        assert mock_salesforce.call_args.kwargs["security_token"] == "tok"
+        assert mock_salesforce.call_args.kwargs.keys() == {
+            "username",
+            "password",
+            "security_token",
+        }
 
 
 def test_mock_strategy_registered_and_instantiable():

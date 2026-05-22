@@ -34,11 +34,11 @@ Or run one package directly:
 uv run --package aidmi-orchestrator pytest packages/orchestrator/tests/ -m "not requires_llm"
 ```
 
-Expected output ends with `44 passed`. Typical wall-clock is 50–60 seconds (Postgres container startup plus two dbt runs).
+Expected output: `make test` prints `2 passed` (pipeline) then `46 passed` (orchestrator). If you run only the orchestrator command above, you should see `46 passed`. Typical wall-clock is about 50–60 seconds (Postgres container startup plus two dbt runs).
 
 ## Run the bundled demo via the CLI
 
-With a `.env` in the repo root, `aidmi-orchestrator` loads variables via `python-dotenv` (shell exports still win). Staging Postgres is either `AIDMI_STAGING_DB_URL` or, if that is unset, a URL assembled from `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB`, and optionally `POSTGRES_HOST` / `POSTGRES_PORT` (see [`cli.md`](cli.md#environment)).
+With a `.env` in the repo root, `aidmi-orchestrator` loads variables via `python-dotenv`. Staging Postgres is either `AIDMI_STAGING_DB_URL` or, if that is unset, a URL assembled from `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB`, and optionally `POSTGRES_HOST` / `POSTGRES_PORT` (see [`cli.md`](cli.md#environment)).
 
 ```bash
 make up                    # Postgres on localhost (.env defaults in .env.example)
@@ -132,16 +132,24 @@ df = pd.read_json("aidmi_workspace/results/demo/results.jsonl", lines=True)
 df[["strategy_name", "metrics"]].head()
 ```
 
-## Salesforce sandbox → Pipedrive-shaped mapping (`sf_pipedrive`)
+## Salesforce → Pipedrive-shaped mapping (`sf_pipedrive`)
 
 Phase 2 of the migration walkthrough: extract **Contact** and **Account** from Salesforce into staging, then drive an LLM strategy to emit dbt SQL for **persons** and **organizations** tables (staging only — no Pipedrive API upload).
 
 Prerequisites:
 
-- `.env` with `SF_USERNAME`, `SF_PASSWORD`, `SF_SECURITY_TOKEN`, and Postgres (`POSTGRES_*` or `AIDMI_STAGING_DB_URL`). For Salesforce **sandboxes**, set `SF_DOMAIN=test`.
+- `.env`: Salesforce **`SF_USERNAME`**, **`SF_PASSWORD`**, and **`SF_SECURITY_TOKEN`** are all required (no **`SF_DOMAIN`**; SOAP uses `login.salesforce.com`) — see **[salesforce-auth.md](salesforce-auth.md)**.
 - `LITELLM_API_KEY` when your strategy YAML sets `api_key_env: LITELLM_API_KEY`.
 - Edit [`packages/orchestrator/examples/strategy_specs/write_tools_freeform_litellm_qwen.yaml`](../packages/orchestrator/examples/strategy_specs/write_tools_freeform_litellm_qwen.yaml): set `base_url` for your LiteLLM OpenAI-compatible endpoint (must include `/v1`).
 - Postgres from `make up`.
+
+**Check Salesforce credentials (no Postgres, no LLM):**
+
+```bash
+make sf-auth-check
+```
+
+This loads `.env`, performs SOAP login, and runs two tiny SOQL reads on Contact and Account.
 
 Quick path:
 

@@ -10,16 +10,14 @@ HERE = Path(__file__).parent
 
 
 def _load_source():
-    missing = [
-        k
-        for k in ("SF_USERNAME", "SF_PASSWORD", "SF_SECURITY_TOKEN")
-        if not os.environ.get(k)
-    ]
-    if missing:
+    u = os.environ.get("SF_USERNAME") or ""
+    p = os.environ.get("SF_PASSWORD") or ""
+    t = os.environ.get("SF_SECURITY_TOKEN") or ""
+    if not u.strip() or not p.strip() or not t.strip():
         raise RuntimeError(
-            "Missing Salesforce credentials in environment; set: "
-            + ", ".join(missing)
-            + ". Sandbox: set SF_DOMAIN=test (optional; default SF_DOMAIN is login)."
+            "Missing Salesforce credentials in environment; set SF_USERNAME, SF_PASSWORD, "
+            "and SF_SECURITY_TOKEN (non-empty). Login uses login.salesforce.com "
+            "(no env override)."
         )
     return salesforce_fixture_slice().with_resources("contact", "account")
 

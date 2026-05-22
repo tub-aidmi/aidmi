@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import os
-from typing import Any, Iterable
+from typing import Iterable, Any
 
 import dlt
 from dlt.common.typing import TDataItem
@@ -12,13 +12,27 @@ from simple_salesforce import Salesforce
 from .helpers.records import get_records
 
 
+def _strip_cred(key: str) -> str | None:
+    v = os.environ.get(key)
+    if v is None:
+        return None
+    stripped = v.strip()
+    return stripped if stripped else None
+
+
 def _salesforce_client() -> Salesforce:
-    domain = os.environ.get("SF_DOMAIN", "login")
+    username = _strip_cred("SF_USERNAME")
+    password = _strip_cred("SF_PASSWORD")
+    security_token = _strip_cred("SF_SECURITY_TOKEN")
+    if not username or not password or not security_token:
+        raise RuntimeError(
+            "SF_USERNAME, SF_PASSWORD, and SF_SECURITY_TOKEN must each be "
+            "non-empty after trimming whitespace."
+        )
     return Salesforce(
-        username=os.environ["SF_USERNAME"],
-        password=os.environ["SF_PASSWORD"],
-        security_token=os.environ["SF_SECURITY_TOKEN"],
-        domain=domain,
+        username=username,
+        password=password,
+        security_token=security_token,
     )
 
 

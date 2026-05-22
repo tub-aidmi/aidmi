@@ -10,7 +10,7 @@ import typer
 import yaml
 from dotenv import load_dotenv
 
-load_dotenv()
+load_dotenv(override=True)
 
 # Trigger all built-in registrations.
 import aidmi_orchestrator.strategy  # noqa: F401
