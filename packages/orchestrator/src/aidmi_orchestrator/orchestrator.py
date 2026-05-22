@@ -41,6 +41,8 @@ async def run_orchestrator(
     started_at = datetime.utcnow()
     run_dir = workspace / "runs" / run_id
     run_dir.mkdir(parents=True, exist_ok=True)
+    dlt_pipelines_dir = run_dir / ".dlt_pipelines"
+    dlt_pipelines_dir.mkdir(parents=True, exist_ok=True)
     dbt_project_path = run_dir / "dbt_project"
     scaffold_dbt_project(dbt_project_path)
 
@@ -121,6 +123,7 @@ async def run_orchestrator(
     return RunArtifacts(
         run_id=run_id,
         dbt_project_path=dbt_project_path,
+        dlt_pipelines_dir=dlt_pipelines_dir,
         staging_db_url=staging.db_url,
         staging_dataset=staging.dataset_name,
         trace=TraceSink.read_all(run_dir / "trace.jsonl"),

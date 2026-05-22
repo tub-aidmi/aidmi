@@ -49,13 +49,15 @@ class FuzzyComparator:
         return True
 
 
-def _run_reference_dbt(db_url: str, dataset: str, reference_path: Path) -> str:
+def _run_reference_dbt(
+    db_url: str, dataset: str, reference_path: Path, pipelines_dir: Path
+) -> str:
     """Run the reference dbt project, materializing into <dataset>_reference."""
     import dlt
-    from aidmi_pipeline.config import StagingConfig, MigrationRun
     ref_dataset = f"{dataset}_reference"
     pipeline = dlt.pipeline(
         pipeline_name=f"ref_{ref_dataset}",
+        pipelines_dir=str(pipelines_dir),
         destination=dlt.destinations.postgres(db_url),
         dataset_name=ref_dataset,
     )
@@ -81,7 +83,7 @@ def _run_reference_dbt(db_url: str, dataset: str, reference_path: Path) -> str:
                     f'SELECT * FROM "{dataset}"."{t}"'
                 )
 
-    venv = dlt.dbt.get_venv(pipeline)
+    venv = dlt.dbt.get_venv(pipeline, venv_path="")
     runner = dlt.dbt.package(pipeline, str(reference_path), venv=venv)
     runner.run_all()
     return ref_dataset
@@ -101,6 +103,7 @@ class RowEqualityEvaluator:
             artifacts.staging_db_url,
             artifacts.staging_dataset,
             artifacts.fixture.reference_dbt_path,
+            artifacts.dlt_pipelines_dir,
         )
 
         per_table: dict[str, dict[str, Any]] = {}

@@ -20,6 +20,7 @@ class FixtureMetadata:
 class RunArtifacts:
     run_id: str
     dbt_project_path: Path
+    dlt_pipelines_dir: Path
     staging_db_url: str
     staging_dataset: str
     trace: list[TraceEvent]

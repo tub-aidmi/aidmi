@@ -11,6 +11,7 @@ def _artifacts(trace=None, final=None):
     return RunArtifacts(
         run_id="r1",
         dbt_project_path=Path("/tmp/x"),
+        dlt_pipelines_dir=Path("/tmp/x/.dlt_pipelines"),
         staging_db_url="postgresql://x",
         staging_dataset="src_r1",
         trace=trace or [],

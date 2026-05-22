@@ -91,7 +91,7 @@ def transform(run: MigrationRun) -> TransformResult:
         destination=dlt.destinations.postgres(run.staging.db_url),
         dataset_name=run.staging.dataset_name,
     )
-    venv = dlt.dbt.get_venv(pipeline)
+    venv = dlt.dbt.get_venv(pipeline, venv_path="")
     runner = dlt.dbt.package(pipeline, str(run.dbt_project_path), venv=venv)
     outcomes = runner.run_all()
     models = [_outcome_to_model(o) for o in outcomes]
