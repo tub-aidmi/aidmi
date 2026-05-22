@@ -39,9 +39,9 @@ def _resolve_api_key(spec: ModelSpec) -> str | None:
 
 
 def _openai_factory(spec: ModelSpec):
-    from pydantic_ai.models.openai import OpenAIModel
+    from pydantic_ai.models.openai import OpenAIChatModel
     from pydantic_ai.providers.openai import OpenAIProvider
-    return OpenAIModel(
+    return OpenAIChatModel(
         spec.model_name,
         provider=OpenAIProvider(base_url=spec.base_url, api_key=_resolve_api_key(spec)),
     )
@@ -61,9 +61,9 @@ register_provider("openai_compatible", _openai_factory)
 
 
 def _ollama_factory(spec: ModelSpec):
-    from pydantic_ai.models.openai import OpenAIModel
+    from pydantic_ai.models.openai import OpenAIChatModel
     from pydantic_ai.providers.ollama import OllamaProvider
-    return OpenAIModel(
+    return OpenAIChatModel(
         spec.model_name,
         provider=OllamaProvider(
             base_url=spec.base_url or "http://localhost:11434",
