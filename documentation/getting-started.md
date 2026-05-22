@@ -34,7 +34,7 @@ Or run one package directly:
 uv run --package aidmi-orchestrator pytest packages/orchestrator/tests/ -m "not requires_llm"
 ```
 
-Expected output ends with `37 passed`. Typical wall-clock is 50–60 seconds (Postgres container startup plus two dbt runs).
+Expected output ends with `44 passed`. Typical wall-clock is 50–60 seconds (Postgres container startup plus two dbt runs).
 
 ## Run the bundled demo via the CLI
 
@@ -131,6 +131,37 @@ import pandas as pd
 df = pd.read_json("aidmi_workspace/results/demo/results.jsonl", lines=True)
 df[["strategy_name", "metrics"]].head()
 ```
+
+## Salesforce sandbox → Pipedrive-shaped mapping (`sf_pipedrive`)
+
+Phase 2 of the migration walkthrough: extract **Contact** and **Account** from Salesforce into staging, then drive an LLM strategy to emit dbt SQL for **persons** and **organizations** tables (staging only — no Pipedrive API upload).
+
+Prerequisites:
+
+- `.env` with `SF_USERNAME`, `SF_PASSWORD`, `SF_SECURITY_TOKEN`, and Postgres (`POSTGRES_*` or `AIDMI_STAGING_DB_URL`). For Salesforce **sandboxes**, set `SF_DOMAIN=test`.
+- `LITELLM_API_KEY` when your strategy YAML sets `api_key_env: LITELLM_API_KEY`.
+- Edit [`packages/orchestrator/examples/strategy_specs/write_tools_freeform_litellm_qwen.yaml`](../packages/orchestrator/examples/strategy_specs/write_tools_freeform_litellm_qwen.yaml): set `base_url` for your LiteLLM OpenAI-compatible endpoint (must include `/v1`).
+- Postgres from `make up`.
+
+Quick path:
+
+```bash
+make litellm-smoke-fixture     # LiteLLM + sp1_users (checks model wiring)
+make up
+make sf-pipedrive-litellm     # Salesforce extract → LLM dbt → run
+```
+
+Equivalent without Make:
+
+```bash
+make up
+
+uv run --package aidmi-orchestrator aidmi-orchestrator run \
+  --fixture sf_pipedrive \
+  --strategy-spec packages/orchestrator/examples/strategy_specs/write_tools_freeform_litellm_qwen.yaml
+```
+
+Use [`structured_per_table_litellm_qwen.yaml`](../packages/orchestrator/examples/strategy_specs/structured_per_table_litellm_qwen.yaml) if your model reliably supports structured output; otherwise prefer `write_tools_freeform_*` as the primary path for Qwen-style models.
 
 ## Next steps
 

@@ -1,0 +1,90 @@
+{
+  "tables": [
+    {
+      "name": "persons",
+      "description": "Pipedrive-style person candidates from Salesforce Contact. Join account on AccountId for organization name when needed.",
+      "primary_key": ["sf_contact_id"],
+      "columns": [
+        {
+          "name": "sf_contact_id",
+          "sql_type": "text",
+          "nullable": false,
+          "description": "Salesforce Contact Id (preserve for traceability and idempotent load later)."
+        },
+        {
+          "name": "name",
+          "sql_type": "text",
+          "nullable": true,
+          "description": "Full display name — trim; combine FirstName and LastName with a single space."
+        },
+        {
+          "name": "email",
+          "sql_type": "text",
+          "nullable": true,
+          "description": "Primary email; lowercased and trimmed (use Email if present)."
+        },
+        {
+          "name": "phone",
+          "sql_type": "text",
+          "nullable": true,
+          "description": "Preferred phone — Phone or MobilePhone."
+        },
+        {
+          "name": "org_name",
+          "sql_type": "text",
+          "nullable": true,
+          "description": "Account name looked up via Contact.AccountId = Account.Id (staging table account)."
+        },
+        {
+          "name": "owner_id",
+          "sql_type": "integer",
+          "nullable": true,
+          "description": "Placeholder for Pipedrive owner; map from OwnerId if you can coerce to integer, otherwise null."
+        },
+        {
+          "name": "add_time",
+          "sql_type": "timestamp",
+          "nullable": true,
+          "description": "Creation time from Contact.CreatedDate if available."
+        }
+      ]
+    },
+    {
+      "name": "organizations",
+      "description": "Pipedrive-style organization candidates from Salesforce Account.",
+      "primary_key": ["sf_account_id"],
+      "columns": [
+        {
+          "name": "sf_account_id",
+          "sql_type": "text",
+          "nullable": false,
+          "description": "Salesforce Account Id (preserve for traceability)."
+        },
+        {
+          "name": "name",
+          "sql_type": "text",
+          "nullable": false,
+          "description": "Account Name; trimmed."
+        },
+        {
+          "name": "address",
+          "sql_type": "text",
+          "nullable": true,
+          "description": "Billing address summary — concatenate BillingStreet, BillingCity, BillingState, BillingPostalCode, BillingCountry with commas/spaces."
+        },
+        {
+          "name": "owner_id",
+          "sql_type": "integer",
+          "nullable": true,
+          "description": "Placeholder for Pipedrive owner; map OwnerId when possible."
+        },
+        {
+          "name": "add_time",
+          "sql_type": "timestamp",
+          "nullable": true,
+          "description": "Creation time from Account.CreatedDate if present."
+        }
+      ]
+    }
+  ]
+}

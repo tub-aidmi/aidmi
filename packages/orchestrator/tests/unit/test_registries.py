@@ -52,6 +52,24 @@ def test_sp1_users_fixture_registered():
     assert f.reference_dbt_path is not None and f.reference_dbt_path.is_dir()
 
 
+def test_sf_pipedrive_fixture_registered():
+    import aidmi_orchestrator.fixtures  # triggers registration
+
+    assert "sf_pipedrive" in list_fixtures()
+    f = get_fixture("sf_pipedrive")
+    assert f.applicable_evaluators == ["execution", "llm_usage", "schema"]
+    assert f.target_schema_path is not None and f.target_schema_path.exists()
+    assert f.reference_dbt_path is None
+
+
+def test_sf_pipedrive_load_source_requires_env():
+    import aidmi_orchestrator.fixtures  # noqa: F401 — triggers registration
+
+    f = get_fixture("sf_pipedrive")
+    with pytest.raises(RuntimeError, match="Missing Salesforce credentials"):
+        f.source_factory()
+
+
 def test_mock_strategy_registered_and_instantiable():
     import aidmi_orchestrator.strategy  # triggers registration
     from aidmi_orchestrator.strategy.base import make_strategy, list_strategies

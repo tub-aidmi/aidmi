@@ -7,7 +7,7 @@ export
 
 .DEFAULT_GOAL := help
 
-.PHONY: help env install setup up down down-v logs psql test test-orchestrator test-pipeline demo sweep clean-workspace
+.PHONY: help env install setup up down down-v logs psql test test-orchestrator test-pipeline demo sweep clean-workspace litellm-smoke-fixture sf-pipedrive-litellm
 
 help: ## List targets (make test works without Postgres)
 	@echo "Makefile targets:"
@@ -49,6 +49,18 @@ demo: ## Mock orchestrator run (needs: make env, make up)
 	uv run --package aidmi-orchestrator aidmi-orchestrator run \
 		--fixture sp1_users \
 		--strategy-spec packages/orchestrator/examples/strategy_specs/mock.yaml
+
+litellm-smoke-fixture: ## LiteLLM + bundled sp1_users (needs: make env, make up, LITELLM base_url edited)
+	@test -f .env || cp -n .env.example .env
+	uv run --package aidmi-orchestrator aidmi-orchestrator run \
+		--fixture sp1_users \
+		--strategy-spec packages/orchestrator/examples/strategy_specs/write_tools_freeform_litellm_qwen.yaml
+
+sf-pipedrive-litellm: ## SF Contact+Account → Pipedrive-shaped dbt (needs: make env, make up, SF_* + LiteLLM)
+	@test -f .env || cp -n .env.example .env
+	uv run --package aidmi-orchestrator aidmi-orchestrator run \
+		--fixture sf_pipedrive \
+		--strategy-spec packages/orchestrator/examples/strategy_specs/write_tools_freeform_litellm_qwen.yaml
 
 sweep: ## Run demo sweep grid (needs Postgres + LLM keys for LLM cells)
 	@test -f .env || cp -n .env.example .env
