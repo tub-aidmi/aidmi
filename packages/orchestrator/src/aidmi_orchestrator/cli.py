@@ -2,6 +2,7 @@
 from __future__ import annotations
 import asyncio
 import os
+import sys
 from pathlib import Path
 from typing import Annotated
 from urllib.parse import quote_plus
@@ -57,13 +58,20 @@ def run(
     strategy_spec: Annotated[Path, typer.Option(help="path to a strategy YAML")],
     run_id: Annotated[str | None, typer.Option(help="optional run id (ULID auto-generated otherwise)")] = None,
     workspace: Annotated[Path, typer.Option(help="workspace directory")] = Path("./aidmi_workspace"),
+    verbose: Annotated[bool, typer.Option("-v", "--verbose", help="stream trace JSONL lines to stderr as they are recorded")] = False,
 ):
     """Run one orchestrator pass against a fixture."""
     spec = yaml.safe_load(strategy_spec.read_text(encoding="utf-8"))
     strategy = make_strategy(spec["strategy"], spec.get("config", {}))
     fx = get_fixture(fixture)
     bench = Benchmark(fx, workspace, _require_staging_url())
-    result = asyncio.run(bench.run(strategy, run_id=run_id))
+    result = asyncio.run(
+        bench.run(
+            strategy,
+            run_id=run_id,
+            trace_mirror=sys.stderr if verbose else None,
+        ),
+    )
     typer.echo(result.model_dump_json(indent=2))
 
 
@@ -74,6 +82,7 @@ def sweep(
     fixture: Annotated[str | None, typer.Option(help="registered fixture name (overrides grid YAML fixture key)")] = None,
     runs_per_cell: Annotated[int, typer.Option(help="repetitions per cell (overrides grid YAML runs_per_cell key)")] = 1,
     workspace: Annotated[Path, typer.Option(help="workspace directory")] = Path("./aidmi_workspace"),
+    verbose: Annotated[bool, typer.Option("-v", "--verbose", help="stream trace JSONL lines to stderr for each cell")] = False,
 ):
     """Sweep multiple (strategy, config) cells across a fixture.
 
@@ -95,7 +104,14 @@ def sweep(
     bench = Benchmark(fx, workspace, _require_staging_url())
     out.mkdir(parents=True, exist_ok=True)
     (out / "sweep_config.yaml").write_text(grid.read_text(), encoding="utf-8")
-    results = asyncio.run(bench.sweep(cells, runs_per_cell=resolved_runs_per_cell, results_path=out / "results.jsonl"))
+    results = asyncio.run(
+        bench.sweep(
+            cells,
+            runs_per_cell=resolved_runs_per_cell,
+            results_path=out / "results.jsonl",
+            trace_mirror=sys.stderr if verbose else None,
+        ),
+    )
     typer.echo(f"wrote {len(results)} result rows to {out / 'results.jsonl'}")
 
 

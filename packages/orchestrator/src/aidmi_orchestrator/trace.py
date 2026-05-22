@@ -55,14 +55,19 @@ _EVENT_CLASSES: dict[str, type[TraceEvent]] = {
 class TraceSink:
     """Append-only JSONL writer; one event per line. Streams during execution."""
 
-    def __init__(self, path: Path):
+    def __init__(self, path: Path, mirror_to: IO[str] | None = None):
         self.path = path
+        self._mirror_to = mirror_to
         self.path.parent.mkdir(parents=True, exist_ok=True)
         self._fh: IO[str] = open(self.path, "a", encoding="utf-8")
 
     def record(self, event: TraceEvent) -> None:
-        self._fh.write(event.model_dump_json() + "\n")
+        line = event.model_dump_json() + "\n"
+        self._fh.write(line)
         self._fh.flush()
+        if self._mirror_to is not None:
+            self._mirror_to.write(line)
+            self._mirror_to.flush()
 
     def close(self) -> None:
         self._fh.close()

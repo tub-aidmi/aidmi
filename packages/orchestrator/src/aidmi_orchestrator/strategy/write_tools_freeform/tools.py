@@ -69,7 +69,10 @@ def make_run_dbt(api, max_passes: int = 3):
         if counter["n"] >= max_passes:
             return {"error": f"max_self_correction_passes={max_passes} reached"}
         counter["n"] += 1
-        result = await api.run_dbt()
-        return result.model_dump()
+        try:
+            result = await api.run_dbt()
+            return result.model_dump()
+        except Exception as e:
+            return {"error": repr(e), "overall_status": "error"}
 
     return run_dbt

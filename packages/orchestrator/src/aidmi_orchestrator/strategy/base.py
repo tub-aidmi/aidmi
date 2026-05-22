@@ -2,6 +2,8 @@
 from __future__ import annotations
 from pathlib import Path
 from typing import Any, Protocol, runtime_checkable
+
+import yaml
 from pydantic import BaseModel
 
 from aidmi_orchestrator.domain import (
@@ -91,6 +93,46 @@ def build_context_prompt(
     return "\n".join(lines)
 
 
+_SOURCES_TARGET_SCHEMA = "{{ target.schema }}"
+
+
+def ensure_sources_yaml_target_schema(sources_yaml_path: Path) -> None:
+    """Ensure each dbt `sources:` entry has `schema: "{{ target.schema }}"`.
+
+    Needed so physical tables resolve into the staging schema dlt configures for
+    the run; omitting schema makes dbt use the logical source name as schema.
+    """
+    if not sources_yaml_path.exists():
+        return
+    try:
+        data = yaml.safe_load(sources_yaml_path.read_text(encoding="utf-8"))
+    except yaml.YAMLError:
+        return
+    if not isinstance(data, dict):
+        return
+    sources = data.get("sources")
+    if not isinstance(sources, list):
+        return
+    changed = False
+    for src in sources:
+        if not isinstance(src, dict):
+            continue
+        if src.get("schema") != _SOURCES_TARGET_SCHEMA:
+            src["schema"] = _SOURCES_TARGET_SCHEMA
+            changed = True
+    if not changed:
+        return
+    if "version" not in data:
+        data["version"] = 2
+    dumped = yaml.safe_dump(
+        data,
+        sort_keys=False,
+        default_flow_style=False,
+        allow_unicode=True,
+    )
+    sources_yaml_path.write_text(dumped, encoding="utf-8")
+
+
 def write_proposal(
     dbt_project_path: Path,
     sql_by_table: dict[str, str],
@@ -135,6 +177,7 @@ __all__ = [
     "make_strategy",
     "build_context_prompt",
     "write_proposal",
+    "ensure_sources_yaml_target_schema",
     "build_manifest_from_notes",
     "ColumnNote",
     "TableMappingNote",

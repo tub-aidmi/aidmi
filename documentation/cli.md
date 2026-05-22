@@ -28,7 +28,8 @@ aidmi-orchestrator run \
   --fixture NAME \
   --strategy-spec PATH \
   [--run-id ID] \
-  [--workspace DIR]
+  [--workspace DIR] \
+  [-v | --verbose]
 ```
 
 ### Options
@@ -39,6 +40,7 @@ aidmi-orchestrator run \
 | `--strategy-spec` | required | Path to a YAML file describing the strategy and its config. See [Configuration](configuration.md). |
 | `--run-id` | auto (ULID) | Optional run identifier. Used as the directory name under `<workspace>/runs/` and as the staging schema suffix (`src_<run-id>`). |
 | `--workspace` | `./aidmi_workspace` | Directory where per-run artifacts are written. |
+| `--verbose`, `-v` | off | Streams each [`trace.jsonl`](data-formats.md#tracejsonl) record to stderr as it is appended (same JSON lines written on disk). |
 
 ### Exit codes
 
@@ -60,7 +62,7 @@ The full `BenchmarkResult` is printed to stdout as indented JSON. Artifacts on d
 └── result.json
 ```
 
-## `aidmi-orchestrator sweep`
+For live progress during a single run: pass `-v` / `--verbose` (duplicate trace lines on stderr). With a pinned `--run-id`, you can also [`tail`](https://manpages.debian.org/stable/coreutils/tail.1.en.html)-follow `trace.jsonl` ([`sweep`](#live-trace-tail--verbose) shows a [`jq`](https://jqlang.org/) filter example).
 
 Run multiple `(strategy, config)` cells against one fixture and stream `BenchmarkResult` rows to a JSONL file.
 
@@ -70,7 +72,8 @@ aidmi-orchestrator sweep \
   --out DIR \
   [--fixture NAME] \
   [--runs-per-cell N] \
-  [--workspace DIR]
+  [--workspace DIR] \
+  [-v | --verbose]
 ```
 
 ### Options
@@ -82,6 +85,19 @@ aidmi-orchestrator sweep \
 | `--fixture` | from grid | Fixture name. Falls back to the grid YAML's top-level `fixture:` key if not given as a flag. An explicit flag overrides the YAML. |
 | `--runs-per-cell` | from grid, then 1 | Number of repetitions per cell. Falls back to the grid YAML's top-level `runs_per_cell:` key, then to 1. |
 | `--workspace` | `./aidmi_workspace` | Workspace directory. |
+| `--verbose`, `-v` | off | Same as [`run`](#aidmi-orchestrator-run): stream trace JSON lines to stderr for each cell while it runs. |
+
+### Live trace (tail + `--verbose`)
+
+`--verbose` / `-v` mirrors each appended [`trace.jsonl`](data-formats.md#tracejsonl) line to stderr immediately. If you prefer to read the file, pin `--run-id` and tail it from another terminal:
+
+```bash
+tail -f aidmi_workspace/runs/<run-id>/trace.jsonl
+```
+
+```bash
+tail -f aidmi_workspace/runs/<run-id>/trace.jsonl | jq -c '{ts:.timestamp, type:.event_type, label:(.label//.tool_name//.role)}'
+```
 
 ### Cartesian expansion
 

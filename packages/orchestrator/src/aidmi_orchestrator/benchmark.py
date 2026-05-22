@@ -3,7 +3,7 @@ from __future__ import annotations
 import itertools
 from datetime import datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, IO
 
 from ulid import ULID
 
@@ -33,14 +33,24 @@ class Benchmark:
     def _default_evaluators(self) -> list[Evaluator]:
         return [make_evaluator(name) for name in self.fixture.applicable_evaluators]
 
-    async def run(self, strategy: Strategy, run_id: str | None = None) -> BenchmarkResult:
+    async def run(
+        self,
+        strategy: Strategy,
+        run_id: str | None = None,
+        trace_mirror: IO[str] | None = None,
+    ) -> BenchmarkResult:
         run_id = run_id or str(ULID())
         started_at = datetime.utcnow()
         error: str | None = None
         artifacts: RunArtifacts | None = None
         try:
             artifacts = await run_orchestrator(
-                self.fixture, strategy, run_id, self.workspace, self.staging_db_url,
+                self.fixture,
+                strategy,
+                run_id,
+                self.workspace,
+                self.staging_db_url,
+                trace_mirror=trace_mirror,
             )
         except StrategyExecutionError as e:
             error = repr(e)
@@ -79,6 +89,7 @@ class Benchmark:
         cells: list[Strategy],
         runs_per_cell: int = 1,
         results_path: Path | None = None,
+        trace_mirror: IO[str] | None = None,
     ) -> list[BenchmarkResult]:
         results: list[BenchmarkResult] = []
         if results_path is not None:
@@ -89,7 +100,7 @@ class Benchmark:
         try:
             for strategy in cells:
                 for _ in range(runs_per_cell):
-                    r = await self.run(strategy)
+                    r = await self.run(strategy, trace_mirror=trace_mirror)
                     results.append(r)
                     if results_fh is not None:
                         results_fh.write(r.model_dump_json() + "\n")

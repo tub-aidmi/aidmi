@@ -1,9 +1,8 @@
 """run_orchestrator — the 6-step sequential flow."""
 from __future__ import annotations
-import json
 from datetime import datetime
 from pathlib import Path
-from typing import Any
+from typing import IO
 
 from aidmi_pipeline.config import StagingConfig, MigrationRun
 from aidmi_pipeline.migration import extract_source
@@ -37,6 +36,7 @@ async def run_orchestrator(
     run_id: str,
     workspace: Path,
     staging_db_url: str,
+    trace_mirror: IO[str] | None = None,
 ) -> RunArtifacts:
     started_at = datetime.utcnow()
     run_dir = workspace / "runs" / run_id
@@ -46,7 +46,7 @@ async def run_orchestrator(
     dbt_project_path = run_dir / "dbt_project"
     scaffold_dbt_project(dbt_project_path)
 
-    trace = TraceSink(run_dir / "trace.jsonl")
+    trace = TraceSink(run_dir / "trace.jsonl", mirror_to=trace_mirror)
     target_schema = _load_target_schema(fixture.target_schema_path)
 
     staging = StagingConfig(db_url=staging_db_url, dataset_name=f"src_{run_id.lower()}")

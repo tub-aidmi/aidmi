@@ -45,9 +45,10 @@ make up                    # Postgres on localhost (.env defaults in .env.exampl
 make demo                  # mock strategy; same as uv run aidmi-orchestrator run ...
 ```
 
-The command prints a `BenchmarkResult` as JSON and writes artifacts under `./aidmi_workspace/runs/<ulid>/`.
+The command prints a `BenchmarkResult` as JSON and writes artifacts under `./aidmi_workspace/runs/<ulid>/`. Add `-v` / `--verbose` to stream [`trace.jsonl`](data-formats.md#tracejsonl) lines to stderr as they are recorded, or pin `--run-id` and tail the same path from another shell (details in [`cli.md`](cli.md)).
 
 Stop Postgres:
+
 
 ```bash
 make down

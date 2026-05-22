@@ -6,7 +6,10 @@ from pydantic import BaseModel
 from pydantic_ai import Agent, Tool, UsageLimits
 
 from aidmi_orchestrator.domain import ModelSpec, StrategyResult
-from aidmi_orchestrator.strategy.base import build_context_prompt
+from aidmi_orchestrator.strategy.base import (
+    build_context_prompt,
+    ensure_sources_yaml_target_schema,
+)
 from aidmi_orchestrator.strategy.write_tools_freeform.prompts import (
     SYSTEM_PROMPT, initial_user_prompt,
 )
@@ -57,6 +60,7 @@ class WriteToolsFreeform:
         await agent.run(initial_user_prompt(context), usage_limits=UsageLimits(request_limit=self.config.max_tool_turns))
 
         models_dir = api.dbt_project_path / "models"
+        ensure_sources_yaml_target_schema(models_dir / "sources.yml")
         produced = [
             p.stem for p in models_dir.glob("*.sql")
         ] if models_dir.exists() else []
