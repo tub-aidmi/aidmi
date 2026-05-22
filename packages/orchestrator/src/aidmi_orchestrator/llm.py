@@ -47,17 +47,6 @@ def _openai_factory(spec: ModelSpec):
     )
 
 
-def _ollama_factory(spec: ModelSpec):
-    from pydantic_ai.models.openai import OpenAIModel
-    from pydantic_ai.providers.ollama import OllamaProvider
-    return OpenAIModel(
-        spec.model_name,
-        provider=OllamaProvider(
-            base_url=spec.base_url or "http://localhost:11434",
-        ),
-    )
-
-
 def _anthropic_factory(spec: ModelSpec):
     from pydantic_ai.models.anthropic import AnthropicModel
     from pydantic_ai.providers.anthropic import AnthropicProvider
@@ -69,6 +58,19 @@ def _anthropic_factory(spec: ModelSpec):
 
 register_provider("openai", _openai_factory)
 register_provider("openai_compatible", _openai_factory)
+
+
+def _ollama_factory(spec: ModelSpec):
+    from pydantic_ai.models.openai import OpenAIModel
+    from pydantic_ai.providers.ollama import OllamaProvider
+    return OpenAIModel(
+        spec.model_name,
+        provider=OllamaProvider(
+            base_url=spec.base_url or "http://localhost:11434",
+        ),
+    )
+
+
 register_provider("ollama", _ollama_factory)
 register_provider("anthropic", _anthropic_factory)
 register_provider("litellm", _openai_factory)

@@ -2,13 +2,18 @@
 
 This page walks through installing the workspace, running the bundled `sp1_users` fixture against the deterministic `mock` strategy, and reading the resulting artifacts. The `mock` strategy makes no LLM calls and is the recommended way to verify the harness on a new machine.
 
+## Prerequisites
+
+Docker Desktop or Docker Engine (Compose v2 plugin) running on your machine—for the Postgres service in Compose and for `testcontainers` during pytest. With only rootless Podman and no Docker, tests may still work if pytest’s bundled socket detection finds a Docker-compatible Podman socket; that path is undocumented.
+
 ## Install
 
 ```bash
 git clone git@github.com:tub-aidmi/aidmi.git
 cd aidmi
-nix develop                # optional: provides python 3.13, uv, podman
-uv sync --all-packages
+nix develop                # optional: provides python 3.13, uv, docker-compose tooling
+make env                   # cp .env.example → .env (first time only)
+make install               # uv sync --all-packages
 ```
 
 `uv sync --all-packages` is required (rather than plain `uv sync`) because `aidmi-orchestrator` is a workspace member package; without `--all-packages` only the root project's dependencies are installed.
@@ -17,36 +22,38 @@ uv sync --all-packages
 
 Run the deterministic test suite. This starts a Postgres container, runs the orchestrator end-to-end with the mock strategy, executes dbt twice (once for the generated mapping, once for the reference dbt project bundled with the fixture), and asserts the produced rows equal the reference.
 
+You do **not** need `make up`; tests spin up Postgres via testcontainers instead.
+
+```bash
+make test
+```
+
+Or run one package directly:
+
 ```bash
 uv run --package aidmi-orchestrator pytest packages/orchestrator/tests/ -m "not requires_llm"
 ```
 
 Expected output ends with `37 passed`. Typical wall-clock is 50–60 seconds (Postgres container startup plus two dbt runs).
 
-If the test fails to start the Postgres container with `Could not find Docker daemon`, set `DOCKER_HOST` to your Podman socket: `export DOCKER_HOST=unix:///run/user/$(id -u)/podman/podman.sock`. The bundled `conftest.py` does this automatically when the socket file exists.
-
 ## Run the bundled demo via the CLI
 
-The CLI requires a Postgres connection string. The simplest way to provide one is via `testcontainers` in a shell script, but for a one-off run you can use any Postgres instance:
+With a `.env` in the repo root, `aidmi-orchestrator` loads variables via `python-dotenv` (shell exports still win). Staging Postgres is either `AIDMI_STAGING_DB_URL` or, if that is unset, a URL assembled from `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB`, and optionally `POSTGRES_HOST` / `POSTGRES_PORT` (see [`cli.md`](cli.md#environment)).
 
 ```bash
-# Start a temporary Postgres
-podman run --rm -d --name aidmi-staging -p 5432:5432 \
-  -e POSTGRES_PASSWORD=test postgres:16-alpine
-export AIDMI_STAGING_DB_URL=postgresql://postgres:test@localhost:5432/postgres
-
-uv run --package aidmi-orchestrator aidmi-orchestrator run \
-  --fixture sp1_users \
-  --strategy-spec packages/orchestrator/examples/strategy_specs/mock.yaml
+make up                    # Postgres on localhost (.env defaults in .env.example)
+make demo                  # mock strategy; same as uv run aidmi-orchestrator run ...
 ```
 
 The command prints a `BenchmarkResult` as JSON and writes artifacts under `./aidmi_workspace/runs/<ulid>/`.
 
-Tear down the container when finished:
+Stop Postgres:
 
 ```bash
-podman stop aidmi-staging
+make down
 ```
+
+Drop the volume as well (`make down-v`) if you want a clean data directory next time.
 
 ## What the run produced
 
@@ -86,9 +93,10 @@ The full schema of `result.json` is documented in [data formats](data-formats.md
 
 ## Run an LLM-driven strategy
 
+Set credentials in `.env` (see [`.env.example`](../.env.example)) or export them for the shell. Postgres from `make up` must match either the composed `POSTGRES_*` URL or `AIDMI_STAGING_DB_URL` if you override it.
+
 ```bash
-export OPENAI_API_KEY=sk-...
-export AIDMI_STAGING_DB_URL=postgresql://postgres:test@localhost:5432/postgres
+make up
 
 uv run --package aidmi-orchestrator aidmi-orchestrator run \
   --fixture sp1_users \
@@ -100,6 +108,13 @@ uv run --package aidmi-orchestrator aidmi-orchestrator run \
 ## Sweep multiple strategies
 
 `aidmi-orchestrator sweep` runs a YAML-defined grid of `(strategy, config)` cells against one fixture and writes one `BenchmarkResult` per cell to a results JSONL.
+
+```bash
+make up
+make sweep
+```
+
+Equivalent:
 
 ```bash
 uv run --package aidmi-orchestrator aidmi-orchestrator sweep \

@@ -158,12 +158,17 @@ To include the evaluator in a default benchmark run, pass an explicit list:
 
 ```python
 from aidmi_orchestrator.benchmark import Benchmark
+from aidmi_orchestrator.cli import staging_db_url_from_env
 from aidmi_orchestrator.evaluator.base import make_evaluator
+
+staging = staging_db_url_from_env()
+if staging is None:
+    raise RuntimeError("configure AIDMI_STAGING_DB_URL or POSTGRES_USER/PASSWORD/DB")
 
 bench = Benchmark(
     fixture=get_fixture("sp1_users"),
     workspace=Path("./workspace"),
-    staging_db_url=os.environ["AIDMI_STAGING_DB_URL"],
+    staging_db_url=staging,
     evaluators=[
         make_evaluator("execution"),
         make_evaluator("schema"),

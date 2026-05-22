@@ -4,9 +4,13 @@ import asyncio
 import os
 from pathlib import Path
 from typing import Annotated
+from urllib.parse import quote_plus
 
 import typer
 import yaml
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # Trigger all built-in registrations.
 import aidmi_orchestrator.strategy  # noqa: F401
@@ -20,11 +24,29 @@ from aidmi_orchestrator.strategy.base import make_strategy
 app = typer.Typer(add_completion=False, help="aidmi orchestrator runner")
 
 
+def staging_db_url_from_env() -> str | None:
+    """Resolve staging DB URL: explicit `AIDMI_STAGING_DB_URL`, else build from POSTGRES_*."""
+    direct = os.environ.get("AIDMI_STAGING_DB_URL")
+    if direct:
+        return direct
+    user = os.environ.get("POSTGRES_USER")
+    password = os.environ.get("POSTGRES_PASSWORD")
+    database = os.environ.get("POSTGRES_DB")
+    if user is None or password is None or database is None:
+        return None
+    host = os.environ.get("POSTGRES_HOST", "localhost")
+    port = os.environ.get("POSTGRES_PORT", "5432")
+    u = quote_plus(user, safe="")
+    p = quote_plus(password, safe="")
+    return f"postgresql://{u}:{p}@{host}:{port}/{database}"
+
+
 def _require_staging_url() -> str:
-    url = os.environ.get("AIDMI_STAGING_DB_URL")
+    url = staging_db_url_from_env()
     if not url:
         raise typer.BadParameter(
-            "set AIDMI_STAGING_DB_URL to a Postgres connection string."
+            "set AIDMI_STAGING_DB_URL, or POSTGRES_USER, POSTGRES_PASSWORD, and POSTGRES_DB "
+            "(optional POSTGRES_HOST default localhost, POSTGRES_PORT default 5432)."
         )
     return url
 

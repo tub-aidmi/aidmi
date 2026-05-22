@@ -20,13 +20,13 @@ The tool is intended for research: comparing prompts, agent topologies, models, 
 
 The orchestrator stops at the *generation* boundary: it produces a validated dbt project and a `BenchmarkResult`, but it does not push data to a production destination. Production reverse-ETL is the responsibility of sub-project 3, which wraps the orchestrator with a state machine and HTTP API.
 
-The orchestrator requires a running Postgres instance for staging. In tests this is provided by `testcontainers`; for benchmark runs you supply a connection string via `AIDMI_STAGING_DB_URL`.
+The orchestrator requires a running Postgres instance for staging. In tests this is provided by `testcontainers`; for CLI runs configure `AIDMI_STAGING_DB_URL`, or omit it and rely on `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB` (optional host/port)—see [`cli.md`](cli.md#environment)—typically from [`.env.example`](../.env.example) copied to `.env`; the CLI loads `.env` automatically.
 
 ## Prerequisites
 
 - Python 3.13
 - `uv` (workspace package manager)
-- Docker or rootless Podman (for staging Postgres via `testcontainers`)
+- Docker Desktop or Docker Engine with Compose—for local staging Postgres (`make up`), and for Postgres started by pytest via `testcontainers`. Rootless Podman may happen to work with pytest’s bundled socket detection; Docker is assumed in the docs.
 - One or more LLM API keys (OpenAI, Anthropic, or a local Ollama server) for the LLM-driven strategies. The bundled `mock` strategy requires no LLM and is useful for harness validation.
 
 See [Getting started](getting-started.md) for the install procedure.

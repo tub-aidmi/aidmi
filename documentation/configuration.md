@@ -68,7 +68,7 @@ Used by every LLM-driven strategy as the `writer_model` (or other role-named) fi
 | `provider` | string | yes | Name of a registered provider. Built-ins: `openai`, `openai_compatible`, `ollama`, `anthropic`, `litellm`. |
 | `model_name` | string | yes | Model identifier the provider accepts (e.g., `gpt-4o-mini`, `claude-3-5-sonnet-latest`, `llama3:70b`). |
 | `base_url` | string | no | Override the provider's default base URL. Useful for OpenAI-compatible proxies and Ollama. |
-| `api_key_env` | string | no | Name of the environment variable holding the API key. The key itself is never serialized. |
+| `api_key_env` | string | no | Name of the environment variable holding the API key. The key itself is never serialized. Omit or leave unset for providers that require no key (see Ollama). |
 | `extra` | object | no | Provider-specific options. Passed through opaquely. |
 
 ### Examples
@@ -89,21 +89,30 @@ writer_model:
   api_key_env: ANTHROPIC_API_KEY
 ```
 
-Local Ollama:
+Local Ollama (no API key — default `base_url` in code is `http://localhost:11434` if omitted):
 ```yaml
 writer_model:
   provider: ollama
   model_name: llama3:70b
-  base_url: http://localhost:11434   # optional; this is the default
+  base_url: http://localhost:11434   # optional
 ```
 
-A self-hosted OpenAI-compatible endpoint (vLLM, LiteLLM proxy, internal gateway):
+LiteLLM proxy (OpenAI-compatible API); set host in YAML (`api_key_env` matches [`.env.example`](../.env.example)):
+```yaml
+writer_model:
+  provider: litellm
+  model_name: gpt-4o-mini
+  base_url: http://localhost:4000/v1
+  api_key_env: LITELLM_API_KEY
+```
+
+A self-hosted OpenAI-compatible endpoint (vLLM, internal gateways; same pattern as LiteLLM for URL + key naming):
 ```yaml
 writer_model:
   provider: openai_compatible
   model_name: my-tuned-model
   base_url: https://llm.internal/v1
-  api_key_env: INTERNAL_LLM_KEY
+  api_key_env: OPENAI_COMPATIBLE_API_KEY
 ```
 
 ## Grid YAML

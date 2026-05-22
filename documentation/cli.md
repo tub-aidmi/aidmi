@@ -4,13 +4,20 @@ The orchestrator ships a Typer-based CLI installed as `aidmi-orchestrator`. Two 
 
 ## Environment
 
-The CLI reads one environment variable:
+Staging Postgres resolves in this order:
 
-| Variable | Required | Description |
-|----------|----------|-------------|
-| `AIDMI_STAGING_DB_URL` | Yes | Postgres connection string used for staging. Format: `postgresql://user:pass@host:port/dbname`. |
+| Variable(s) | Required | Description |
+|-------------|----------|-------------|
+| `AIDMI_STAGING_DB_URL` | No* | Overrides everything when set (non-empty). Format: `postgresql://user:pass@host:port/dbname`. |
+| `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB` | No* | When `AIDMI_STAGING_DB_URL` is unset, the CLI builds `postgresql://user:password@host:port/db`. User/password are URL-encoded automatically. |
+| `POSTGRES_HOST` | No | Defaults to `localhost` when composing the URL. |
+| `POSTGRES_PORT` | No | Defaults to `5432` when composing the URL. |
 
-Strategy specs and grid YAML files reference additional environment variables via the `api_key_env` field on each `ModelSpec`. For example, `api_key_env: OPENAI_API_KEY` causes the orchestrator to read the OpenAI key from `$OPENAI_API_KEY` at runtime. The key is never serialized into trace, manifest, or result files.
+\*Either set `AIDMI_STAGING_DB_URL`, or all three `POSTGRES_USER`, `POSTGRES_PASSWORD`, and `POSTGRES_DB`. [`.env.example`](../.env.example) follows the compose form (no duplicated URL unless you uncomment the override).
+
+Strategy specs and grid YAML choose `provider`, model, optional `base_url`, and optional `api_key_env`. Only the referenced API keys typically belong in `.env` ([`.env.example`](../.env.example)); host URLs belong in YAML (see [`configuration.md`](configuration.md)).
+
+If a `.env` file exists in the current working directory when you invoke `aidmi-orchestrator`, it is loaded automatically via `python-dotenv`. Existing shell-defined variables are **not** overridden.
 
 ## `aidmi-orchestrator run`
 
@@ -111,10 +118,9 @@ A `KeyboardInterrupt` or other signal stops the sweep at the next cell boundary.
 
 ## Examples
 
-Run the mock strategy on the SP1 fixture:
+Run the mock strategy on the SP1 fixture (typically `make up` from repo root plus a `.env` matching [`.env.example`](../.env.example)):
 
 ```bash
-export AIDMI_STAGING_DB_URL=postgresql://postgres:test@localhost:5432/postgres
 aidmi-orchestrator run \
   --fixture sp1_users \
   --strategy-spec packages/orchestrator/examples/strategy_specs/mock.yaml
@@ -123,8 +129,7 @@ aidmi-orchestrator run \
 Sweep all three context modes of `structured_per_table` against `sp1_users` with two repetitions per cell:
 
 ```bash
-export AIDMI_STAGING_DB_URL=postgresql://postgres:test@localhost:5432/postgres
-export OPENAI_API_KEY=sk-...
+export OPENAI_API_KEY=sk-...    # matches api_key_env in the grid YAML
 aidmi-orchestrator sweep \
   --grid packages/orchestrator/examples/day1_grid.yaml \
   --out aidmi_workspace/results/2026-05-17-day1 \
