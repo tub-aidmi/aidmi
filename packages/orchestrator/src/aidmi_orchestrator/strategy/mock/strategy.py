@@ -40,7 +40,7 @@ class MockStrategy:
                 reasoning=entry.get("reasoning", ""),
             ))
 
-        write_proposal(api.dbt_project_path, sql_by_table, sorted(source_tables))
+        write_proposal(api.dbt_project_path, sql_by_table, sorted(source_tables), api.staging_raw_dataset)
 
         manifest = MappingManifest(
             tables=notes,

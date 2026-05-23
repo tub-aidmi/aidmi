@@ -34,7 +34,7 @@ Or run one package directly:
 uv run --package aidmi-orchestrator pytest packages/orchestrator/tests/ -m "not requires_llm"
 ```
 
-Expected output: `make test` prints `2 passed` (pipeline) then `46 passed` (orchestrator). If you run only the orchestrator command above, you should see `46 passed`. Typical wall-clock is about 50–60 seconds (Postgres container startup plus two dbt runs).
+Expected output: `make test` prints `2 passed` (pipeline) then `49 passed` (orchestrator, excluding `@pytest.mark.requires_llm`). Typical wall-clock is about 50–60 seconds (Postgres container startup plus two dbt runs).
 
 ## Run the bundled demo via the CLI
 
@@ -89,6 +89,8 @@ Key metric keys in `result.json`:
 ```
 
 `row_count_match=true` and `row_set_diff_count=0` mean the strategy's SQL produced output identical to the fixture's hand-written reference dbt project. `dollar_cost_total=0.0` because the mock strategy makes no LLM calls.
+
+For each run Postgres contains two schemas, named in printed JSON and **`result.json`** as **`staging_raw_dataset`** (dlt extract) and **`staging_out_dataset`** (dbt outputs). Values are empty strings if the orchestrator crashed before wiring the run.
 
 The full schema of `result.json` is documented in [data formats](data-formats.md).
 

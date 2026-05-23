@@ -6,6 +6,9 @@ import json
 import asyncio
 from pathlib import Path
 import pytest
+import psycopg2
+
+from aidmi_pipeline.config import staging_schemas_for_run
 
 # Trigger registrations
 import aidmi_orchestrator.strategy  # noqa: F401
@@ -30,6 +33,27 @@ def test_mock_strategy_full_pipeline(staging_db_url, tmp_path):
     assert result.metrics["dbt_success"] is True
     assert result.metrics["row_count_match"] is True
     assert result.metrics["target_columns_covered"] == 1.0
+    raw_expect, out_expect = staging_schemas_for_run(result.run_id)
+    assert result.staging_raw_dataset == raw_expect
+    assert result.staging_out_dataset == out_expect
+    with psycopg2.connect(staging_db_url) as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                SELECT table_schema, table_name
+                FROM information_schema.tables
+                WHERE table_schema IN (%s, %s)
+                  AND table_name NOT LIKE %s ESCAPE %s
+                """,
+                (raw_expect, out_expect, "\\_dlt%", "\\"),
+            )
+            by_schema: dict[str, set[str]] = {raw_expect: set(), out_expect: set()}
+            for sch, tbl in cur.fetchall():
+                by_schema.setdefault(sch, set()).add(tbl)
+    assert "contacts" in by_schema.get(raw_expect, set())
+    assert "users" in by_schema.get(out_expect, set())
+    assert "users" not in by_schema.get(raw_expect, set())
+    assert "contacts" not in by_schema.get(out_expect, set())
 
     # Trace + artifacts on disk
     run_dir = tmp_path / "runs" / result.run_id

@@ -42,13 +42,16 @@ class Passthrough:
         source_tables = []
         for t in api.source_summary.tables:
             target = self.config.target_table
+            slug = t.db_schema
             sql_by_table[target] = (
                 "{{ config(materialized='table') }}\n"
-                f"SELECT * FROM {{{{ source('{t.schema}', '{t.name}') }}}}\n"
+                f"SELECT * FROM {{{{ source('{slug}', '{t.name}') }}}}\n"
             )
-            source_tables.append((t.schema, t.name))
+            source_tables.append((slug, t.name))
 
-        write_proposal(api.dbt_project_path, sql_by_table, source_tables)
+        write_proposal(
+            api.dbt_project_path, sql_by_table, source_tables, api.staging_raw_dataset,
+        )
 
         return StrategyResult(
             target_tables_written=list(sql_by_table),
@@ -85,7 +88,7 @@ The base module exports helpers for tasks that strategies typically share:
 | Helper | Purpose |
 |--------|---------|
 | `build_context_prompt(source_summary, target_schema, mode, samples_per_table)` | Builds a textual description of the source and target for the LLM. Handles the three context modes uniformly. |
-| `write_proposal(dbt_project_path, sql_by_table, source_tables)` | Writes per-table `.sql` files and a matching `sources.yml`. |
+| `write_proposal(dbt_project_path, sql_by_table, source_tables, raw_schema)` | Writes per-table `.sql` files and a matching `sources.yml` with literal `schema: "<raw_schema>"` entries (normalized again before each dbt run). |
 | `build_manifest_from_notes(notes_by_table, strategy_name, strategy_config)` | Constructs a `MappingManifest` from per-table notes. |
 
 Use them where they fit; ignore them if you want full control.

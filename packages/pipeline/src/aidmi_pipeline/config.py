@@ -1,13 +1,27 @@
+from __future__ import annotations
+
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 from pydantic import BaseModel
 
 
+def staging_schemas_for_run(run_id: str) -> tuple[str, str]:
+    """Return (raw_schema, out_schema) Postgres dataset names for a ULID run_id."""
+    base = f"src_{run_id.lower()}"
+    return f"{base}_raw", f"{base}_out"
+
+
 @dataclass
 class StagingConfig:
     db_url: str
-    dataset_name: str
+    raw_dataset_name: str
+    out_dataset_name: str
+
+    @classmethod
+    def for_run(cls, db_url: str, run_id: str) -> StagingConfig:
+        raw, out = staging_schemas_for_run(run_id)
+        return cls(db_url=db_url, raw_dataset_name=raw, out_dataset_name=out)
 
 
 @dataclass
@@ -25,7 +39,8 @@ class CliMigrationConfig(BaseModel):
     source_url: str
     source_table_or_glob: str
     staging_db_url: str
-    staging_dataset: str
+    staging_raw_dataset: str
+    staging_out_dataset: str
     target_kind: str
     target_url: str
     target_dataset: str
@@ -62,7 +77,11 @@ def cli_config_to_run(cfg: CliMigrationConfig) -> MigrationRun:
 
     return MigrationRun(
         source=source,
-        staging=StagingConfig(db_url=cfg.staging_db_url, dataset_name=cfg.staging_dataset),
+        staging=StagingConfig(
+            db_url=cfg.staging_db_url,
+            raw_dataset_name=cfg.staging_raw_dataset,
+            out_dataset_name=cfg.staging_out_dataset,
+        ),
         target=target,
         target_dataset=cfg.target_dataset,
         target_tables=cfg.target_tables,

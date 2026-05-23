@@ -7,7 +7,7 @@ from pathlib import Path
 
 import yaml
 
-from aidmi_orchestrator.strategy.base import ensure_sources_yaml_target_schema
+from aidmi_orchestrator.strategy.base import ensure_sources_yaml_raw_schema
 from aidmi_orchestrator.strategy.write_tools_freeform.tools import make_run_dbt
 
 
@@ -19,16 +19,16 @@ sources:
       - name: contacts
 """
 
-EXPECTED_MACRO = "{{ target.schema }}"
+RAW_SCHEMA = "src_test_raw"
 
 
-def test_ensure_sources_yaml_injects_target_schema_macro(tmp_path: Path) -> None:
+def test_ensure_sources_yaml_injects_raw_schema(tmp_path: Path) -> None:
     path = tmp_path / "sources.yml"
     path.write_text(BAD_YAML, encoding="utf-8")
-    ensure_sources_yaml_target_schema(path)
+    ensure_sources_yaml_raw_schema(tmp_path, RAW_SCHEMA)
 
     loaded = yaml.safe_load(path.read_text(encoding="utf-8"))
-    assert loaded["sources"][0]["schema"] == EXPECTED_MACRO
+    assert loaded["sources"][0]["schema"] == RAW_SCHEMA
 
 
 def test_ensure_sources_yaml_idempotent_when_present(tmp_path: Path) -> None:
@@ -36,14 +36,14 @@ def test_ensure_sources_yaml_idempotent_when_present(tmp_path: Path) -> None:
 
 sources:
   - name: x
-    schema: '{EXPECTED_MACRO}'
+    schema: "{RAW_SCHEMA}"
     tables:
       - name: t
 """
     path = tmp_path / "sources.yml"
     path.write_text(yaml_text, encoding="utf-8")
     before = path.read_text(encoding="utf-8")
-    ensure_sources_yaml_target_schema(path)
+    ensure_sources_yaml_raw_schema(tmp_path, RAW_SCHEMA)
     after = path.read_text(encoding="utf-8")
     assert before == after
 

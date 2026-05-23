@@ -50,22 +50,18 @@ class FuzzyComparator:
 
 
 def _run_reference_dbt(
-    db_url: str, dataset: str, reference_path: Path, pipelines_dir: Path
+    db_url: str, raw_dataset: str, reference_path: Path, pipelines_dir: Path
 ) -> str:
-    """Run the reference dbt project, materializing into <dataset>_reference."""
+    """Run the reference dbt project, materializing into <raw_dataset>_reference."""
     import dlt
-    ref_dataset = f"{dataset}_reference"
+    ref_dataset = f"{raw_dataset}_reference"
     pipeline = dlt.pipeline(
         pipeline_name=f"ref_{ref_dataset}",
         pipelines_dir=str(pipelines_dir),
         destination=dlt.destinations.postgres(db_url),
         dataset_name=ref_dataset,
     )
-    # The reference dbt project reads from the original `dataset` (where raw
-    # source data lives); we point dbt's `target.schema` at `ref_dataset` so
-    # outputs materialize there, but the source('source_crm', 'contacts')
-    # reference resolves to `ref_dataset.contacts`. To keep the reference
-    # tables visible to dbt, we COPY the raw tables into ref_dataset first.
+    # Tables live in raw_dataset after extract; outputs materialize under ref_dataset.
     with psycopg2.connect(db_url) as conn:
         with conn.cursor() as cur:
             cur.execute(f'CREATE SCHEMA IF NOT EXISTS "{ref_dataset}"')
@@ -74,13 +70,13 @@ def _run_reference_dbt(
                 SELECT table_name FROM information_schema.tables
                 WHERE table_schema = %s AND table_name NOT LIKE %s ESCAPE %s
                 """,
-                (dataset, r"\_dlt%", "\\"),
+                (raw_dataset, r"\_dlt%", "\\"),
             )
             tables = [r[0] for r in cur.fetchall()]
             for t in tables:
                 cur.execute(
                     f'CREATE TABLE IF NOT EXISTS "{ref_dataset}"."{t}" AS '
-                    f'SELECT * FROM "{dataset}"."{t}"'
+                    f'SELECT * FROM "{raw_dataset}"."{t}"'
                 )
 
     venv = dlt.dbt.get_venv(pipeline, venv_path="")
@@ -101,7 +97,7 @@ class RowEqualityEvaluator:
     def evaluate(self, artifacts: RunArtifacts) -> dict[str, Any]:
         ref_dataset = _run_reference_dbt(
             artifacts.staging_db_url,
-            artifacts.staging_dataset,
+            artifacts.staging_raw_dataset,
             artifacts.fixture.reference_dbt_path,
             artifacts.dlt_pipelines_dir,
         )
@@ -111,7 +107,7 @@ class RowEqualityEvaluator:
         for tname in artifacts.strategy_result.target_tables_written:
             with psycopg2.connect(artifacts.staging_db_url) as conn:
                 with conn.cursor(cursor_factory=RealDictCursor) as cur:
-                    cur.execute(f'SELECT * FROM "{artifacts.staging_dataset}"."{tname}"')
+                    cur.execute(f'SELECT * FROM "{artifacts.staging_out_dataset}"."{tname}"')
                     produced = [dict(r) for r in cur.fetchall()]
                     cur.execute(f'SELECT * FROM "{ref_dataset}"."{tname}"')
                     reference = [dict(r) for r in cur.fetchall()]

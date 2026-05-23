@@ -69,7 +69,7 @@ class StructuredPerTable:
         source_tables = sorted(
             {(t.db_schema, t.name) for t in api.source_summary.tables}
         )
-        write_proposal(api.dbt_project_path, sql_by_table, source_tables)
+        write_proposal(api.dbt_project_path, sql_by_table, source_tables, api.staging_raw_dataset)
 
         manifest = MappingManifest(
             tables=[

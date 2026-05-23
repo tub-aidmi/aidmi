@@ -196,7 +196,7 @@ The orchestrator depends on `aidmi_pipeline` (sub-project 1) for two functions:
 
 The orchestrator constructs a `MigrationRun` with:
 - `source` — the fixture's `source_factory()` result.
-- `staging` — `StagingConfig(db_url=staging_db_url, dataset_name=f"src_{run_id.lower()}")`. The ULID is lowercased because dlt normalizes schema names to lowercase when creating them in Postgres, but dbt resolves `{{ target.schema }}` to whatever string we passed; the case has to match.
+- `staging` — `StagingConfig.for_run(db_url, run_id)`, i.e. `raw_dataset_name=src_<run_id_lower>_raw` and `out_dataset_name=src_<run_id_lower>_out`. Extract uses the raw schema; dlt's dbt integration sets `target.schema` to the **out** schema so models materialize there. The ULID portion is lowercased to match Postgres / dlt normalization.
 - `target` and `target_dataset` — `None` and `""`, unused during generation.
 - `target_tables` — empty, unused.
 - `dbt_project_path` — the per-run scaffolded directory.

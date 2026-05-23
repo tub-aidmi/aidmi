@@ -24,6 +24,8 @@ class OrchestratorAPI:
     target_schema: TargetSchema | None
     dbt_project_path: Path
     staging_db_url: str
+    staging_raw_dataset: str
+    staging_out_dataset: str
     trace: TraceSink
     _pipeline_run: Any = None      # aidmi_pipeline.MigrationRun; set by orchestrator
 

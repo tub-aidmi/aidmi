@@ -4,7 +4,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import IO
 
-from aidmi_pipeline.config import StagingConfig, MigrationRun
+from aidmi_pipeline.config import MigrationRun, StagingConfig
 from aidmi_pipeline.migration import extract_source
 
 from aidmi_orchestrator.api import OrchestratorAPI
@@ -49,7 +49,7 @@ async def run_orchestrator(
     trace = TraceSink(run_dir / "trace.jsonl", mirror_to=trace_mirror)
     target_schema = _load_target_schema(fixture.target_schema_path)
 
-    staging = StagingConfig(db_url=staging_db_url, dataset_name=f"src_{run_id.lower()}")
+    staging = StagingConfig.for_run(staging_db_url, run_id)
     pipeline_run = MigrationRun(
         source=fixture.source_factory(),
         staging=staging,
@@ -68,7 +68,7 @@ async def run_orchestrator(
     ))
 
     # 2. discover
-    source_summary = discover(staging.db_url, staging.dataset_name, samples_per_table=100)
+    source_summary = discover(staging.db_url, staging.raw_dataset_name, samples_per_table=100)
     trace.record(StrategyEvent(
         timestamp=datetime.utcnow(),
         label="discover_complete",
@@ -81,6 +81,8 @@ async def run_orchestrator(
         target_schema=target_schema,
         dbt_project_path=dbt_project_path,
         staging_db_url=staging.db_url,
+        staging_raw_dataset=staging.raw_dataset_name,
+        staging_out_dataset=staging.out_dataset_name,
         trace=trace,
         _pipeline_run=pipeline_run,
     )
@@ -125,7 +127,8 @@ async def run_orchestrator(
         dbt_project_path=dbt_project_path,
         dlt_pipelines_dir=dlt_pipelines_dir,
         staging_db_url=staging.db_url,
-        staging_dataset=staging.dataset_name,
+        staging_raw_dataset=staging.raw_dataset_name,
+        staging_out_dataset=staging.out_dataset_name,
         trace=TraceSink.read_all(run_dir / "trace.jsonl"),
         strategy_result=strategy_result,
         target_schema_input=target_schema,

@@ -7,8 +7,8 @@ This page describes the units the orchestrator is built from and how they intera
 The orchestrator is a fixed sequential flow defined in `orchestrator.py:run_orchestrator`:
 
 1. Scaffold a per-run directory and an empty dbt project.
-2. Call SP1's `extract_source` to load the fixture's raw data into a per-run Postgres schema (`src_<run-id>`).
-3. Introspect the staging schema into a `SourceSummary` (table names, column types and nullability, sample rows).
+2. Call SP1's `extract_source` to load the fixture's raw data into `src_<run-id-lower>_raw`.
+3. Introspect **only** that raw schema into a `SourceSummary` (table names, column types and nullability, sample rows).
 4. Construct an `OrchestratorAPI` instance and pass it to `strategy.generate(api)`.
 5. Run the dbt project the strategy wrote (`api.run_dbt()`), recording the final outcome.
 6. Run each registered evaluator against the post-state and persist the merged metrics.
@@ -28,10 +28,11 @@ class Strategy(Protocol):
 
 The orchestrator hands the strategy an `OrchestratorAPI` containing:
 
-- `source_summary` — pre-computed schema introspection plus sample rows.
+- `source_summary` — pre-computed schema introspection plus sample rows (raw schema only).
 - `target_schema` — the target schema if the fixture provided one, else `None`.
 - `dbt_project_path` — the directory the strategy writes `.sql` files into.
-- `staging_db_url` — Postgres connection string, for strategies that want to read directly.
+- `staging_db_url` — Postgres connection string.
+- `staging_raw_dataset`, `staging_out_dataset` — raw extract and dbt output schema names (`src_<id>_raw` / `src_<id>_out`).
 - `trace` — a sink that auto-records every traced operation.
 - `make_llm(spec, role)` — constructs a `TracedModel` wrapping a PydanticAI model.
 - `run_dbt()` — executes dbt against the current state of the dbt project; auto-traced.
@@ -59,6 +60,8 @@ class Evaluator(Protocol):
 ```
 
 `applies_to` lets an evaluator self-skip — for example, `row_equality` only runs when the fixture provides a reference dbt project to compare against.
+
+`RunArtifacts` includes `staging_raw_dataset` / `staging_out_dataset`. Built-in **`schema`** and **`row_equality`** evaluators compare **production** outputs in PostgreSQL's **`_out`** schema; **`row_equality`** copies **`_raw`** tables into `{raw}_reference` before running fixture reference dbt.
 
 Metric names are free-form. Each evaluator emits whatever keys it wants; the harness merges all evaluators' output into the `BenchmarkResult.metrics` dictionary. Adding a new evaluator does not require a schema change.
 

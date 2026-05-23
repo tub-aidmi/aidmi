@@ -3,8 +3,9 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any, Protocol, runtime_checkable
 
-import yaml
 from pydantic import BaseModel
+
+from aidmi_pipeline.sources_yaml import ensure_sources_yaml_raw_schema
 
 from aidmi_orchestrator.domain import (
     SourceSummary, TargetSchema, MappingManifest, TableMappingNote,
@@ -42,6 +43,7 @@ def make_strategy(name: str, config_dict: dict[str, Any] | None = None) -> Strat
 
 
 # ---------- Shared helpers (used by per-table & write-tools strategies) ----------
+
 
 def build_context_prompt(
     source_summary: SourceSummary,
@@ -93,53 +95,17 @@ def build_context_prompt(
     return "\n".join(lines)
 
 
-_SOURCES_TARGET_SCHEMA = "{{ target.schema }}"
-
-
-def ensure_sources_yaml_target_schema(sources_yaml_path: Path) -> None:
-    """Ensure each dbt `sources:` entry has `schema: "{{ target.schema }}"`.
-
-    Needed so physical tables resolve into the staging schema dlt configures for
-    the run; omitting schema makes dbt use the logical source name as schema.
-    """
-    if not sources_yaml_path.exists():
-        return
-    try:
-        data = yaml.safe_load(sources_yaml_path.read_text(encoding="utf-8"))
-    except yaml.YAMLError:
-        return
-    if not isinstance(data, dict):
-        return
-    sources = data.get("sources")
-    if not isinstance(sources, list):
-        return
-    changed = False
-    for src in sources:
-        if not isinstance(src, dict):
-            continue
-        if src.get("schema") != _SOURCES_TARGET_SCHEMA:
-            src["schema"] = _SOURCES_TARGET_SCHEMA
-            changed = True
-    if not changed:
-        return
-    if "version" not in data:
-        data["version"] = 2
-    dumped = yaml.safe_dump(
-        data,
-        sort_keys=False,
-        default_flow_style=False,
-        allow_unicode=True,
-    )
-    sources_yaml_path.write_text(dumped, encoding="utf-8")
-
-
 def write_proposal(
     dbt_project_path: Path,
     sql_by_table: dict[str, str],
     source_tables: list[tuple[str, str]],  # (schema, name) pairs
+    raw_schema: str,
 ) -> None:
     """Write SQL files + sources.yml. Strategies that produce a structured
     proposal can call this helper; tool-based strategies write files directly.
+
+    Logical source names come from discovery / mapping (`source_slug` in dbt );
+    ``raw_schema`` is the Postgres schema where extract landed (`src_<run>_raw`).
     """
     models_dir = dbt_project_path / "models"
     models_dir.mkdir(parents=True, exist_ok=True)
@@ -150,12 +116,13 @@ def write_proposal(
     schemas = {schema for schema, _ in source_tables}
     for schema in sorted(schemas):
         src_yaml_lines.append(f"  - name: {schema}")
-        src_yaml_lines.append('    schema: "{{ target.schema }}"')
+        src_yaml_lines.append(f'    schema: "{raw_schema}"')
         src_yaml_lines.append("    tables:")
         for s, tname in source_tables:
             if s == schema:
                 src_yaml_lines.append(f"      - name: {tname}")
     (models_dir / "sources.yml").write_text("\n".join(src_yaml_lines) + "\n", encoding="utf-8")
+    ensure_sources_yaml_raw_schema(models_dir, raw_schema)
 
 
 def build_manifest_from_notes(
@@ -177,8 +144,9 @@ __all__ = [
     "make_strategy",
     "build_context_prompt",
     "write_proposal",
-    "ensure_sources_yaml_target_schema",
+    "ensure_sources_yaml_raw_schema",
     "build_manifest_from_notes",
     "ColumnNote",
     "TableMappingNote",
 ]
+

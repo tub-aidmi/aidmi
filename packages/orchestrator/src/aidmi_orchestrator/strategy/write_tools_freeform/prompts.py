@@ -13,19 +13,23 @@ Layout you must produce:
 
 Use {{ config(materialized='table') }} at the top of each model.
 
-Crucial: raw data is loaded into a Postgres schema like `src_<run_id_lower>.<table>` in the prompt.
-dbt resolves that via {{ target.schema }} at run time — not by repeating that schema name under `sources:`.
-Therefore every entry under `sources:` MUST include this exact line (copy verbatim, including doubled braces):
+Important: extracted data lands in a Postgres RAW schema (`src_<run_id_lower>_raw`) shown in context.
+Transformed dbt models are materialized into a separate OUT schema (`src_<run_id_lower>_out`) at run time.
+Under `sources:`, each block must declare the physical Postgres schema for raw tables:
 
-  schema: "{{ target.schema }}"
+  schema: "<the_raw_schema_from_the_prompt>"
 
-Example `models/sources.yml` (logical source names are your choice):
+(Copy it exactly from context — literal string, include quotes in YAML.)
+
+If you mistakenly use "{{ target.schema }}" for sources, dbt would resolve sources to the OUT schema where those tables do not exist. The orchestrator fixes `sources.yml` before compile, but matching the prompt avoids confusion.
+
+Example `models/sources.yml` when context shows raw schema `src_01abc_raw`:
 
 version: 2
 
 sources:
   - name: source_crm
-    schema: "{{ target.schema }}"
+    schema: "src_01abc_raw"
     tables:
       - name: contacts
 

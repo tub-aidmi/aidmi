@@ -80,6 +80,12 @@ class Benchmark:
             strategy_result=strategy_result,
             metrics=metrics,
             error=error,
+            staging_raw_dataset=(
+                artifacts.staging_raw_dataset if artifacts is not None else ""
+            ),
+            staging_out_dataset=(
+                artifacts.staging_out_dataset if artifacts is not None else ""
+            ),
         )
         write_benchmark_result(self.workspace / "runs" / run_id, result)
         return result

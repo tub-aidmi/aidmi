@@ -53,7 +53,7 @@ class SchemaEvaluator:
         target_by_table = {t.name: t for t in target.tables} if target is not None else {}
 
         for tname in artifacts.strategy_result.target_tables_written:
-            cols = _introspect(artifacts.staging_db_url, artifacts.staging_dataset, tname)
+            cols = _introspect(artifacts.staging_db_url, artifacts.staging_out_dataset, tname)
             produced_total += len(cols)
             for _, dtype in cols:
                 type_histogram[dtype] += 1

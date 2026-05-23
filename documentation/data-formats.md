@@ -15,7 +15,12 @@ A run produces several files on disk. This page is the reference for each.
 └── sweep_config.yaml
 ```
 
-`<run-id>` is a [ULID](https://github.com/ulid/spec) (Crockford base32; sortable; 26 characters). Used as the directory name and lowercased as the staging schema name (`src_<run-id-lower>`).
+`<run-id>` is a [ULID](https://github.com/ulid/spec) (Crockford base32; sortable; 26 characters). Used as the directory name. Each run uses two Postgres schemas derived from the lowercase run id:
+
+- `src_<run-id-lower>_raw` — dlt extract (source tables).
+- `src_<run-id-lower>_out` — dbt models (transformed output).
+
+`staging_raw_dataset` and `staging_out_dataset` in `result.json` record these names verbatim.
 
 ## trace.jsonl
 
@@ -208,7 +213,9 @@ The `BenchmarkResult` for a single run.
   "wall_clock_seconds": 60.0,
   "strategy_result": { ... },
   "metrics": { ... },
-  "error": null
+  "error": null,
+  "staging_raw_dataset": "src_01hxx00000000000000000000_raw",
+  "staging_out_dataset": "src_01hxx00000000000000000000_out"
 }
 ```
 
@@ -223,6 +230,8 @@ The `BenchmarkResult` for a single run.
 | `strategy_result` | object | The strategy's own `StrategyResult` (mirrored in `strategy_result.json` for convenience). |
 | `metrics` | object | All evaluator outputs merged. Schema is free-form; each evaluator contributes its own keys. |
 | `error` | string or null | Populated when the orchestrator caught a strategy crash. The run still produces a `result.json`; evaluators that can run on partial state still execute. |
+| `staging_raw_dataset` | string | Postgres schema for extract (e.g. `src_01abc…_raw`). Empty when the run failed before artifacts were built. |
+| `staging_out_dataset` | string | Postgres schema for dbt output (e.g. `src_01abc…_out`). Empty when the run failed before artifacts were built. |
 
 ### Default metric keys
 
