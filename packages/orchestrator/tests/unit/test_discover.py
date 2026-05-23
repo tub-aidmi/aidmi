@@ -22,7 +22,7 @@ def test_discover_summarizes_seeded_schema(staging_db_url):
     assert len(summary.tables) == 1
     t = summary.tables[0]
     assert t.name == "contacts"
-    assert t.schema == "src_test_discover"
+    assert t.db_schema == "src_test_discover"
     assert t.row_count == 2
     cols = {c.name: c for c in t.columns}
     assert cols["id"].sql_type.startswith("integer")

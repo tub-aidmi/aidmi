@@ -11,7 +11,7 @@ from aidmi_orchestrator.domain import (
 def test_source_summary_round_trip():
     ss = SourceSummary(tables=[
         TableInfo(
-            schema="src_xyz",
+            db_schema="src_xyz",
             name="contacts",
             columns=[ColumnInfo(name="id", sql_type="integer", nullable=False)],
             row_count=8,

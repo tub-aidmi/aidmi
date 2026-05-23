@@ -57,7 +57,7 @@ def build_context_prompt(
     """
     lines: list[str] = ["# Source database\n"]
     for t in source_summary.tables:
-        lines.append(f"\n## {t.schema}.{t.name}  ({t.row_count} rows)\n")
+        lines.append(f"\n## {t.db_schema}.{t.name}  ({t.row_count} rows)\n")
         lines.append("Columns:")
         for c in t.columns:
             null = "NULL" if c.nullable else "NOT NULL"

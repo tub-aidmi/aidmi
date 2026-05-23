@@ -50,7 +50,7 @@ def discover(db_url: str, dataset_name: str, samples_per_table: int = 100) -> So
                 sample_rows = [dict(r) for r in cur.fetchall()]
 
             tables.append(TableInfo(
-                schema=dataset_name,
+                db_schema=dataset_name,
                 name=table_name,
                 columns=columns,
                 row_count=row_count,

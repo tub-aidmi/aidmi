@@ -18,7 +18,7 @@ class ColumnInfo(BaseModel):
 class TableInfo(BaseModel):
     model_config = ConfigDict(protected_namespaces=())
 
-    schema: str
+    db_schema: str
     name: str
     columns: list[ColumnInfo]
     row_count: int
