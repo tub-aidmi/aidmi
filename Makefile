@@ -7,11 +7,11 @@ export
 
 .DEFAULT_GOAL := help
 
-.PHONY: help env install setup up down down-v logs psql test test-orchestrator test-pipeline demo sweep clean-workspace litellm-smoke-fixture sf-auth-check sf-pipedrive-litellm
+.PHONY: help env install setup up down down-v logs psql test test-orchestrator test-pipeline demo sweep clean-workspace litellm-smoke-fixture ollama-smoke-fixture sf-auth-check sf-pipedrive-litellm sf-pipedrive-ollama
 
 help: ## List targets (make test works without Postgres)
 	@echo "Makefile targets:"
-	@grep -E '^[a-zA-Z_-]+:.*##' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*##"} { printf "  %-20s %s\n", $$1, $$2 }'
+	@grep -E '^[a-zA-Z_-]+:.*##' Makefile | sort | awk 'BEGIN {FS = ":.*##"} { printf "  %-20s %s\n", $$1, $$2 }'
 
 env: ## Create .env from .env.example if missing
 	cp -n .env.example .env
@@ -56,6 +56,12 @@ litellm-smoke-fixture: ## LiteLLM + bundled sp1_users (needs: make env, make up,
 		--fixture sp1_users \
 		--strategy-spec packages/orchestrator/examples/strategy_specs/write_tools_freeform_litellm_qwen.yaml
 
+ollama-smoke-fixture: ## Ollama + bundled sp1_users (needs: make env, make up, Ollama running locally)
+	@test -f .env || cp -n .env.example .env
+	uv run --package aidmi-orchestrator aidmi-orchestrator run \
+		--fixture sp1_users \
+		--strategy-spec packages/orchestrator/examples/strategy_specs/write_tools_freeform_ollama_qwen.yaml
+
 sf-auth-check: ## SOAP login + SOQL sanity (needs .env)
 	uv run --package aidmi-orchestrator python packages/orchestrator/scripts/sf_auth_probe.py
 
@@ -64,6 +70,12 @@ sf-pipedrive-litellm: ## SF Contact+Account → Pipedrive-shaped dbt (needs: mak
 	uv run --package aidmi-orchestrator aidmi-orchestrator run \
 		--fixture sf_pipedrive \
 		--strategy-spec packages/orchestrator/examples/strategy_specs/write_tools_freeform_litellm_qwen.yaml
+
+sf-pipedrive-ollama: ## SF Contact+Account → Pipedrive-shaped dbt (needs: make env, make up, SF_* + Ollama)
+	@test -f .env || cp -n .env.example .env
+	uv run --package aidmi-orchestrator aidmi-orchestrator run \
+		--fixture sf_pipedrive \
+		--strategy-spec packages/orchestrator/examples/strategy_specs/write_tools_freeform_ollama_qwen.yaml
 
 sweep: ## Run demo sweep grid (needs Postgres + LLM keys for LLM cells)
 	@test -f .env || cp -n .env.example .env

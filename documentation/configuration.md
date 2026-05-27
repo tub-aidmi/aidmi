@@ -89,7 +89,7 @@ writer_model:
   api_key_env: ANTHROPIC_API_KEY
 ```
 
-Local Ollama (no API key — default `base_url` in code is `http://localhost:11434` if omitted):
+Local Ollama (no API key — default `base_url` in code is `http://localhost:11434` if omitted; `/v1` is appended automatically for the OpenAI-compatible chat API):
 ```yaml
 writer_model:
   provider: ollama

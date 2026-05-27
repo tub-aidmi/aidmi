@@ -60,13 +60,20 @@ register_provider("openai", _openai_factory)
 register_provider("openai_compatible", _openai_factory)
 
 
+def _ollama_base_url(spec: ModelSpec) -> str:
+    base = (spec.base_url or "http://localhost:11434").rstrip("/")
+    if not base.endswith("/v1"):
+        base = f"{base}/v1"
+    return base
+
+
 def _ollama_factory(spec: ModelSpec):
     from pydantic_ai.models.openai import OpenAIChatModel
     from pydantic_ai.providers.ollama import OllamaProvider
     return OpenAIChatModel(
         spec.model_name,
         provider=OllamaProvider(
-            base_url=spec.base_url or "http://localhost:11434",
+            base_url=_ollama_base_url(spec),
         ),
     )
 

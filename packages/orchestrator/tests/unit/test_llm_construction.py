@@ -35,3 +35,20 @@ def test_custom_provider_can_be_registered_and_used(monkeypatch):
     spec = ModelSpec(provider="my_corporate_xyz", model_name="x")
     result = make_llm(spec)
     assert result is sentinel
+
+
+@pytest.mark.parametrize(
+    ("base_url", "expected"),
+    [
+        (None, "http://localhost:11434/v1"),
+        ("http://localhost:11434", "http://localhost:11434/v1"),
+        ("http://localhost:11434/", "http://localhost:11434/v1"),
+        ("http://localhost:11434/v1", "http://localhost:11434/v1"),
+        ("http://remote:11434/v1/", "http://remote:11434/v1"),
+    ],
+)
+def test_ollama_base_url_appends_v1(base_url, expected):
+    from aidmi_orchestrator.llm import _ollama_base_url
+
+    spec = ModelSpec(provider="ollama", model_name="llama3", base_url=base_url)
+    assert _ollama_base_url(spec) == expected

@@ -144,6 +144,7 @@ Prerequisites:
 - `.env`: Salesforce **`SF_USERNAME`**, **`SF_PASSWORD`**, and **`SF_SECURITY_TOKEN`** are all required (no **`SF_DOMAIN`**; SOAP uses `login.salesforce.com`) — see **[salesforce-auth.md](salesforce-auth.md)**.
 - `LITELLM_API_KEY` when your strategy YAML sets `api_key_env: LITELLM_API_KEY`.
 - Edit [`packages/orchestrator/examples/strategy_specs/write_tools_freeform_litellm_qwen.yaml`](../packages/orchestrator/examples/strategy_specs/write_tools_freeform_litellm_qwen.yaml): set `base_url` for your LiteLLM OpenAI-compatible endpoint (must include `/v1`).
+- For local Ollama: model running at `http://localhost:11434` and `model_name` set in [`write_tools_freeform_ollama_qwen.yaml`](../packages/orchestrator/examples/strategy_specs/write_tools_freeform_ollama_qwen.yaml) (no API key).
 - Postgres from `make up`.
 
 **Check Salesforce credentials (no Postgres, no LLM):**
@@ -154,7 +155,7 @@ make sf-auth-check
 
 This loads `.env`, performs SOAP login, and runs two tiny SOQL reads on Contact and Account.
 
-Quick path:
+Quick path (LiteLLM):
 
 ```bash
 make litellm-smoke-fixture     # LiteLLM + sp1_users (checks model wiring)
@@ -162,7 +163,15 @@ make up
 make sf-pipedrive-litellm     # Salesforce extract → LLM dbt → run
 ```
 
-Equivalent without Make:
+Quick path (local Ollama):
+
+```bash
+make ollama-smoke-fixture     # Ollama + sp1_users (checks model wiring)
+make up
+make sf-pipedrive-ollama      # Salesforce extract → LLM dbt → run
+```
+
+Equivalent without Make (LiteLLM):
 
 ```bash
 make up
@@ -170,6 +179,16 @@ make up
 uv run --package aidmi-orchestrator aidmi-orchestrator run \
   --fixture sf_pipedrive \
   --strategy-spec packages/orchestrator/examples/strategy_specs/write_tools_freeform_litellm_qwen.yaml
+```
+
+Equivalent without Make (local Ollama):
+
+```bash
+make up
+
+uv run --package aidmi-orchestrator aidmi-orchestrator run \
+  --fixture sf_pipedrive \
+  --strategy-spec packages/orchestrator/examples/strategy_specs/write_tools_freeform_ollama_qwen.yaml
 ```
 
 Use [`structured_per_table_litellm_qwen.yaml`](../packages/orchestrator/examples/strategy_specs/structured_per_table_litellm_qwen.yaml) if your model reliably supports structured output; otherwise prefer `write_tools_freeform_*` as the primary path for Qwen-style models.
