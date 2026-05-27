@@ -12,7 +12,11 @@ from aidmi_orchestrator.strategy.base import (
     build_context_prompt,
 )
 from aidmi_orchestrator.strategy.write_tools_freeform.prompts import (
-    SYSTEM_PROMPT, initial_user_prompt,
+    build_initial_user_prompt,
+    build_system_prompt,
+)
+from aidmi_orchestrator.strategy.write_tools_freeform.self_correction import (
+    run_post_agent_dbt_loop,
 )
 from aidmi_orchestrator.strategy.write_tools_freeform.tools import (
     make_write_file, make_read_file, make_query_postgres, make_run_dbt,
@@ -49,16 +53,25 @@ class WriteToolsFreeform:
         if self.config.enable_self_correction:
             tools.append(Tool(make_run_dbt(api, self.config.max_self_correction_passes), name="run_dbt"))
 
+        usage_limits = UsageLimits(request_limit=self.config.max_tool_turns)
         agent = Agent(
             traced_model,
             tools=tools,
-            system_prompt=SYSTEM_PROMPT,
+            system_prompt=build_system_prompt(
+                enable_self_correction=self.config.enable_self_correction,
+            ),
         )
         context = build_context_prompt(
             api.source_summary, api.target_schema, self.config.context_mode,
             samples_per_table=self.config.samples_per_table,
         )
-        await agent.run(initial_user_prompt(context), usage_limits=UsageLimits(request_limit=self.config.max_tool_turns))
+        await agent.run(
+            build_initial_user_prompt(
+                context,
+                enable_self_correction=self.config.enable_self_correction,
+            ),
+            usage_limits=usage_limits,
+        )
 
         models_dir = api.dbt_project_path / "models"
         ensure_sources_yaml_raw_schema(models_dir, api.staging_raw_dataset)
@@ -66,7 +79,21 @@ class WriteToolsFreeform:
             p.stem for p in models_dir.glob("*.sql")
         ] if models_dir.exists() else []
 
-        status = "complete" if produced else "gave_up"
+        dbt_ok = True
+        if self.config.enable_self_correction and produced:
+            dbt_ok = await run_post_agent_dbt_loop(
+                api,
+                agent,
+                usage_limits,
+                max_passes=self.config.max_self_correction_passes,
+            )
+
+        if not produced:
+            status = "gave_up"
+        elif self.config.enable_self_correction and not dbt_ok:
+            status = "partial"
+        else:
+            status = "complete"
         return StrategyResult(
             target_tables_written=produced,
             target_schema=api.target_schema,
