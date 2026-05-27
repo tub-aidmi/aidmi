@@ -4,15 +4,18 @@ The orchestrator is driven by three YAML/JSON formats: strategy specs, grid file
 
 ## Strategy spec YAML
 
-A strategy spec describes one `(strategy, config)` pair. Consumed by `aidmi-orchestrator run --strategy-spec <path>` and by `make_strategy(name, config_dict)` in Python.
+A strategy spec describes one `(strategy, config)` pair. Consumed by `aidmi-orchestrator run --strategy-spec <path>` (via `parse_strategy_spec()` + `make_strategy()` in Python) or by calling `make_strategy(name, config_dict)` directly when you build config in code.
 
 ### Schema
 
 ```yaml
+name: <unique label for this spec>        # required for file-based runs; convention: match YAML filename stem
 strategy: <registered strategy name>      # required
 config:                                   # strategy-defined schema; see below
   ...
 ```
+
+The `name` field is recorded in each run's `result.json` as `strategy_spec_name` so you can tell which YAML produced a row (for example two files that both use `strategy: structured_per_table`). It is **not** the registry name: that remains `strategy_name` (`structured_per_table`, `write_tools_freeform`, etc.).
 
 The `config` block is validated against the strategy's Pydantic config class. Unknown fields raise a validation error.
 
@@ -21,6 +24,7 @@ The `config` block is validated against the strategy's Pydantic config class. Un
 #### `mock`
 
 ```yaml
+name: mock
 strategy: mock
 config:
   mapping_source: <path to mapping JSON>   # required, file readable at run time
@@ -31,6 +35,7 @@ The mapping JSON must conform to the schema in [Data formats — mock_mapping.js
 #### `structured_per_table`
 
 ```yaml
+name: structured_per_table_openai_example
 strategy: structured_per_table
 config:
   writer_model:                       # required, see ModelSpec below
@@ -45,6 +50,7 @@ config:
 #### `write_tools_freeform`
 
 ```yaml
+name: write_tools_freeform_example
 strategy: write_tools_freeform
 config:
   writer_model:                        # required
@@ -125,7 +131,8 @@ A grid YAML describes a sweep — multiple `(strategy, config)` cells run agains
 fixture: <fixture name>               # optional; CLI flag wins if set
 runs_per_cell: <int>                  # optional, default 1
 cells:                                # required
-  - strategy: <name>
+  - name: <optional label>              # used as strategy_spec_name base; default: same as strategy
+    strategy: <name>
     config: { ... }
   - strategy: <name>
     config: { ... }
@@ -149,7 +156,11 @@ cells:
       samples_per_table: [3, 10]
 ```
 
-expands into 4 cells (2 × 2). To sweep across nested fields like `model_name`, write a separate cell block per value:
+expands into 4 cells (2 × 2). When a cell expands this way, each output row gets a distinct `strategy_spec_name` by appending `_<key>_<value>` fragments (lowercased, punctuation to underscores) for each varied dimension, prefixed by the cell `name` when set, otherwise by the registry strategy name.
+
+Example: with `name: spt` and `context_mode: [metadata_only, …]`, labels look like `spt_context_mode_metadata_only`.
+
+To sweep across nested fields like `model_name`, write a separate cell block per value:
 
 ```yaml
 cells:

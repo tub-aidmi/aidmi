@@ -52,6 +52,7 @@ def test_benchmark_result_with_metrics():
         run_id="01HXX000000000000000000000",
         fixture_name="sp1_users",
         strategy_name="mock",
+        strategy_spec_name="mock_spec",
         strategy_config={"mapping_source": "x.json"},
         started_at=datetime(2026, 5, 17),
         completed_at=datetime(2026, 5, 17),

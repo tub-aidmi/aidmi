@@ -65,7 +65,7 @@ Each module has one clear responsibility:
 | `api.py` | The `OrchestratorAPI` dataclass — the typed surface strategies use. Delegates dbt invocation to SP1's `transform()`. |
 | `persistence.py` | File writers only. No business logic, no observation of state. |
 | `orchestrator.py` | The sequential flow: extract → discover → strategy → final dbt → persist. The only place that wires SP1 to the orchestrator. |
-| `benchmark.py` | `Benchmark.run` invokes the orchestrator + evaluators and writes a `BenchmarkResult`. `Benchmark.sweep` loops over cells. `expand_grid` does cartesian product expansion of a grid YAML. |
+| `benchmark.py` | `Benchmark.run` invokes the orchestrator + evaluators and writes a `BenchmarkResult` (requires `strategy_spec_name`). `Benchmark.sweep` loops over `(strategy, spec label)` tuples. `expand_grid` does cartesian product expansion of a grid YAML. |
 | `cli.py` | Typer wrapper. YAML deserialization and CLI argument plumbing only. |
 | `strategy/base.py` | Protocol, registry, and three shared helpers (`build_context_prompt`, `write_proposal`, `build_manifest_from_notes`). |
 | `evaluator/base.py` | Protocol, `RunArtifacts`, `FixtureMetadata`, registry. |
@@ -78,7 +78,7 @@ For one orchestrator run:
 ```
 1. CLI / benchmark.py
    │
-   │ benchmark.run(strategy)
+   │ benchmark.run(strategy, strategy_spec_name=...)
    ▼
 2. orchestrator.py:run_orchestrator
    │

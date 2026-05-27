@@ -26,7 +26,7 @@ def test_mock_strategy_full_pipeline(staging_db_url, tmp_path):
     strategy = make_strategy("mock", {"mapping_source": mapping_source})
 
     bench = Benchmark(fixture, workspace=tmp_path, staging_db_url=staging_db_url)
-    result = asyncio.run(bench.run(strategy))
+    result = asyncio.run(bench.run(strategy, strategy_spec_name="mock"))
 
     # Success criteria from spec Section 2 point 1
     assert result.error is None, f"orchestrator errored: {result.error}"

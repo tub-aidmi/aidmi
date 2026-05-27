@@ -1,6 +1,7 @@
 """Benchmark harness: run() / sweep() with grid expansion."""
 from __future__ import annotations
 import itertools
+import string
 from datetime import datetime
 from pathlib import Path
 from typing import Any, IO
@@ -14,7 +15,28 @@ from aidmi_orchestrator.evaluator.base import (
 from aidmi_orchestrator.fixtures.base import Fixture
 from aidmi_orchestrator.orchestrator import run_orchestrator, StrategyExecutionError
 from aidmi_orchestrator.persistence import write_benchmark_result
-from aidmi_orchestrator.strategy.base import Strategy, make_strategy
+from aidmi_orchestrator.strategy.base import Strategy
+
+
+def parse_strategy_spec(spec: dict[str, Any]) -> tuple[str, str, dict[str, Any]]:
+    """Return (registered strategy name, spec display name, config dict)."""
+    if "strategy" not in spec:
+        raise ValueError("strategy spec must include top-level 'strategy'")
+    if "name" not in spec:
+        raise ValueError("strategy spec must include top-level 'name'")
+    registry = spec["strategy"]
+    spec_name = spec["name"]
+    if not isinstance(registry, str) or not isinstance(spec_name, str):
+        raise ValueError("strategy spec 'strategy' and 'name' must be strings")
+    if not registry.strip() or not spec_name.strip():
+        raise ValueError("strategy spec 'strategy' and 'name' must be non-empty")
+    return registry, spec_name.strip(), dict(spec.get("config", {}) or {})
+
+
+def _grid_spec_fragment(value: Any) -> str:
+    s = str(value).lower()
+    safe = "".join(ch if ch in (string.ascii_lowercase + string.digits + "_") else "_" for ch in s)
+    return safe.strip("_") or "val"
 
 
 class Benchmark:
@@ -36,6 +58,8 @@ class Benchmark:
     async def run(
         self,
         strategy: Strategy,
+        *,
+        strategy_spec_name: str,
         run_id: str | None = None,
         trace_mirror: IO[str] | None = None,
     ) -> BenchmarkResult:
@@ -73,6 +97,7 @@ class Benchmark:
             run_id=run_id,
             fixture_name=self.fixture.name,
             strategy_name=strategy.name,
+            strategy_spec_name=strategy_spec_name,
             strategy_config=strategy.config.model_dump() if strategy.config is not None else {},
             started_at=started_at,
             completed_at=completed_at,
@@ -92,7 +117,7 @@ class Benchmark:
 
     async def sweep(
         self,
-        cells: list[Strategy],
+        cells: list[tuple[Strategy, str]],
         runs_per_cell: int = 1,
         results_path: Path | None = None,
         trace_mirror: IO[str] | None = None,
@@ -104,9 +129,13 @@ class Benchmark:
         else:
             results_fh = None
         try:
-            for strategy in cells:
+            for strategy, strategy_spec_name in cells:
                 for _ in range(runs_per_cell):
-                    r = await self.run(strategy, trace_mirror=trace_mirror)
+                    r = await self.run(
+                        strategy,
+                        strategy_spec_name=strategy_spec_name,
+                        trace_mirror=trace_mirror,
+                    )
                     results.append(r)
                     if results_fh is not None:
                         results_fh.write(r.model_dump_json() + "\n")
@@ -117,23 +146,29 @@ class Benchmark:
         return results
 
 
-def expand_grid(grid: dict[str, Any]) -> list[tuple[str, dict[str, Any]]]:
-    """Expand a grid YAML dict into a list of (strategy_name, config_dict) cells.
+def expand_grid(grid: dict[str, Any]) -> list[tuple[str, dict[str, Any], str]]:
+    """Expand a grid YAML dict into (registry_strategy, config_dict, spec_name) tuples.
 
-    A cell with list-valued top-level scalar config fields expands cartesian.
+    A cell with list-valued top-level scalar config fields expands cartesian-wise.
+    When expanding, suffixes derived from varied keys distinguish each combo.
+    If a cell omits ``name``, the registry ``strategy`` value is used as the base label.
     """
-    out: list[tuple[str, dict]] = []
+    out: list[tuple[str, dict, str]] = []
     for cell in grid.get("cells", []):
-        name = cell["strategy"]
+        registry = cell["strategy"]
+        base_name = cell.get("name") or registry
         cfg = cell.get("config", {})
         list_keys = [k for k, v in cfg.items() if isinstance(v, list)]
         if not list_keys:
-            out.append((name, dict(cfg)))
+            out.append((registry, dict(cfg), base_name))
             continue
         scalar_part = {k: v for k, v in cfg.items() if k not in list_keys}
         for combo in itertools.product(*(cfg[k] for k in list_keys)):
             expanded = dict(scalar_part)
             for k, v in zip(list_keys, combo):
                 expanded[k] = v
-            out.append((name, expanded))
+            suffix = "".join(
+                f"_{k}_{_grid_spec_fragment(v)}" for k, v in zip(list_keys, combo)
+            )
+            out.append((registry, expanded, f"{base_name}{suffix}"))
     return out

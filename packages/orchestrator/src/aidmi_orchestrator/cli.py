@@ -18,7 +18,7 @@ import aidmi_orchestrator.strategy  # noqa: F401
 import aidmi_orchestrator.evaluator  # noqa: F401
 import aidmi_orchestrator.fixtures  # noqa: F401
 
-from aidmi_orchestrator.benchmark import Benchmark, expand_grid
+from aidmi_orchestrator.benchmark import Benchmark, expand_grid, parse_strategy_spec
 from aidmi_orchestrator.fixtures.base import get_fixture
 from aidmi_orchestrator.strategy.base import make_strategy
 
@@ -62,12 +62,17 @@ def run(
 ):
     """Run one orchestrator pass against a fixture."""
     spec = yaml.safe_load(strategy_spec.read_text(encoding="utf-8"))
-    strategy = make_strategy(spec["strategy"], spec.get("config", {}))
+    try:
+        registry, spec_name, config = parse_strategy_spec(spec)
+    except ValueError as e:
+        raise typer.BadParameter(str(e)) from None
+    strategy = make_strategy(registry, config)
     fx = get_fixture(fixture)
     bench = Benchmark(fx, workspace, _require_staging_url())
     result = asyncio.run(
         bench.run(
             strategy,
+            strategy_spec_name=spec_name,
             run_id=run_id,
             trace_mirror=sys.stderr if verbose else None,
         ),
@@ -99,7 +104,10 @@ def sweep(
         runs_per_cell if runs_per_cell != 1 else int(grid_data.get("runs_per_cell", runs_per_cell))
     )
     cells_specs = expand_grid(grid_data)
-    cells = [make_strategy(name, cfg) for name, cfg in cells_specs]
+    cells = [
+        (make_strategy(reg, cfg), spec_name)
+        for reg, cfg, spec_name in cells_specs
+    ]
     fx = get_fixture(resolved_fixture)
     bench = Benchmark(fx, workspace, _require_staging_url())
     out.mkdir(parents=True, exist_ok=True)

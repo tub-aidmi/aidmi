@@ -93,8 +93,8 @@ A fixture's data files live alongside its `__init__.py` in the same sub-package 
 ## Run, benchmark, sweep
 
 - A **run** is one invocation of `run_orchestrator(fixture, strategy, run_id, workspace, staging_db_url)`. It produces a `runs/<run-id>/` directory.
-- A **benchmark** wraps a run with evaluator invocation and produces a `BenchmarkResult`. The Python entry point is `Benchmark.run(strategy)`.
-- A **sweep** runs multiple `(strategy, config)` cells against one fixture and streams the resulting `BenchmarkResult` rows to a JSONL file. `Benchmark.sweep(cells, runs_per_cell, results_path)`.
+- A **benchmark** wraps a run with evaluator invocation and produces a `BenchmarkResult`. The Python entry point is `Benchmark.run(strategy, strategy_spec_name="…")` (often from `parse_strategy_spec()` plus `make_strategy()` for file-based workflows).
+- A **sweep** runs multiple `(strategy, config)` cells against one fixture and streams the resulting `BenchmarkResult` rows to a JSONL file. `Benchmark.sweep` takes `list[tuple[Strategy, str]]` pairs `(strategy, strategy_spec_name)`.
 
 ## Registries
 

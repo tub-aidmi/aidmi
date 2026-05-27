@@ -37,7 +37,7 @@ aidmi-orchestrator run \
 | Option | Default | Description |
 |--------|---------|-------------|
 | `--fixture` | required | Name of a registered fixture (e.g., `sp1_users`). |
-| `--strategy-spec` | required | Path to a YAML file describing the strategy and its config. See [Configuration](configuration.md). |
+| `--strategy-spec` | required | Path to YAML with required `name` (written to results as `strategy_spec_name`), `strategy` (registry id), and `config`. See [Configuration](configuration.md). |
 | `--run-id` | auto (ULID) | Optional run identifier. Used as the directory name under `<workspace>/runs/` and to derive Postgres schemas `src_<run-id-lower>_raw` and `src_<run-id-lower>_out`. |
 | `--workspace` | `./aidmi_workspace` | Directory where per-run artifacts are written. |
 | `--verbose`, `-v` | off | Streams each [`trace.jsonl`](data-formats.md#tracejsonl) record to stderr as it is appended (same JSON lines written on disk). |
@@ -114,7 +114,7 @@ cells:
       context_mode: [metadata_only, metadata_plus_samples, live_query_tool]
 ```
 
-expands into three cells, one per `context_mode` value. The expansion applies to top-level scalar fields only; nested fields like `writer_model.model_name` are not expanded. To sweep models, write a separate cell block for each model.
+expands into three cells, one per `context_mode` value. Each row records a distinct `strategy_spec_name` (derived from optional cell `name`, else from `strategy`, plus suffixes such as `_context_mode_metadata_only`). The expansion applies to top-level scalar fields only; nested fields like `writer_model.model_name` are not expanded. To sweep models, write a separate cell block for each model.
 
 ### Output
 

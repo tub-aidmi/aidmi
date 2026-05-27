@@ -132,7 +132,7 @@ Read `aidmi_workspace/results/demo/results.jsonl` with pandas:
 ```python
 import pandas as pd
 df = pd.read_json("aidmi_workspace/results/demo/results.jsonl", lines=True)
-df[["strategy_name", "metrics"]].head()
+df[["strategy_spec_name", "strategy_name", "metrics"]].head()
 ```
 
 ## Salesforce → Pipedrive-shaped mapping (`sf_pipedrive`)

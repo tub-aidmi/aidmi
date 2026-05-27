@@ -33,6 +33,7 @@ def test_write_benchmark_result(tmp_path):
         run_id="r1",
         fixture_name="sp1_users",
         strategy_name="mock",
+        strategy_spec_name="mock_spec",
         strategy_config={},
         started_at=datetime(2026, 5, 17),
         completed_at=datetime(2026, 5, 17),

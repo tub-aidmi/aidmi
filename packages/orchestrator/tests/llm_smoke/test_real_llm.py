@@ -31,7 +31,9 @@ def test_structured_per_table_openai_smoke(staging_db_url, tmp_path):
         "samples_per_table": 3,
     })
     bench = Benchmark(fixture, workspace=tmp_path, staging_db_url=staging_db_url)
-    result = asyncio.run(bench.run(strategy))
+    result = asyncio.run(
+        bench.run(strategy, strategy_spec_name="structured_per_table_openai_smoke")
+    )
 
     assert result.error is None, f"orchestrator errored: {result.error}"
     assert result.metrics["dbt_success"] is True, (

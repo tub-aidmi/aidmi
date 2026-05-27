@@ -94,6 +94,7 @@ class BenchmarkResult(BaseModel):
     run_id: str
     fixture_name: str
     strategy_name: str
+    strategy_spec_name: str
     strategy_config: dict[str, Any]
     started_at: datetime
     completed_at: datetime

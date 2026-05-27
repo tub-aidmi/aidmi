@@ -207,6 +207,7 @@ The `BenchmarkResult` for a single run.
   "run_id": "01HXX0000000000000000000",
   "fixture_name": "sp1_users",
   "strategy_name": "mock",
+  "strategy_spec_name": "mock",
   "strategy_config": { ... },
   "started_at": "2026-05-17T12:00:00",
   "completed_at": "2026-05-17T12:01:00",
@@ -223,7 +224,8 @@ The `BenchmarkResult` for a single run.
 |-------|------|-------------|
 | `run_id` | string | ULID, matches the directory name. |
 | `fixture_name` | string | The fixture this run targeted. |
-| `strategy_name` | string | The strategy used. |
+| `strategy_name` | string | Registered strategy implementation (`mock`, `structured_per_table`, `write_tools_freeform`, …). |
+| `strategy_spec_name` | string | Label for the exact spec (YAML `name` for `run`, or grid cell `name` with optional cartesian suffixes for `sweep`). |
 | `strategy_config` | object | Full serialized config, including `ModelSpec`s but never API keys. |
 | `started_at`, `completed_at` | ISO 8601 | UTC timestamps. |
 | `wall_clock_seconds` | number | End-to-end run duration. |
