@@ -23,9 +23,18 @@ def _ensure_under(root: Path, candidate: str) -> Path:
 def make_write_file(api):
     async def write_file(path: str, content: str) -> str:
         start = time.perf_counter()
-        target = _ensure_under(api.dbt_project_path, path)
-        target.parent.mkdir(parents=True, exist_ok=True)
-        target.write_text(content, encoding="utf-8")
+        try:
+            target = _ensure_under(api.dbt_project_path, path)
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_text(content, encoding="utf-8")
+        except (ValueError, OSError) as e:
+            latency_ms = (time.perf_counter() - start) * 1000
+            api.trace.record(ToolCallEvent(
+                timestamp=datetime.utcnow(), tool_name="write_file",
+                args={"path": path, "size": len(content)}, result=f"error: {e!r}",
+                latency_ms=latency_ms,
+            ))
+            return f"ERROR: could not write {path!r}: {e}. Use a file path like models/<name>.sql, not a directory."
         latency_ms = (time.perf_counter() - start) * 1000
         api.trace.record(ToolCallEvent(
             timestamp=datetime.utcnow(), tool_name="write_file",
@@ -38,8 +47,16 @@ def make_write_file(api):
 def make_read_file(api):
     async def read_file(path: str) -> str:
         start = time.perf_counter()
-        target = _ensure_under(api.dbt_project_path, path)
-        content = target.read_text(encoding="utf-8") if target.exists() else ""
+        try:
+            target = _ensure_under(api.dbt_project_path, path)
+            content = target.read_text(encoding="utf-8") if target.exists() else ""
+        except (ValueError, OSError) as e:
+            latency_ms = (time.perf_counter() - start) * 1000
+            api.trace.record(ToolCallEvent(
+                timestamp=datetime.utcnow(), tool_name="read_file",
+                args={"path": path}, result=f"error: {e!r}", latency_ms=latency_ms,
+            ))
+            return f"ERROR: could not read {path!r}: {e}. Use a file path like models/<name>.sql, not a directory."
         latency_ms = (time.perf_counter() - start) * 1000
         api.trace.record(ToolCallEvent(
             timestamp=datetime.utcnow(), tool_name="read_file",
