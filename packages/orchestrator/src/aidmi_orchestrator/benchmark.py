@@ -1,4 +1,4 @@
-"""Benchmark harness: run() / sweep() with grid expansion."""
+"""Benchmark harness: run() with grid expansion."""
 from __future__ import annotations
 import asyncio
 import copy
@@ -123,37 +123,6 @@ class Benchmark:
         )
         write_benchmark_result(self.workspace / "runs" / run_id, result)
         return result
-
-    async def sweep(
-        self,
-        cells: list[tuple[Strategy, str]],
-        runs_per_cell: int = 1,
-        results_path: Path | None = None,
-        trace_mirror: IO[str] | None = None,
-    ) -> list[BenchmarkResult]:
-        results: list[BenchmarkResult] = []
-        if results_path is not None:
-            results_path.parent.mkdir(parents=True, exist_ok=True)
-            results_fh = open(results_path, "a", encoding="utf-8")
-        else:
-            results_fh = None
-        try:
-            for strategy, strategy_spec_name in cells:
-                for i in range(runs_per_cell):
-                    r = await self.run(
-                        strategy,
-                        strategy_spec_name=strategy_spec_name,
-                        rep_index=i,
-                        trace_mirror=trace_mirror,
-                    )
-                    results.append(r)
-                    if results_fh is not None:
-                        results_fh.write(r.model_dump_json() + "\n")
-                        results_fh.flush()
-        finally:
-            if results_fh is not None:
-                results_fh.close()
-        return results
 
 
 def resolve_model_refs(config: dict[str, Any], models: dict[str, dict[str, Any]]) -> dict[str, Any]:

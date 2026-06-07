@@ -25,6 +25,14 @@ from aidmi_orchestrator.strategy.base import make_strategy
 app = typer.Typer(add_completion=False, help="aidmi orchestrator runner")
 
 
+def _as_list(value) -> list[str]:
+    if value is None:
+        return []
+    if isinstance(value, str):
+        return [value]
+    return list(value)
+
+
 def staging_db_url_from_env() -> str | None:
     """Resolve staging DB URL: explicit `AIDMI_STAGING_DB_URL`, else build from POSTGRES_*."""
     direct = os.environ.get("AIDMI_STAGING_DB_URL")
@@ -84,43 +92,83 @@ def run(
 def sweep(
     grid: Annotated[Path, typer.Option(help="path to a grid YAML")],
     out: Annotated[Path, typer.Option(help="results directory")],
-    fixture: Annotated[str | None, typer.Option(help="registered fixture name (overrides grid YAML fixture key)")] = None,
-    runs_per_cell: Annotated[int, typer.Option(help="repetitions per cell (overrides grid YAML runs_per_cell key)")] = 1,
+    fixture: Annotated[str | None, typer.Option(help="single fixture override (grid YAML 'fixture' may be a list)")] = None,
+    runs_per_cell: Annotated[int, typer.Option(help="repetitions per cell (overrides grid YAML)")] = 1,
     workspace: Annotated[Path, typer.Option(help="workspace directory")] = Path("./aidmi_workspace"),
-    verbose: Annotated[bool, typer.Option("-v", "--verbose", help="stream trace JSONL lines to stderr for each cell")] = False,
+    concurrency: Annotated[int | None, typer.Option(help="parallel runs (overrides grid YAML 'concurrency', default 3)")] = None,
+    resume: Annotated[bool, typer.Option("--resume/--no-resume", help="skip (spec, fixture, rep) tuples already in results.jsonl")] = True,
+    verbose: Annotated[bool, typer.Option("-v", "--verbose", help="stream trace JSONL to stderr (concurrency 1 only)")] = False,
 ):
-    """Sweep multiple (strategy, config) cells across a fixture.
+    """Sweep (strategy, config) cells across fixtures with model-major scheduling."""
+    from aidmi_orchestrator.scheduler import (
+        DEFAULT_EXCLUSIVE_PREFIXES, SweepJob, completed_keys, expand_jobs,
+        filter_resumed, run_jobs,
+    )
 
-    Fixture and runs_per_cell can be defined in the grid YAML. CLI flags take
-    precedence when explicitly provided; YAML values are used as defaults.
-    """
     grid_data = yaml.safe_load(grid.read_text(encoding="utf-8"))
-    resolved_fixture = fixture or grid_data.get("fixture")
-    if not resolved_fixture:
-        raise typer.BadParameter(
-            "provide --fixture or add a 'fixture' key to the grid YAML."
-        )
-    resolved_runs_per_cell = (
-        runs_per_cell if runs_per_cell != 1 else int(grid_data.get("runs_per_cell", runs_per_cell))
+    fixtures = [fixture] if fixture else _as_list(grid_data.get("fixture"))
+    if not fixtures:
+        raise typer.BadParameter("provide --fixture or a 'fixture' key (string or list) in the grid YAML.")
+    resolved_runs = (
+        runs_per_cell if runs_per_cell != 1 else int(grid_data.get("runs_per_cell", 1))
     )
-    cells_specs = expand_grid(grid_data)
-    cells = [
-        (make_strategy(reg, cfg), spec_name)
-        for reg, cfg, spec_name, _ in cells_specs
-    ]
-    fx = get_fixture(resolved_fixture)
-    bench = Benchmark(fx, workspace, _require_staging_url())
+    resolved_concurrency = concurrency or int(grid_data.get("concurrency", 3))
+    prefixes = tuple(grid_data.get("exclusive_model_prefixes", list(DEFAULT_EXCLUSIVE_PREFIXES)))
+
+    cells = expand_grid(grid_data)
+    jobs = expand_jobs(cells, fixtures, resolved_runs)
+
     out.mkdir(parents=True, exist_ok=True)
+    results_path = out / "results.jsonl"
+    if resume:
+        before = len(jobs)
+        jobs = filter_resumed(jobs, completed_keys(results_path))
+        if before - len(jobs):
+            typer.echo(f"resume: skipping {before - len(jobs)} completed runs")
+    elif results_path.exists():
+        results_path.unlink()
     (out / "sweep_config.yaml").write_text(grid.read_text(), encoding="utf-8")
-    results = asyncio.run(
-        bench.sweep(
-            cells,
-            runs_per_cell=resolved_runs_per_cell,
-            results_path=out / "results.jsonl",
-            trace_mirror=sys.stderr if verbose else None,
-        ),
-    )
-    typer.echo(f"wrote {len(results)} result rows to {out / 'results.jsonl'}")
+
+    staging_url = _require_staging_url()
+    benches = {fx: Benchmark(get_fixture(fx), workspace, staging_url) for fx in fixtures}
+    for job in jobs:
+        if job.fixture_name not in benches:
+            benches[job.fixture_name] = Benchmark(get_fixture(job.fixture_name), workspace, staging_url)
+
+    mirror = sys.stderr if (verbose and resolved_concurrency == 1) else None
+    if verbose and resolved_concurrency > 1:
+        typer.echo("verbose trace mirroring disabled for concurrency > 1", err=True)
+
+    total = len(jobs)
+    counter = {"done": 0}
+    lock = asyncio.Lock()
+    fh = open(results_path, "a", encoding="utf-8")
+
+    async def run_job(job: SweepJob):
+        strategy = make_strategy(job.registry_strategy, job.config)
+        result = await benches[job.fixture_name].run(
+            strategy, strategy_spec_name=job.spec_name,
+            rep_index=job.rep_index, trace_mirror=mirror,
+        )
+        async with lock:
+            fh.write(result.model_dump_json() + "\n")
+            fh.flush()
+            counter["done"] += 1
+            status = "ERROR" if result.error else "ok"
+            typer.echo(
+                f"[{counter['done']}/{total}] {job.spec_name} @ {job.fixture_name} "
+                f"rep{job.rep_index}: {status} ({result.wall_clock_seconds:.0f}s)"
+            )
+        return result
+
+    try:
+        results = asyncio.run(
+            run_jobs(jobs, run_job, concurrency=resolved_concurrency, prefixes=prefixes)
+        )
+    finally:
+        fh.close()
+    failed = sum(1 for r in results if r.error)
+    typer.echo(f"wrote {len(results)} result rows to {results_path} ({failed} with errors)")
 
 
 if __name__ == "__main__":

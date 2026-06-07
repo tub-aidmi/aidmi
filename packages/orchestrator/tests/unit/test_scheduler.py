@@ -69,6 +69,17 @@ def test_completed_keys_missing_file(tmp_path) -> None:
     assert completed_keys(tmp_path / "absent.jsonl") == set()
 
 
+def test_completed_keys_skips_malformed_lines(tmp_path) -> None:
+    results = tmp_path / "results.jsonl"
+    results.write_text(
+        json.dumps({"strategy_spec_name": "a", "fixture_name": "fx", "rep_index": 0})
+        + "\n" + '{"strategy_spec_name": "b", "fixture',
+        encoding="utf-8",
+    )
+    done = completed_keys(results)
+    assert done == {("a", "fx", 0)}
+
+
 def test_run_jobs_exclusive_groups_never_overlap() -> None:
     jobs = [
         _job("a1", model="ise-ollama/a"), _job("a2", model="ise-ollama/a"),

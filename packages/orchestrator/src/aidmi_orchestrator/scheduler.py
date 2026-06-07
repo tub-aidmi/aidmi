@@ -73,7 +73,11 @@ def completed_keys(results_path: Path) -> set[tuple[str, str, int]]:
     for line in results_path.read_text(encoding="utf-8").splitlines():
         if not line.strip():
             continue
-        row = json.loads(line)
+        try:
+            row = json.loads(line)
+        except json.JSONDecodeError:
+            print(f"WARNING: skipping malformed results line in {results_path}")
+            continue
         done.add((
             row["strategy_spec_name"], row["fixture_name"], int(row.get("rep_index", 0)),
         ))
