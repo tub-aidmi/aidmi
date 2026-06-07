@@ -37,7 +37,7 @@ class MappingPlan(BaseModel):
 
 
 def plan_slice_text(plan: MappingPlan, target_table_name: str) -> str:
-    lines = [f"Overview: {plan.overview}"]
+    lines = [f"Overview: {plan.overview}"] if plan.overview else []
     slice_ = next((t for t in plan.tables if t.target_table == target_table_name), None)
     if slice_ is None:
         lines.append(f"(The plan has no specific plan for `{target_table_name}` — map it yourself, consistent with the overview.)")
@@ -46,7 +46,8 @@ def plan_slice_text(plan: MappingPlan, target_table_name: str) -> str:
     if slice_.join_keys:
         lines.append(f"Join keys: {', '.join(slice_.join_keys)}")
     for c in slice_.columns:
-        lines.append(f"- {c.target_column} <- {', '.join(c.source_columns) or '(unspecified)'} ({c.transform_hint})")
+        hint = f" ({c.transform_hint})" if c.transform_hint else ""
+        lines.append(f"- {c.target_column} <- {', '.join(c.source_columns) or '(unspecified)'}{hint}")
     if slice_.notes:
         lines.append(f"Notes: {slice_.notes}")
     return "\n".join(lines)
@@ -81,7 +82,7 @@ class PlanThenExecute:
         plan = (await planner_agent.run(planner_user_prompt(context))).output
         api.trace.record(StrategyEvent(
             timestamp=datetime.utcnow(), label="plan_complete",
-            data={"plan": plan.model_dump()},
+            data={"overview": plan.overview, "tables_planned": [t.target_table for t in plan.tables]},
         ))
 
         writer_agent = make_table_agent(
@@ -99,8 +100,10 @@ class PlanThenExecute:
         target_table_names = [t.name for t in api.target_schema.tables]
         mappings = await asyncio.gather(*(one_table(n) for n in target_table_names))
 
-        for m in mappings:
-            m.reasoning = f"{plan.overview}\n{m.reasoning}".strip()
+        mappings = [
+            m.model_copy(update={"reasoning": f"{plan.overview}\n{m.reasoning}".strip()})
+            for m in mappings
+        ]
 
         sql_by_table = {m.target_table: m.dbt_sql for m in mappings}
         source_tables = sorted({(t.db_schema, t.name) for t in api.source_summary.tables})

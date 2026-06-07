@@ -57,3 +57,23 @@ def test_plan_slice_text_handles_missing_table() -> None:
     plan = MappingPlan(**PLAN_ARGS)
     text = plan_slice_text(plan, "ghosts")
     assert "no specific plan" in text
+
+
+def test_executor_user_prompt_contains_plan_slice() -> None:
+    from aidmi_orchestrator.strategy.plan_then_execute.prompts import executor_user_prompt
+    prompt = executor_user_prompt("users", "CTX", "SLICE")
+    assert "`users`" in prompt
+    assert "CTX" in prompt
+    assert "SLICE" in prompt
+
+
+def test_plan_slice_text_omits_empty_overview_and_hint() -> None:
+    plan = MappingPlan(tables=[{
+        "target_table": "users",
+        "source_tables": ["contacts"],
+        "columns": [{"target_column": "user_id", "source_columns": ["contacts.id"]}],
+    }])
+    text = plan_slice_text(plan, "users")
+    assert "Overview:" not in text
+    assert "user_id <- contacts.id" in text
+    assert "()" not in text
