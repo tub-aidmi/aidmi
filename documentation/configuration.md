@@ -84,7 +84,7 @@ config:
   max_critique_rounds: 2               # int ≥ 1, default 2; alternates write/critique passes
 ```
 
-The writer produces an initial dbt project; the critic reviews the SQL for correctness and mapping quality, returning structured feedback. The writer then revises up to `max_critique_rounds` times.
+The writer produces an initial dbt project; the critic reviews the SQL for correctness and mapping quality, returning structured feedback. The writer then revises up to `max_critique_rounds` times. This strategy also accepts `context_mode`, `samples_per_table`, and `max_query_tool_rows` with the same defaults as `structured_per_table`.
 
 #### `plan_then_execute`
 
@@ -102,7 +102,7 @@ config:
     api_key_env: LITELLM_API_KEY
 ```
 
-The planner produces a structured mapping plan (table-by-table column assignments); the writer turns the plan into dbt SQL. Using a cheaper/smaller writer model with a stronger planner is a common configuration.
+The planner produces a structured mapping plan (table-by-table column assignments); the writer turns the plan into dbt SQL. Using a cheaper/smaller writer model with a stronger planner is a common configuration. This strategy also accepts `context_mode`, `samples_per_table`, and `max_query_tool_rows` with the same defaults as `structured_per_table`.
 
 #### `ensemble_vote`
 
@@ -121,7 +121,7 @@ config:
   n_candidates: 3                      # int ≥ 1, default 3; independent generation passes
 ```
 
-Runs `n_candidates` independent write passes with the writer model, then has the judge select and merge the best SQL across candidates per target table.
+Runs `n_candidates` independent write passes with the writer model, then has the judge select the best candidate per target table. This strategy also accepts `context_mode`, `samples_per_table`, and `max_query_tool_rows` with the same defaults as `structured_per_table`.
 
 ### `ModelSpec`
 

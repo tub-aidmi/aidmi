@@ -99,9 +99,9 @@ Strategies that follow the structured per-table pattern (one agent call per targ
 
 | Helper | Purpose |
 |--------|---------|
-| `make_table_agent(model, output_type, system_prompt)` | Constructs a PydanticAI `Agent` with tracing wired up, scoped to a single target table. |
-| `generate_table_mapping(agent, context_prompt, table_name)` | Runs the agent for one target table and returns a `TableMapping` (includes `dbt_sql` and per-column `notes`). |
-| `manifest_from_mappings(mappings, strategy_name, strategy_config)` | Collects per-table `TableMapping` results into a `MappingManifest`. |
+| `make_table_agent(model, *, api=None, enable_query_tool=False, max_query_tool_rows=100, system_prompt=WRITER_SYSTEM_PROMPT)` | Constructs a PydanticAI `Agent` with `output_type=TableMapping` hardwired. Pass `api` and `enable_query_tool=True` to expose the `query_postgres` tool to the agent. |
+| `generate_table_mapping(agent, target_table_name, context)` | Async. Runs the agent for one target table and returns a `TableMapping` (includes `dbt_sql` and per-column notes). |
+| `manifest_from_mappings(mappings, source_table_names, strategy_name, strategy_config)` | Collects per-table `TableMapping` results into a `MappingManifest`. `source_table_names` (a list of raw table names) is required. |
 
 The built-in `structured_per_table`, `write_then_critique`, `plan_then_execute`, and `ensemble_vote` strategies all use these helpers internally. A custom strategy that follows the same pattern can use them too, inheriting consistent trace events and manifest structure.
 

@@ -49,7 +49,7 @@ The strategy returns a `StrategyResult` describing what it wrote and an optional
 | `write_tools_freeform` | A single PydanticAI agent given `write_file`, `read_file`, optionally `query_postgres`, and optionally `run_dbt` as tools. Lays out the dbt project however it sees fit. Optionally self-corrects by re-running dbt. |
 | `write_then_critique` | Two-agent loop: a writer produces SQL, a critic (same or different model) reviews it and returns structured feedback, the writer revises. Repeats for up to `max_critique_rounds` passes. |
 | `plan_then_execute` | A planner agent produces a structured mapping plan (table-by-table column assignments); a separate writer agent (same or different model) turns the plan into dbt SQL. |
-| `ensemble_vote` | Runs `n_candidates` independent write passes, then uses a judge agent to select and merge the best SQL per target table across candidates. |
+| `ensemble_vote` | Runs `n_candidates` independent write passes, then uses a judge agent to select the best candidate per target table. |
 
 ## Evaluator
 

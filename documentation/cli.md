@@ -85,7 +85,7 @@ aidmi-orchestrator sweep \
 | `--grid` | required | Path to a grid YAML file. See [Configuration](configuration.md#grid-yaml). |
 | `--out` | required | Output directory for sweep results. |
 | `--fixture` | from grid | Single fixture override. Falls back to the grid YAML's `fixture:` key (string or list). The YAML may list multiple fixtures; `--fixture` collapses to a single fixture and overrides the YAML. |
-| `--runs-per-cell` | from grid, then 1 | Number of repetitions per cell. Falls back to the grid YAML's `runs_per_cell:` key, then to 1. |
+| `--runs-per-cell` | from grid, then 1 | Number of repetitions per cell. Falls back to the grid YAML's `runs_per_cell:` key, then to 1. Note: the value 1 acts as "unset" — `--runs-per-cell 1` cannot override a grid file's `runs_per_cell` greater than 1. To force single runs, edit the grid file or use a copy with `runs_per_cell: 1`. |
 | `--concurrency` | from grid, then 3 | Maximum number of parallel runs. Falls back to the grid YAML's `concurrency:` key, then to 3. |
 | `--resume` / `--no-resume` | `--resume` | When `--resume` (default), skip any `(spec, fixture, rep)` tuple whose result row already exists in `results.jsonl`. `--no-resume` truncates the file and re-runs everything. |
 | `--workspace` | `./aidmi_workspace` | Workspace directory. |
