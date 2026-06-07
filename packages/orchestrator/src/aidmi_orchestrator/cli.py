@@ -171,5 +171,39 @@ def sweep(
     typer.echo(f"wrote {len(results)} result rows to {results_path} ({failed} with errors)")
 
 
+@app.command()
+def report(
+    results: Annotated[list[Path], typer.Argument(help="results.jsonl files or sweep output dirs")],
+    out: Annotated[Path, typer.Option(help="report output directory")] = Path("./report"),
+    matrix_metric: Annotated[str, typer.Option(help="metric for the strategy × model matrix")] = "target_columns_covered",
+    metrics: Annotated[str | None, typer.Option(help="comma-separated headline metric override")] = None,
+    plots: Annotated[bool, typer.Option(help="also write PNG bar charts (requires the 'plots' extra)")] = False,
+):
+    """Aggregate sweep results into markdown/CSV tables (and optional plots)."""
+    from aidmi_orchestrator.analysis import (
+        DEFAULT_HEADLINE_METRICS, aggregate, load_results,
+        render_markdown, render_matrix, write_csvs, write_plots,
+    )
+
+    rows = load_results(results)
+    if not rows:
+        raise typer.BadParameter("no result rows found in the given paths")
+    cells = aggregate(rows)
+    headline = [m.strip() for m in metrics.split(",")] if metrics else DEFAULT_HEADLINE_METRICS
+
+    out.mkdir(parents=True, exist_ok=True)
+    md = render_markdown(cells, headline) + "\n" + render_matrix(cells, matrix_metric)
+    (out / "summary.md").write_text(md, encoding="utf-8")
+    write_csvs(cells, out)
+    written = ["summary.md", "cells.csv", "summary.csv"]
+    if plots:
+        try:
+            pngs = write_plots(cells, out / "plots", headline)
+        except RuntimeError as e:
+            raise typer.BadParameter(str(e)) from None
+        written.append(f"plots/ ({len(pngs)} PNGs)")
+    typer.echo(f"report over {len(rows)} runs / {len(cells)} cells -> {out}: {', '.join(written)}")
+
+
 if __name__ == "__main__":
     app()
