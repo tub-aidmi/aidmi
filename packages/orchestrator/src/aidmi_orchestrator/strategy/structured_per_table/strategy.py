@@ -33,7 +33,12 @@ class StructuredPerTable:
             api.source_summary, api.target_schema, self.config.context_mode,
             samples_per_table=self.config.samples_per_table,
         )
-        agent = make_table_agent(traced_model)
+        agent = make_table_agent(
+            traced_model,
+            api=api,
+            enable_query_tool=(self.config.context_mode == "live_query_tool"),
+            max_query_tool_rows=self.config.max_query_tool_rows,
+        )
 
         target_table_names = [t.name for t in api.target_schema.tables]
         mappings = await asyncio.gather(
