@@ -1,4 +1,10 @@
 """Prompt templates for the write_then_critique strategy."""
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from aidmi_orchestrator.strategy.structured_common import TableMapping
 
 CRITIC_SYSTEM_PROMPT = """\
 You are a meticulous staff data engineer reviewing a colleague's dbt mapping proposal.
@@ -33,12 +39,12 @@ def revision_user_prompt(
     )
 
 
-def render_proposal(mappings: dict) -> str:
+def render_proposal(mappings: dict[str, TableMapping]) -> str:
     parts = []
     for name, m in sorted(mappings.items()):
         notes = "\n".join(
             f"  - {c.target_column} <- {', '.join(c.source_columns) or '(none)'}: {c.explanation}"
             for c in m.column_notes
-        )
+        ) or "  (none)"
         parts.append(f"## {name}\n```sql\n{m.dbt_sql}\n```\nColumn notes:\n{notes}\nReasoning: {m.reasoning}")
     return "\n\n".join(parts)

@@ -106,3 +106,23 @@ def test_strategy_partial_when_critic_never_approves(tmp_path) -> None:
     ))
     result = asyncio.run(strategy.generate(api))
     assert result.self_reported_status == "partial"
+
+
+def test_revise_crash_returns_unapproved() -> None:
+    mappings = {"users": _mapping("users")}
+    critique = AsyncMock(return_value=_report(users="needs_revision"))
+    revise = AsyncMock(side_effect=RuntimeError("llm down"))
+    final, approved = asyncio.run(run_critique_rounds(mappings, critique, revise, max_rounds=3))
+    assert approved is False
+    assert final["users"].dbt_sql == "SELECT 1"
+    critique.assert_awaited_once()
+
+
+def test_config_rejects_zero_rounds() -> None:
+    import pytest
+    from pydantic import ValidationError
+    with pytest.raises(ValidationError):
+        WriteThenCritiqueConfig(
+            writer_model=ModelSpec(provider="litellm", model_name="m"),
+            max_critique_rounds=0,
+        )

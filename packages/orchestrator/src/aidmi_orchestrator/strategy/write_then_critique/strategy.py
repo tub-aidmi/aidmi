@@ -3,7 +3,7 @@ from __future__ import annotations
 import asyncio
 from datetime import datetime
 from typing import Literal
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from pydantic_ai import Agent
 
 from aidmi_orchestrator.domain import ModelSpec, StrategyResult
@@ -23,7 +23,7 @@ from aidmi_orchestrator.trace import StrategyEvent
 class WriteThenCritiqueConfig(BaseModel):
     writer_model: ModelSpec
     critic_model: ModelSpec | None = None
-    max_critique_rounds: int = 2
+    max_critique_rounds: int = Field(default=2, ge=1)
     context_mode: Literal["metadata_only", "metadata_plus_samples", "live_query_tool"] = "metadata_plus_samples"
     samples_per_table: int = 3
     max_query_tool_rows: int = 100

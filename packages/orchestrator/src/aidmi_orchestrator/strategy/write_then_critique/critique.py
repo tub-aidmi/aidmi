@@ -26,7 +26,11 @@ async def run_critique_rounds(
     *,
     max_rounds: int,
 ) -> tuple[dict[str, TableMapping], bool]:
-    """Returns (final mappings, all_approved)."""
+    """Returns (final mappings, all_approved).
+
+    A crash inside revise() returns the current mappings unapproved rather
+    than raising, mirroring the structured self-correction policy.
+    """
     current = dict(mappings)
     for _ in range(max_rounds):
         report = await critique(current)
@@ -37,9 +41,12 @@ async def run_critique_rounds(
         }
         if not rejected:
             return current, True
-        revised = await asyncio.gather(
-            *(revise(name, current[name], comments) for name, comments in rejected.items())
-        )
+        try:
+            revised = await asyncio.gather(
+                *(revise(name, current[name], comments) for name, comments in rejected.items())
+            )
+        except Exception:
+            return current, False
         for name, m in zip(rejected, revised):
             current[name] = m.model_copy(update={"target_table": name})
     return current, False
