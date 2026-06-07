@@ -1,5 +1,6 @@
 """OrchestratorAPI — the surface every strategy receives."""
 from __future__ import annotations
+import asyncio
 import re
 import time
 from dataclasses import dataclass
@@ -38,7 +39,7 @@ class OrchestratorAPI:
         if self._pipeline_run is None:
             raise RuntimeError("api.run_dbt() called but no pipeline_run wired in")
         start = time.perf_counter()
-        result = transform(self._pipeline_run)
+        result = await asyncio.to_thread(transform, self._pipeline_run)
         duration_ms = (time.perf_counter() - start) * 1000
         self.trace.record(DbtRunEvent(
             timestamp=datetime.utcnow(),

@@ -96,6 +96,7 @@ class BenchmarkResult(BaseModel):
     strategy_name: str
     strategy_spec_name: str
     strategy_config: dict[str, Any]
+    rep_index: int = 0
     started_at: datetime
     completed_at: datetime
     wall_clock_seconds: float

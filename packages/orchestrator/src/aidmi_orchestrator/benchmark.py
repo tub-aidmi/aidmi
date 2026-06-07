@@ -1,5 +1,6 @@
 """Benchmark harness: run() / sweep() with grid expansion."""
 from __future__ import annotations
+import asyncio
 import itertools
 import string
 from datetime import datetime
@@ -60,6 +61,7 @@ class Benchmark:
         strategy: Strategy,
         *,
         strategy_spec_name: str,
+        rep_index: int = 0,
         run_id: str | None = None,
         trace_mirror: IO[str] | None = None,
     ) -> BenchmarkResult:
@@ -78,6 +80,8 @@ class Benchmark:
             )
         except StrategyExecutionError as e:
             error = repr(e)
+        except Exception as e:
+            error = f"harness: {e!r}"
 
         completed_at = datetime.utcnow()
         wall_clock = (completed_at - started_at).total_seconds()
@@ -85,8 +89,11 @@ class Benchmark:
         metrics: dict[str, Any] = {}
         if artifacts is not None:
             for ev in self.evaluators:
-                if ev.applies_to(artifacts):
-                    metrics.update(ev.evaluate(artifacts))
+                try:
+                    if ev.applies_to(artifacts):
+                        metrics.update(await asyncio.to_thread(ev.evaluate, artifacts))
+                except Exception as e:
+                    metrics[f"evaluator_error_{ev.name}"] = repr(e)
 
         strategy_result = (
             artifacts.strategy_result if artifacts is not None
@@ -99,6 +106,7 @@ class Benchmark:
             strategy_name=strategy.name,
             strategy_spec_name=strategy_spec_name,
             strategy_config=strategy.config.model_dump() if strategy.config is not None else {},
+            rep_index=rep_index,
             started_at=started_at,
             completed_at=completed_at,
             wall_clock_seconds=wall_clock,
@@ -130,10 +138,11 @@ class Benchmark:
             results_fh = None
         try:
             for strategy, strategy_spec_name in cells:
-                for _ in range(runs_per_cell):
+                for i in range(runs_per_cell):
                     r = await self.run(
                         strategy,
                         strategy_spec_name=strategy_spec_name,
+                        rep_index=i,
                         trace_mirror=trace_mirror,
                     )
                     results.append(r)
