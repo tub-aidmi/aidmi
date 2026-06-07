@@ -45,6 +45,8 @@ config:
   context_mode: metadata_plus_samples  # one of metadata_only, metadata_plus_samples, live_query_tool
   samples_per_table: 3                 # int, default 3 (ignored unless mode includes samples)
   max_query_tool_rows: 100             # int, default 100 (ignored unless mode is live_query_tool)
+  enable_self_correction: false        # bool, default false; re-runs dbt after each table pass
+  max_self_correction_passes: 3        # int, default 3; ignored unless enable_self_correction
 ```
 
 #### `write_tools_freeform`
@@ -64,6 +66,62 @@ config:
   enable_self_correction: false        # bool, default false
   max_self_correction_passes: 3        # int, default 3; ignored unless enable_self_correction
 ```
+
+#### `write_then_critique`
+
+```yaml
+name: write_then_critique_example
+strategy: write_then_critique
+config:
+  writer_model:                        # required
+    provider: litellm
+    model_name: my-model
+    api_key_env: LITELLM_API_KEY
+  critic_model:                        # optional; defaults to writer_model when omitted
+    provider: litellm
+    model_name: my-critic-model
+    api_key_env: LITELLM_API_KEY
+  max_critique_rounds: 2               # int ≥ 1, default 2; alternates write/critique passes
+```
+
+The writer produces an initial dbt project; the critic reviews the SQL for correctness and mapping quality, returning structured feedback. The writer then revises up to `max_critique_rounds` times.
+
+#### `plan_then_execute`
+
+```yaml
+name: plan_then_execute_example
+strategy: plan_then_execute
+config:
+  planner_model:                       # required
+    provider: litellm
+    model_name: my-model
+    api_key_env: LITELLM_API_KEY
+  writer_model:                        # optional; defaults to planner_model when omitted
+    provider: litellm
+    model_name: my-writer-model
+    api_key_env: LITELLM_API_KEY
+```
+
+The planner produces a structured mapping plan (table-by-table column assignments); the writer turns the plan into dbt SQL. Using a cheaper/smaller writer model with a stronger planner is a common configuration.
+
+#### `ensemble_vote`
+
+```yaml
+name: ensemble_vote_example
+strategy: ensemble_vote
+config:
+  writer_model:                        # required
+    provider: litellm
+    model_name: my-model
+    api_key_env: LITELLM_API_KEY
+  judge_model:                         # optional; defaults to writer_model when omitted
+    provider: litellm
+    model_name: my-judge-model
+    api_key_env: LITELLM_API_KEY
+  n_candidates: 3                      # int ≥ 1, default 3; independent generation passes
+```
+
+Runs `n_candidates` independent write passes with the writer model, then has the judge select and merge the best SQL across candidates per target table.
 
 ### `ModelSpec`
 
@@ -128,15 +186,52 @@ A grid YAML describes a sweep — multiple `(strategy, config)` cells run agains
 ### Schema
 
 ```yaml
-fixture: <fixture name>               # optional; CLI flag wins if set
+fixture: <fixture name or list>       # string or list; CLI --fixture overrides; list runs each fixture
 runs_per_cell: <int>                  # optional, default 1
+concurrency: <int>                    # optional, default 3; max parallel runs
+exclusive_model_prefixes: [<prefix>]  # optional, default ["ise-"]; models whose names start with any
+                                      # prefix run one-at-a-time within that prefix group (others are
+                                      # passthrough and run in parallel up to concurrency)
+models:                               # optional; named ModelSpec definitions
+  <ref>:
+    provider: <name>
+    model_name: <name>
+    base_url: <url>                   # optional
+    api_key_env: <env var name>       # optional
 cells:                                # required
   - name: <optional label>              # used as strategy_spec_name base; default: same as strategy
     strategy: <name>
+    fixtures: [<name>, ...]           # optional; restrict this cell to a subset of the sweep fixtures
     config: { ... }
   - strategy: <name>
     config: { ... }
 ```
+
+**Top-level `fixture`** may be a string (single fixture) or a YAML list (multi-fixture). The sweep runs every cell against every fixture unless the cell has its own `fixtures:` restriction.
+
+**`models:` named-spec block.** Define ModelSpec dicts once under `models:` and reference them by name in any `*_model` config field. A list of refs in a `*_model` field expands cartesian-wise just like any other list field (see below):
+
+```yaml
+models:
+  small:
+    provider: litellm
+    model_name: ise-ollama/small-model
+    base_url: http://localhost:4000/v1
+    api_key_env: LITELLM_API_KEY
+  large:
+    provider: litellm
+    model_name: ise-ollama/large-model
+    base_url: http://localhost:4000/v1
+    api_key_env: LITELLM_API_KEY
+cells:
+  - name: structured
+    strategy: structured_per_table
+    config:
+      writer_model: [small, large]    # expands into 2 cells, one per model
+      context_mode: metadata_plus_samples
+```
+
+**`exclusive_model_prefixes`** controls model-major scheduling. Models whose `model_name` starts with any listed prefix (e.g., `ise-`) are loaded one at a time: the sweep serializes all jobs for one exclusive model before starting the next. Models that do not match any prefix run in parallel up to `concurrency` with no serialization constraint.
 
 ### Cartesian expansion
 
@@ -160,7 +255,7 @@ expands into 4 cells (2 × 2). When a cell expands this way, each output row get
 
 Example: with `name: spt` and `context_mode: [metadata_only, …]`, labels look like `spt_context_mode_metadata_only`.
 
-To sweep across nested fields like `model_name`, write a separate cell block per value:
+To sweep across nested fields like `model_name` without using the `models:` block, write a separate cell block per value:
 
 ```yaml
 cells:
@@ -177,31 +272,30 @@ cells:
 ### Complete example
 
 ```yaml
-fixture: sp1_users
-runs_per_cell: 1
+fixture: [sp1_users, sf_pipedrive_snapshot]
+runs_per_cell: 3
+concurrency: 3
+exclusive_model_prefixes: ["ise-"]
+models:
+  qwen9b:
+    provider: litellm
+    model_name: ise-openai-nvidia/qwen35-9b
+    base_url: http://localhost:4000/v1
+    api_key_env: LITELLM_API_KEY
 cells:
-  - strategy: mock
+  - name: mock_control
+    strategy: mock
+    fixtures: [sp1_users]
     config:
       mapping_source: packages/orchestrator/src/aidmi_orchestrator/fixtures/sp1_users/mock_mapping.json
-  - strategy: structured_per_table
+  - name: structured
+    strategy: structured_per_table
     config:
-      writer_model:
-        provider: openai
-        model_name: gpt-4o-mini
-        api_key_env: OPENAI_API_KEY
-      context_mode: [metadata_only, metadata_plus_samples, live_query_tool]
-      samples_per_table: 3
-  - strategy: write_tools_freeform
-    config:
-      writer_model:
-        provider: anthropic
-        model_name: claude-3-5-sonnet-latest
-        api_key_env: ANTHROPIC_API_KEY
+      writer_model: [qwen9b]
       context_mode: metadata_plus_samples
-      enable_self_correction: [false, true]
 ```
 
-Total: 1 + 3 + 2 = 6 cells.
+Total: 1 (mock, sp1_users only) + 1×2 fixtures = 3 cells. With `runs_per_cell: 3`, 9 benchmark runs.
 
 ## Pricing override
 

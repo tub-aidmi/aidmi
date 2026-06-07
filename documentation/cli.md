@@ -1,6 +1,6 @@
 # CLI reference
 
-The orchestrator ships a Typer-based CLI installed as `aidmi-orchestrator`. Two subcommands: `run` and `sweep`.
+The orchestrator ships a Typer-based CLI installed as `aidmi-orchestrator`. Three subcommands: `run`, `sweep`, and `report`.
 
 ## Environment
 
@@ -64,7 +64,7 @@ The full `BenchmarkResult` is printed to stdout as indented JSON. Artifacts on d
 
 For live progress during a single run: pass `-v` / `--verbose` (duplicate trace lines on stderr). With a pinned `--run-id`, you can also [`tail`](https://manpages.debian.org/stable/coreutils/tail.1.en.html)-follow `trace.jsonl` ([`sweep`](#live-trace-tail--verbose) shows a [`jq`](https://jqlang.org/) filter example).
 
-Run multiple `(strategy, config)` cells against one fixture and stream `BenchmarkResult` rows to a JSONL file.
+Run multiple `(strategy, config)` cells across one or more fixtures and stream `BenchmarkResult` rows to a JSONL file.
 
 ```
 aidmi-orchestrator sweep \
@@ -72,6 +72,8 @@ aidmi-orchestrator sweep \
   --out DIR \
   [--fixture NAME] \
   [--runs-per-cell N] \
+  [--concurrency N] \
+  [--resume | --no-resume] \
   [--workspace DIR] \
   [-v | --verbose]
 ```
@@ -82,10 +84,26 @@ aidmi-orchestrator sweep \
 |--------|---------|-------------|
 | `--grid` | required | Path to a grid YAML file. See [Configuration](configuration.md#grid-yaml). |
 | `--out` | required | Output directory for sweep results. |
-| `--fixture` | from grid | Fixture name. Falls back to the grid YAML's top-level `fixture:` key if not given as a flag. An explicit flag overrides the YAML. |
-| `--runs-per-cell` | from grid, then 1 | Number of repetitions per cell. Falls back to the grid YAML's top-level `runs_per_cell:` key, then to 1. |
+| `--fixture` | from grid | Single fixture override. Falls back to the grid YAML's `fixture:` key (string or list). The YAML may list multiple fixtures; `--fixture` collapses to a single fixture and overrides the YAML. |
+| `--runs-per-cell` | from grid, then 1 | Number of repetitions per cell. Falls back to the grid YAML's `runs_per_cell:` key, then to 1. |
+| `--concurrency` | from grid, then 3 | Maximum number of parallel runs. Falls back to the grid YAML's `concurrency:` key, then to 3. |
+| `--resume` / `--no-resume` | `--resume` | When `--resume` (default), skip any `(spec, fixture, rep)` tuple whose result row already exists in `results.jsonl`. `--no-resume` truncates the file and re-runs everything. |
 | `--workspace` | `./aidmi_workspace` | Workspace directory. |
-| `--verbose`, `-v` | off | Same as [`run`](#aidmi-orchestrator-run): stream trace JSON lines to stderr for each cell while it runs. |
+| `--verbose`, `-v` | off | Same as [`run`](#aidmi-orchestrator-run): stream trace JSON lines to stderr. Only active when `--concurrency 1`; a warning is printed and mirroring is suppressed otherwise. |
+
+### Model-major scheduling
+
+The sweep schedules jobs in model-major order for models whose `model_name` starts with any prefix listed in the grid's `exclusive_model_prefixes` (default `["ise-"]`). All jobs for one exclusive model finish before jobs for the next exclusive model start — necessary when the ISE cluster can only load one large model at a time. Models that do not match any exclusive prefix are treated as passthrough and run in parallel up to `--concurrency` without the serialization constraint.
+
+### Progress output
+
+Each completed run prints a one-line summary:
+
+```
+[done/total] spec_name @ fixture repN: ok (42s)
+```
+
+`resume` also prints the number of skipped runs before the first new one.
 
 ### Live trace (tail + `--verbose`)
 
@@ -114,7 +132,7 @@ cells:
       context_mode: [metadata_only, metadata_plus_samples, live_query_tool]
 ```
 
-expands into three cells, one per `context_mode` value. Each row records a distinct `strategy_spec_name` (derived from optional cell `name`, else from `strategy`, plus suffixes such as `_context_mode_metadata_only`). The expansion applies to top-level scalar fields only; nested fields like `writer_model.model_name` are not expanded. To sweep models, write a separate cell block for each model.
+expands into three cells, one per `context_mode` value. Each row records a distinct `strategy_spec_name` (derived from optional cell `name`, else from `strategy`, plus suffixes such as `_context_mode_metadata_only`). The expansion applies to top-level scalar fields only; nested fields like `writer_model.model_name` are not expanded. Named model refs in the `models:` block are an exception: a list of ref names in a `*_model` field expands cartesian-wise before resolving to ModelSpec dicts (see [Configuration](configuration.md#grid-yaml)).
 
 ### Output
 
@@ -126,11 +144,52 @@ expands into three cells, one per `context_mode` value. Each row records a disti
 
 Each run's full per-cell artifacts (trace, dbt project, result.json) are also written under `<workspace>/runs/<run-id>/` so individual cells can be inspected offline.
 
+### Resume semantics
+
+`results.jsonl` is appended to, never replaced, when `--resume` is active. Completed-key lookup is based on `(strategy_spec_name, fixture_name, rep_index)` from existing rows. Interrupted sweeps resume from the first missing run without re-running completed cells.
+
 ### Failure handling
 
 A cell that fails (strategy crash, dbt error, missing API key) does not stop the sweep. The cell's `BenchmarkResult` is written with `error` set to a string describing the failure, and the next cell starts. The `results.jsonl` always contains exactly one row per cell.
 
 A `KeyboardInterrupt` or other signal stops the sweep at the next cell boundary. Already-completed cells remain in `results.jsonl`.
+
+## `aidmi-orchestrator report`
+
+Aggregate one or more sweep result directories into markdown and CSV summary tables (and optionally PNG bar charts).
+
+```
+aidmi-orchestrator report \
+  PATH [PATH ...] \
+  [--out DIR] \
+  [--matrix-metric METRIC] \
+  [--metrics METRIC,...] \
+  [--plots]
+```
+
+### Arguments
+
+| Argument | Description |
+|----------|-------------|
+| `PATH ...` | One or more paths to sweep output directories (containing `results.jsonl`) or bare `results.jsonl` files. Multiple directories are merged before aggregation. |
+
+### Options
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `--out` | `./report` | Output directory for report files. Created if absent. |
+| `--matrix-metric` | `target_columns_covered` | Metric used to build the strategy × model matrix table in `summary.md`. |
+| `--metrics` | built-in list | Comma-separated list of headline metrics to display in the summary table. Overrides the default set. |
+| `--plots` | off | Write PNG bar charts alongside the CSV files. Requires the `plots` extra (`pip install aidmi-orchestrator[plots]`). |
+
+### Output files
+
+| File | Contents |
+|------|---------|
+| `summary.md` | Markdown table of headline metrics per cell (mean ± std), followed by a strategy × model matrix for `--matrix-metric`. |
+| `cells.csv` | One row per `(strategy_spec_name, fixture, rep)` with all metrics flattened. |
+| `summary.csv` | One row per `(strategy_spec_name, fixture)` with per-metric mean and std. |
+| `plots/` | PNG bar charts per headline metric (only when `--plots` is given). |
 
 ## Examples
 

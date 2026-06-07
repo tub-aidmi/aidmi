@@ -10,7 +10,7 @@ The tool is intended for research: comparing prompts, agent topologies, models, 
 |------|----------|
 | [Getting started](getting-started.md) | First-time setup, run the bundled demo. |
 | [Concepts](concepts.md) | What an orchestrator, strategy, evaluator, and fixture are, and how they fit together. |
-| [CLI reference](cli.md) | `aidmi-orchestrator run` and `sweep` commands. |
+| [CLI reference](cli.md) | `aidmi-orchestrator run`, `sweep`, and `report` commands. |
 | [Configuration](configuration.md) | Strategy-spec, grid, and pricing-override YAML schemas. |
 | [Data formats](data-formats.md) | The on-disk artifacts a run produces. |
 | [Extending](extending.md) | Writing new strategies, evaluators, fixtures, and LLM providers. |

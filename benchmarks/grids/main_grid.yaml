@@ -1,0 +1,63 @@
+fixture: [sp1_users, sf_pipedrive_snapshot]
+runs_per_cell: 3
+concurrency: 3
+exclusive_model_prefixes: ["ise-"]
+models:
+  qwen9b:
+    provider: litellm
+    model_name: ise-openai-nvidia/qwen35-9b
+    base_url: http://localhost:4000/v1
+    api_key_env: LITELLM_API_KEY
+  qwen36:
+    provider: litellm
+    model_name: "ise-ollama/qwen3.6:35b-a3b"
+    base_url: http://localhost:4000/v1
+    api_key_env: LITELLM_API_KEY
+  gptoss120:
+    provider: litellm
+    model_name: "ise-ollama/gpt-oss:120b"
+    base_url: http://localhost:4000/v1
+    api_key_env: LITELLM_API_KEY
+  qwen397:
+    provider: litellm
+    model_name: academic/qwen3.5-397b-a17b
+    base_url: http://localhost:4000/v1
+    api_key_env: LITELLM_API_KEY
+cells:
+  - name: mock_control
+    strategy: mock
+    fixtures: [sp1_users]
+    config:
+      mapping_source: packages/orchestrator/src/aidmi_orchestrator/fixtures/sp1_users/mock_mapping.json
+  - name: structured
+    strategy: structured_per_table
+    config:
+      writer_model: [qwen9b, qwen36, gptoss120, qwen397]
+      context_mode: metadata_plus_samples
+  - name: structured_sc
+    strategy: structured_per_table
+    config:
+      writer_model: [qwen9b, qwen36, gptoss120, qwen397]
+      context_mode: metadata_plus_samples
+      enable_self_correction: true
+  - name: freeform_sc
+    strategy: write_tools_freeform
+    config:
+      writer_model: [qwen9b, qwen36, gptoss120, qwen397]
+      context_mode: metadata_plus_samples
+      enable_self_correction: true
+      max_tool_turns: 30
+  - name: critique
+    strategy: write_then_critique
+    config:
+      writer_model: [qwen9b, qwen36, gptoss120, qwen397]
+      max_critique_rounds: 2
+  - name: plan
+    strategy: plan_then_execute
+    config:
+      planner_model: [qwen9b, qwen36, gptoss120, qwen397]
+  - name: ensemble
+    strategy: ensemble_vote
+    config:
+      writer_model: [qwen9b, qwen36, gptoss120, qwen397]
+      n_candidates: 3

@@ -40,13 +40,16 @@ The orchestrator hands the strategy an `OrchestratorAPI` containing:
 
 The strategy returns a `StrategyResult` describing what it wrote and an optional `MappingManifest` documenting the per-column mapping decisions in structured form.
 
-### Day-1 strategies
+### Built-in strategies
 
 | Name | Paradigm |
 |------|----------|
 | `mock` | Reads a JSON file describing the mapping and writes it to disk. No LLM. Used in tests and as a benchmark baseline. |
-| `structured_per_table` | One PydanticAI agent per target table, running in parallel via `asyncio.gather`. Each agent returns a typed `TableMapping` (full `dbt_sql` string plus column notes). |
+| `structured_per_table` | One PydanticAI agent per target table, running in parallel via `asyncio.gather`. Each agent returns a typed `TableMapping` (full `dbt_sql` string plus column notes). Supports optional self-correction (`enable_self_correction`): re-runs dbt after each table pass and feeds errors back to the agent for up to `max_self_correction_passes` rounds. |
 | `write_tools_freeform` | A single PydanticAI agent given `write_file`, `read_file`, optionally `query_postgres`, and optionally `run_dbt` as tools. Lays out the dbt project however it sees fit. Optionally self-corrects by re-running dbt. |
+| `write_then_critique` | Two-agent loop: a writer produces SQL, a critic (same or different model) reviews it and returns structured feedback, the writer revises. Repeats for up to `max_critique_rounds` passes. |
+| `plan_then_execute` | A planner agent produces a structured mapping plan (table-by-table column assignments); a separate writer agent (same or different model) turns the plan into dbt SQL. |
+| `ensemble_vote` | Runs `n_candidates` independent write passes, then uses a judge agent to select and merge the best SQL per target table across candidates. |
 
 ## Evaluator
 
@@ -65,7 +68,7 @@ class Evaluator(Protocol):
 
 Metric names are free-form. Each evaluator emits whatever keys it wants; the harness merges all evaluators' output into the `BenchmarkResult.metrics` dictionary. Adding a new evaluator does not require a schema change.
 
-### Day-1 evaluators
+### Built-in evaluators
 
 | Name | When it runs | Sample metrics |
 |------|--------------|----------------|
@@ -73,6 +76,8 @@ Metric names are free-form. Each evaluator emits whatever keys it wants; the har
 | `llm_usage` | Trace contains LLM call events | `llm_calls_by_role`, `tokens_input_total`, `tokens_input_cached`, `cache_hit_rate`, `dollar_cost_total`, `dollar_cost_by_role`, `latency_ms_p95_by_role` |
 | `schema` | Always | `produced_column_count`, `produced_type_histogram`; coverage metrics when a target schema is available |
 | `row_equality` | Fixture has a reference dbt project | `row_count_match`, `row_set_diff_count`, per-table `column_value_match_rate` |
+| `manifest_quality` | Strategy produced a `MappingManifest` | Scores the per-column mapping notes for completeness and specificity. |
+| `data_preservation` | Always | Checks that non-nullable source columns appear in at least one output model; flags columns dropped without a note. |
 
 `llm_usage` prices each call using LiteLLM's `model_cost` table. For models LiteLLM does not know about (custom Ollama tags, internal proxies), an optional `configs/pricing.json` override file maps `provider/model_name` to per-token rates.
 
@@ -94,7 +99,7 @@ A fixture's data files live alongside its `__init__.py` in the same sub-package 
 
 - A **run** is one invocation of `run_orchestrator(fixture, strategy, run_id, workspace, staging_db_url)`. It produces a `runs/<run-id>/` directory.
 - A **benchmark** wraps a run with evaluator invocation and produces a `BenchmarkResult`. The Python entry point is `Benchmark.run(strategy, strategy_spec_name="…")` (often from `parse_strategy_spec()` plus `make_strategy()` for file-based workflows).
-- A **sweep** runs multiple `(strategy, config)` cells against one fixture and streams the resulting `BenchmarkResult` rows to a JSONL file. `Benchmark.sweep` takes `list[tuple[Strategy, str]]` pairs `(strategy, strategy_spec_name)`.
+- A **sweep** runs multiple `(strategy, config)` cells across one or more fixtures and streams the resulting `BenchmarkResult` rows to a JSONL file. The scheduler uses **model-major ordering**: models whose `model_name` starts with an exclusive prefix (default `ise-`) are serialized one at a time so that only one large model is loaded on the ISE cluster at once; all other (passthrough) models run in parallel up to the configured concurrency. Interrupted sweeps are resumable: already-written rows in `results.jsonl` are skipped on the next invocation.
 
 ## Registries
 
