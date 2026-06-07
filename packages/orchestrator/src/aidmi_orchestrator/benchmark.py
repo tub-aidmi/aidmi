@@ -1,6 +1,7 @@
 """Benchmark harness: run() / sweep() with grid expansion."""
 from __future__ import annotations
 import asyncio
+import copy
 import itertools
 import string
 from datetime import datetime
@@ -163,7 +164,7 @@ def resolve_model_refs(config: dict[str, Any], models: dict[str, dict[str, Any]]
                 raise ValueError(
                     f"unknown model ref {value!r} in field {key!r}. Defined: {sorted(models)}"
                 )
-            out[key] = dict(models[value])
+            out[key] = copy.deepcopy(models[value])
     return out
 
 
