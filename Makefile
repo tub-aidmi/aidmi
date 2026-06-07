@@ -7,7 +7,7 @@ export
 
 .DEFAULT_GOAL := help
 
-.PHONY: help env install setup up down down-v logs psql test test-orchestrator test-pipeline demo sweep clean-workspace litellm-smoke-fixture ollama-smoke-fixture sf-auth-check sf-pipedrive-litellm sf-pipedrive-ollama
+.PHONY: help env install setup up down down-v logs psql test test-orchestrator test-pipeline demo sweep clean-workspace litellm-smoke-fixture ollama-smoke-fixture sf-auth-check sf-snapshot sf-pipedrive-litellm sf-pipedrive-ollama
 
 help: ## List targets (make test works without Postgres)
 	@echo "Makefile targets:"
@@ -61,6 +61,9 @@ ollama-smoke-fixture: ## Ollama + bundled sp1_users (needs: make env, make up, O
 	uv run --package aidmi-orchestrator aidmi-orchestrator run \
 		--fixture sp1_users \
 		--strategy-spec packages/orchestrator/examples/strategy_specs/write_tools_freeform_ollama_qwen.yaml
+
+sf-snapshot: ## One-time SF Contact+Account → committed JSONL snapshot (needs SF_* in .env)
+	uv run --package aidmi-orchestrator python packages/orchestrator/scripts/snapshot_sf_pipedrive.py
 
 sf-auth-check: ## SOAP login + SOQL sanity (needs .env)
 	uv run --package aidmi-orchestrator python packages/orchestrator/scripts/sf_auth_probe.py
