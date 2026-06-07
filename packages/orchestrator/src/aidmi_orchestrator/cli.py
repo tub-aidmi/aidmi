@@ -118,6 +118,12 @@ def sweep(
     cells = expand_grid(grid_data)
     jobs = expand_jobs(cells, fixtures, resolved_runs)
 
+    staging_url = _require_staging_url()
+    benches = {fx: Benchmark(get_fixture(fx), workspace, staging_url) for fx in fixtures}
+    for job in jobs:
+        if job.fixture_name not in benches:
+            benches[job.fixture_name] = Benchmark(get_fixture(job.fixture_name), workspace, staging_url)
+
     out.mkdir(parents=True, exist_ok=True)
     results_path = out / "results.jsonl"
     if resume:
@@ -128,12 +134,6 @@ def sweep(
     elif results_path.exists():
         results_path.unlink()
     (out / "sweep_config.yaml").write_text(grid.read_text(), encoding="utf-8")
-
-    staging_url = _require_staging_url()
-    benches = {fx: Benchmark(get_fixture(fx), workspace, staging_url) for fx in fixtures}
-    for job in jobs:
-        if job.fixture_name not in benches:
-            benches[job.fixture_name] = Benchmark(get_fixture(job.fixture_name), workspace, staging_url)
 
     mirror = sys.stderr if (verbose and resolved_concurrency == 1) else None
     if verbose and resolved_concurrency > 1:

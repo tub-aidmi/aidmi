@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Awaitable, Callable
@@ -60,7 +61,7 @@ def group_jobs(
             continue
         if len(key) > 1:
             print(f"WARNING: {job.spec_name} mixes exclusive models {sorted(key)} — "
-                  f"every role switch will reload the model")
+                  f"every role switch will reload the model", file=sys.stderr)
         groups.setdefault(key, []).append(job)
     ordered = [groups[k] for k in sorted(groups, key=lambda k: sorted(k))]
     return ordered, passthrough
@@ -76,7 +77,7 @@ def completed_keys(results_path: Path) -> set[tuple[str, str, int]]:
         try:
             row = json.loads(line)
         except json.JSONDecodeError:
-            print(f"WARNING: skipping malformed results line in {results_path}")
+            print(f"WARNING: skipping malformed results line in {results_path}", file=sys.stderr)
             continue
         done.add((
             row["strategy_spec_name"], row["fixture_name"], int(row.get("rep_index", 0)),
