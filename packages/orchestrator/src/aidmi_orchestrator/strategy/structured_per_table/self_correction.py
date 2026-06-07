@@ -14,7 +14,9 @@ async def retry_failing_tables(
     """Run dbt up to max_passes times; between runs, regenerate only failing tables.
 
     regenerate(table_name, error_message) must rewrite that table's SQL on disk.
-    Returns True as soon as dbt reports overall success.
+    Returns True as soon as dbt reports overall success. A dbt crash, a
+    regeneration crash, or a failed run without named failing models all
+    return False rather than raising.
     """
     for attempt in range(max_passes):
         try:
@@ -30,5 +32,10 @@ async def retry_failing_tables(
             for m in getattr(result, "models", []) or []
             if getattr(m, "status", None) != "success"
         ]
-        await asyncio.gather(*(regenerate(name, err) for name, err in failing))
+        if not failing:
+            return False
+        try:
+            await asyncio.gather(*(regenerate(name, err) for name, err in failing))
+        except Exception:
+            return False
     return False

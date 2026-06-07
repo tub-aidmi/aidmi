@@ -5,9 +5,17 @@ import asyncio
 from types import SimpleNamespace
 from unittest.mock import AsyncMock
 
+from pydantic_ai.models.test import TestModel
+
+from aidmi_orchestrator.domain import ModelSpec
 from aidmi_orchestrator.strategy.structured_per_table.self_correction import (
     retry_failing_tables,
 )
+from aidmi_orchestrator.strategy.structured_per_table.strategy import (
+    StructuredPerTable, StructuredPerTableConfig,
+)
+
+from .test_structured_common import MAPPING_ARGS, fake_api
 
 
 def _fail(*names: str) -> SimpleNamespace:
@@ -55,15 +63,22 @@ def test_dbt_crash_counts_as_failure_without_regeneration_detail() -> None:
     regenerate.assert_not_awaited()
 
 
-from unittest.mock import MagicMock
-from pydantic_ai.models.test import TestModel
+def test_failure_without_named_models_does_not_spin() -> None:
+    bad = SimpleNamespace(overall_status="partial", models=[])
+    run_dbt = AsyncMock(return_value=bad)
+    regenerate = AsyncMock()
+    ok = asyncio.run(retry_failing_tables(run_dbt, regenerate, max_passes=3))
+    assert ok is False
+    run_dbt.assert_awaited_once()
+    regenerate.assert_not_awaited()
 
-from aidmi_orchestrator.domain import ModelSpec
-from aidmi_orchestrator.strategy.structured_per_table.strategy import (
-    StructuredPerTable, StructuredPerTableConfig,
-)
 
-from .test_structured_common import MAPPING_ARGS, fake_api
+def test_regenerate_crash_is_non_fatal() -> None:
+    run_dbt = AsyncMock(return_value=_fail("users"))
+    regenerate = AsyncMock(side_effect=RuntimeError("llm down"))
+    ok = asyncio.run(retry_failing_tables(run_dbt, regenerate, max_passes=3))
+    assert ok is False
+    run_dbt.assert_awaited_once()
 
 
 def test_strategy_reports_partial_when_dbt_never_succeeds(tmp_path) -> None:
