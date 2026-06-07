@@ -38,6 +38,19 @@ def per_table_user_prompt(target_table_name: str, context_prompt: str) -> str:
     )
 
 
+def retry_user_prompt(
+    target_table_name: str, context_prompt: str, previous_sql: str, error_message: str,
+) -> str:
+    return (
+        f"Your previous dbt model for `{target_table_name}` failed.\n\n"
+        f"Previous SQL:\n```sql\n{previous_sql}\n```\n\n"
+        f"dbt error:\n{error_message}\n\n"
+        f"{context_prompt}\n\n"
+        f"Produce a corrected dbt model for `{target_table_name}` "
+        f"using valid PostgreSQL only."
+    )
+
+
 class ColumnNoteOut(BaseModel):
     target_column: str
     source_columns: list[str] = Field(default_factory=list)

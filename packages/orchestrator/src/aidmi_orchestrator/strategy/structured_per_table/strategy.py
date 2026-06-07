@@ -8,6 +8,10 @@ from aidmi_orchestrator.domain import ModelSpec, StrategyResult
 from aidmi_orchestrator.strategy.base import build_context_prompt, write_proposal
 from aidmi_orchestrator.strategy.structured_common import (
     generate_table_mapping, make_table_agent, manifest_from_mappings,
+    retry_user_prompt,
+)
+from aidmi_orchestrator.strategy.structured_per_table.self_correction import (
+    retry_failing_tables,
 )
 
 
@@ -16,6 +20,8 @@ class StructuredPerTableConfig(BaseModel):
     context_mode: Literal["metadata_only", "metadata_plus_samples", "live_query_tool"] = "metadata_plus_samples"
     samples_per_table: int = 3
     max_query_tool_rows: int = 100
+    enable_self_correction: bool = False
+    max_self_correction_passes: int = 3
 
 
 class StructuredPerTable:
@@ -51,8 +57,30 @@ class StructuredPerTable:
         )
         write_proposal(api.dbt_project_path, sql_by_table, source_tables, api.staging_raw_dataset)
 
+        mappings_by_table = {m.target_table: m for m in mappings}
+
+        dbt_ok = True
+        if self.config.enable_self_correction:
+            async def regenerate(table_name: str, error_message: str) -> None:
+                previous = mappings_by_table.get(table_name)
+                prompt = retry_user_prompt(
+                    table_name, context,
+                    previous.dbt_sql if previous else "", error_message,
+                )
+                run = await agent.run(prompt)
+                fixed = run.output.model_copy(update={"target_table": table_name})
+                mappings_by_table[table_name] = fixed
+                (api.dbt_project_path / "models" / f"{table_name}.sql").write_text(
+                    fixed.dbt_sql, encoding="utf-8"
+                )
+
+            dbt_ok = await retry_failing_tables(
+                api.run_dbt, regenerate,
+                max_passes=self.config.max_self_correction_passes,
+            )
+
         manifest = manifest_from_mappings(
-            list(mappings),
+            list(mappings_by_table.values()),
             source_table_names=[t.name for t in api.source_summary.tables],
             strategy_name=self.name,
             strategy_config=self.config.model_dump(),
@@ -61,5 +89,5 @@ class StructuredPerTable:
             target_tables_written=list(sql_by_table),
             target_schema=api.target_schema,
             manifest=manifest,
-            self_reported_status="complete",
+            self_reported_status="complete" if dbt_ok else "partial",
         )
