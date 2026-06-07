@@ -106,7 +106,7 @@ def sweep(
     cells_specs = expand_grid(grid_data)
     cells = [
         (make_strategy(reg, cfg), spec_name)
-        for reg, cfg, spec_name in cells_specs
+        for reg, cfg, spec_name, _ in cells_specs
     ]
     fx = get_fixture(resolved_fixture)
     bench = Benchmark(fx, workspace, _require_staging_url())

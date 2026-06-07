@@ -1,5 +1,4 @@
 import asyncio
-from types import SimpleNamespace
 from unittest.mock import AsyncMock, patch
 
 import pytest
@@ -106,13 +105,13 @@ def test_parse_strategy_spec_rejects_empty_strings():
 def test_expand_grid_non_expanding_uses_cell_name():
     spec = {"cells": [{"name": "litellm_try", "strategy": "mock", "config": {"x": 1}}]}
     out = expand_grid(spec)
-    assert out == [("mock", {"x": 1}, "litellm_try")]
+    assert out == [("mock", {"x": 1}, "litellm_try", None)]
 
 
 def test_expand_grid_non_expanding_fallback_to_registry():
     spec = {"cells": [{"strategy": "mock", "config": {"mapping_source": "p.json"}}]}
     out = expand_grid(spec)
-    assert out == [("mock", {"mapping_source": "p.json"}, "mock")]
+    assert out == [("mock", {"mapping_source": "p.json"}, "mock", None)]
 
 
 def test_expand_grid_cartesian_suffix():
@@ -127,7 +126,7 @@ def test_expand_grid_cartesian_suffix():
         }]
     }
     out = expand_grid(spec)
-    labels = {name for _, _, name in out}
+    labels = {name for _, _, name, _ in out}
     assert labels == {
         "spt_context_mode_metadata_only",
         "spt_context_mode_metadata_plus_samples",
@@ -143,6 +142,53 @@ def test_expand_grid_multi_dim_suffix():
     }
     out = expand_grid(spec)
     assert len(out) == 4
-    labels = {name for _, _, name in out}
+    labels = {name for _, _, name, _ in out}
     assert "mock_a_1_b_false" in labels
     assert "mock_a_2_b_true" in labels
+
+
+def test_expand_grid_resolves_model_refs_cartesian():
+    spec = {
+        "models": {
+            "small": {"provider": "litellm", "model_name": "ise-x/small"},
+            "big": {"provider": "litellm", "model_name": "academic/big"},
+        },
+        "cells": [{
+            "name": "spt",
+            "strategy": "structured_per_table",
+            "config": {"writer_model": ["small", "big"]},
+        }],
+    }
+    out = expand_grid(spec)
+    assert len(out) == 2
+    by_name = {name: cfg for _, cfg, name, _ in out}
+    assert by_name["spt_writer_model_small"]["writer_model"]["model_name"] == "ise-x/small"
+    assert by_name["spt_writer_model_big"]["writer_model"]["model_name"] == "academic/big"
+
+
+def test_expand_grid_resolves_scalar_model_ref():
+    spec = {
+        "models": {"small": {"provider": "litellm", "model_name": "ise-x/small"}},
+        "cells": [{"strategy": "plan_then_execute", "config": {"planner_model": "small"}}],
+    }
+    (_, cfg, _, _), = expand_grid(spec)
+    assert cfg["planner_model"]["model_name"] == "ise-x/small"
+
+
+def test_expand_grid_inline_model_dict_untouched():
+    spec = {"cells": [{"strategy": "structured_per_table",
+                       "config": {"writer_model": {"provider": "openai", "model_name": "gpt"}}}]}
+    (_, cfg, _, _), = expand_grid(spec)
+    assert cfg["writer_model"]["model_name"] == "gpt"
+
+
+def test_expand_grid_unknown_model_ref_raises():
+    spec = {"cells": [{"strategy": "x", "config": {"writer_model": "ghost"}}]}
+    with pytest.raises(ValueError, match="ghost"):
+        expand_grid(spec)
+
+
+def test_expand_grid_passes_cell_fixtures_through():
+    spec = {"cells": [{"strategy": "mock", "fixtures": ["sp1_users"], "config": {}}]}
+    (_, _, _, fixtures), = expand_grid(spec)
+    assert fixtures == ["sp1_users"]

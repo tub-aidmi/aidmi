@@ -155,21 +155,37 @@ class Benchmark:
         return results
 
 
-def expand_grid(grid: dict[str, Any]) -> list[tuple[str, dict[str, Any], str]]:
-    """Expand a grid YAML dict into (registry_strategy, config_dict, spec_name) tuples.
+def resolve_model_refs(config: dict[str, Any], models: dict[str, dict[str, Any]]) -> dict[str, Any]:
+    out = dict(config)
+    for key, value in config.items():
+        if key.endswith("_model") and isinstance(value, str):
+            if value not in models:
+                raise ValueError(
+                    f"unknown model ref {value!r} in field {key!r}. Defined: {sorted(models)}"
+                )
+            out[key] = dict(models[value])
+    return out
 
-    A cell with list-valued top-level scalar config fields expands cartesian-wise.
-    When expanding, suffixes derived from varied keys distinguish each combo.
-    If a cell omits ``name``, the registry ``strategy`` value is used as the base label.
+
+def expand_grid(grid: dict[str, Any]) -> list[tuple[str, dict[str, Any], str, list[str] | None]]:
+    """Expand a grid YAML dict into (registry_strategy, config, spec_name, cell_fixtures) tuples.
+
+    List-valued top-level scalar config fields expand cartesian-wise; suffixes
+    derived from varied keys distinguish each combo. Fields ending in `_model`
+    accept string refs into the top-level `models:` block (lists of refs expand
+    like any scalar list, then resolve to spec dicts). A cell-level `fixtures:`
+    list restricts which sweep fixtures the cell runs on (None = all).
     """
-    out: list[tuple[str, dict, str]] = []
+    models = grid.get("models", {}) or {}
+    out: list[tuple[str, dict, str, list[str] | None]] = []
     for cell in grid.get("cells", []):
         registry = cell["strategy"]
         base_name = cell.get("name") or registry
+        cell_fixtures = cell.get("fixtures")
         cfg = cell.get("config", {})
         list_keys = [k for k, v in cfg.items() if isinstance(v, list)]
         if not list_keys:
-            out.append((registry, dict(cfg), base_name))
+            out.append((registry, resolve_model_refs(dict(cfg), models), base_name, cell_fixtures))
             continue
         scalar_part = {k: v for k, v in cfg.items() if k not in list_keys}
         for combo in itertools.product(*(cfg[k] for k in list_keys)):
@@ -179,5 +195,8 @@ def expand_grid(grid: dict[str, Any]) -> list[tuple[str, dict[str, Any], str]]:
             suffix = "".join(
                 f"_{k}_{_grid_spec_fragment(v)}" for k, v in zip(list_keys, combo)
             )
-            out.append((registry, expanded, f"{base_name}{suffix}"))
+            out.append((
+                registry, resolve_model_refs(expanded, models),
+                f"{base_name}{suffix}", cell_fixtures,
+            ))
     return out
