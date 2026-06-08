@@ -7,7 +7,7 @@ export
 
 .DEFAULT_GOAL := help
 
-.PHONY: help env install setup up down down-v logs psql test test-orchestrator test-pipeline demo sweep clean-workspace litellm-smoke-fixture ollama-smoke-fixture sf-auth-check sf-pipedrive-litellm sf-pipedrive-ollama
+.PHONY: help env install setup up down down-v logs psql test test-orchestrator test-pipeline demo sweep clean-workspace litellm-smoke-fixture ollama-smoke-fixture sf-auth-check sf-snapshot sf-pipedrive-litellm sf-pipedrive-ollama bench-main bench-side-context bench-side-selfcorr bench-report
 
 help: ## List targets (make test works without Postgres)
 	@echo "Makefile targets:"
@@ -62,6 +62,9 @@ ollama-smoke-fixture: ## Ollama + bundled sp1_users (needs: make env, make up, O
 		--fixture sp1_users \
 		--strategy-spec packages/orchestrator/examples/strategy_specs/write_tools_freeform_ollama_qwen.yaml
 
+sf-snapshot: ## One-time SF Contact+Account → committed JSONL snapshot (needs SF_* in .env)
+	uv run --package aidmi-orchestrator python packages/orchestrator/scripts/snapshot_sf_pipedrive.py
+
 sf-auth-check: ## SOAP login + SOQL sanity (needs .env)
 	uv run --package aidmi-orchestrator python packages/orchestrator/scripts/sf_auth_probe.py
 
@@ -82,6 +85,29 @@ sweep: ## Run demo sweep grid (needs Postgres + LLM keys for LLM cells)
 	uv run --package aidmi-orchestrator aidmi-orchestrator sweep \
 		--grid packages/orchestrator/examples/day1_grid.yaml \
 		--out aidmi_workspace/results/demo
+
+bench-main: ## Main benchmark grid (needs: make up, SSH tunnel to ISE, LITELLM_API_KEY)
+	@test -f .env || cp -n .env.example .env
+	uv run --package aidmi-orchestrator aidmi-orchestrator sweep \
+		--grid benchmarks/grids/main_grid.yaml \
+		--out benchmarks/results/main
+
+bench-side-context: ## Context-mode side study (qwen3.6 only)
+	@test -f .env || cp -n .env.example .env
+	uv run --package aidmi-orchestrator aidmi-orchestrator sweep \
+		--grid benchmarks/grids/side_context_modes.yaml \
+		--out benchmarks/results/side_context
+
+bench-side-selfcorr: ## Self-correction side study (qwen3.6 only)
+	@test -f .env || cp -n .env.example .env
+	uv run --package aidmi-orchestrator aidmi-orchestrator sweep \
+		--grid benchmarks/grids/side_self_correction.yaml \
+		--out benchmarks/results/side_selfcorr
+
+bench-report: ## Aggregate all benchmark results into benchmarks/report/
+	uv run --package aidmi-orchestrator aidmi-orchestrator report \
+		benchmarks/results/main benchmarks/results/side_context benchmarks/results/side_selfcorr \
+		--out benchmarks/report
 
 clean-workspace: ## Remove ./aidmi_workspace
 	rm -rf aidmi_workspace

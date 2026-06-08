@@ -1,5 +1,6 @@
 """run_orchestrator — the 6-step sequential flow."""
 from __future__ import annotations
+import asyncio
 from datetime import datetime
 from pathlib import Path
 from typing import IO
@@ -60,7 +61,7 @@ async def run_orchestrator(
     )
 
     # 1. extract
-    extract_result = extract_source(pipeline_run)
+    extract_result = await asyncio.to_thread(extract_source, pipeline_run)
     trace.record(StrategyEvent(
         timestamp=datetime.utcnow(),
         label="extract_complete",

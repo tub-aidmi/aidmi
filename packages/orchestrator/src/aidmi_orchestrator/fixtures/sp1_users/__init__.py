@@ -19,5 +19,8 @@ register_fixture(Fixture(
     source_factory=_load_source,
     target_schema_path=HERE / "target_schema.json",
     reference_dbt_path=HERE / "reference_dbt",
-    applicable_evaluators=["execution", "llm_usage", "schema", "row_equality"],
+    applicable_evaluators=[
+        "execution", "llm_usage", "schema", "row_equality",
+        "manifest_quality", "data_preservation",
+    ],
 ))

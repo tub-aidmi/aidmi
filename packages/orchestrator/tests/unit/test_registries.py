@@ -47,7 +47,7 @@ def test_sp1_users_fixture_registered():
     import aidmi_orchestrator.fixtures  # triggers registration
     assert "sp1_users" in list_fixtures()
     f = get_fixture("sp1_users")
-    assert f.applicable_evaluators == ["execution", "llm_usage", "schema", "row_equality"]
+    assert f.applicable_evaluators == ["execution", "llm_usage", "schema", "row_equality", "manifest_quality", "data_preservation"]
     assert f.target_schema_path is not None and f.target_schema_path.exists()
     assert f.reference_dbt_path is not None and f.reference_dbt_path.is_dir()
 
@@ -125,3 +125,22 @@ def test_mock_strategy_registered_and_instantiable():
     assert "mock" in list_strategies()
     s = make_strategy("mock", {"mapping_source": "/dev/null"})
     assert s.name == "mock"
+
+
+def test_sf_pipedrive_snapshot_fixture_registered():
+    import aidmi_orchestrator.fixtures  # noqa: F401
+    from aidmi_orchestrator.fixtures.base import get_fixture
+    fx = get_fixture("sf_pipedrive_snapshot")
+    assert fx.target_schema_path.name == "target_schema.json"
+    assert fx.reference_dbt_path is None
+    assert "data_preservation" in fx.applicable_evaluators
+    assert "manifest_quality" in fx.applicable_evaluators
+
+
+def test_sp1_users_gains_new_evaluators():
+    import aidmi_orchestrator.fixtures  # noqa: F401
+    from aidmi_orchestrator.fixtures.base import get_fixture
+    fx = get_fixture("sp1_users")
+    assert "manifest_quality" in fx.applicable_evaluators
+    assert "data_preservation" in fx.applicable_evaluators
+    assert "row_equality" in fx.applicable_evaluators

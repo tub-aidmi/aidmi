@@ -1,5 +1,7 @@
-"""Benchmark harness: run() / sweep() with grid expansion."""
+"""Benchmark harness: run() with grid expansion."""
 from __future__ import annotations
+import asyncio
+import copy
 import itertools
 import string
 from datetime import datetime
@@ -60,6 +62,7 @@ class Benchmark:
         strategy: Strategy,
         *,
         strategy_spec_name: str,
+        rep_index: int = 0,
         run_id: str | None = None,
         trace_mirror: IO[str] | None = None,
     ) -> BenchmarkResult:
@@ -78,6 +81,8 @@ class Benchmark:
             )
         except StrategyExecutionError as e:
             error = repr(e)
+        except Exception as e:
+            error = f"harness: {e!r}"
 
         completed_at = datetime.utcnow()
         wall_clock = (completed_at - started_at).total_seconds()
@@ -85,8 +90,11 @@ class Benchmark:
         metrics: dict[str, Any] = {}
         if artifacts is not None:
             for ev in self.evaluators:
-                if ev.applies_to(artifacts):
-                    metrics.update(ev.evaluate(artifacts))
+                try:
+                    if ev.applies_to(artifacts):
+                        metrics.update(await asyncio.to_thread(ev.evaluate, artifacts))
+                except Exception as e:
+                    metrics[f"evaluator_error_{ev.name}"] = repr(e)
 
         strategy_result = (
             artifacts.strategy_result if artifacts is not None
@@ -99,6 +107,7 @@ class Benchmark:
             strategy_name=strategy.name,
             strategy_spec_name=strategy_spec_name,
             strategy_config=strategy.config.model_dump() if strategy.config is not None else {},
+            rep_index=rep_index,
             started_at=started_at,
             completed_at=completed_at,
             wall_clock_seconds=wall_clock,
@@ -115,52 +124,38 @@ class Benchmark:
         write_benchmark_result(self.workspace / "runs" / run_id, result)
         return result
 
-    async def sweep(
-        self,
-        cells: list[tuple[Strategy, str]],
-        runs_per_cell: int = 1,
-        results_path: Path | None = None,
-        trace_mirror: IO[str] | None = None,
-    ) -> list[BenchmarkResult]:
-        results: list[BenchmarkResult] = []
-        if results_path is not None:
-            results_path.parent.mkdir(parents=True, exist_ok=True)
-            results_fh = open(results_path, "a", encoding="utf-8")
-        else:
-            results_fh = None
-        try:
-            for strategy, strategy_spec_name in cells:
-                for _ in range(runs_per_cell):
-                    r = await self.run(
-                        strategy,
-                        strategy_spec_name=strategy_spec_name,
-                        trace_mirror=trace_mirror,
-                    )
-                    results.append(r)
-                    if results_fh is not None:
-                        results_fh.write(r.model_dump_json() + "\n")
-                        results_fh.flush()
-        finally:
-            if results_fh is not None:
-                results_fh.close()
-        return results
+
+def resolve_model_refs(config: dict[str, Any], models: dict[str, dict[str, Any]]) -> dict[str, Any]:
+    out = dict(config)
+    for key, value in config.items():
+        if key.endswith("_model") and isinstance(value, str):
+            if value not in models:
+                raise ValueError(
+                    f"unknown model ref {value!r} in field {key!r}. Defined: {sorted(models)}"
+                )
+            out[key] = copy.deepcopy(models[value])
+    return out
 
 
-def expand_grid(grid: dict[str, Any]) -> list[tuple[str, dict[str, Any], str]]:
-    """Expand a grid YAML dict into (registry_strategy, config_dict, spec_name) tuples.
+def expand_grid(grid: dict[str, Any]) -> list[tuple[str, dict[str, Any], str, list[str] | None]]:
+    """Expand a grid YAML dict into (registry_strategy, config, spec_name, cell_fixtures) tuples.
 
-    A cell with list-valued top-level scalar config fields expands cartesian-wise.
-    When expanding, suffixes derived from varied keys distinguish each combo.
-    If a cell omits ``name``, the registry ``strategy`` value is used as the base label.
+    List-valued top-level scalar config fields expand cartesian-wise; suffixes
+    derived from varied keys distinguish each combo. Fields ending in `_model`
+    accept string refs into the top-level `models:` block (lists of refs expand
+    like any scalar list, then resolve to spec dicts). A cell-level `fixtures:`
+    list restricts which sweep fixtures the cell runs on (None = all).
     """
-    out: list[tuple[str, dict, str]] = []
+    models = grid.get("models", {}) or {}
+    out: list[tuple[str, dict, str, list[str] | None]] = []
     for cell in grid.get("cells", []):
         registry = cell["strategy"]
         base_name = cell.get("name") or registry
+        cell_fixtures = cell.get("fixtures")
         cfg = cell.get("config", {})
         list_keys = [k for k, v in cfg.items() if isinstance(v, list)]
         if not list_keys:
-            out.append((registry, dict(cfg), base_name))
+            out.append((registry, resolve_model_refs(dict(cfg), models), base_name, cell_fixtures))
             continue
         scalar_part = {k: v for k, v in cfg.items() if k not in list_keys}
         for combo in itertools.product(*(cfg[k] for k in list_keys)):
@@ -170,5 +165,8 @@ def expand_grid(grid: dict[str, Any]) -> list[tuple[str, dict[str, Any], str]]:
             suffix = "".join(
                 f"_{k}_{_grid_spec_fragment(v)}" for k, v in zip(list_keys, combo)
             )
-            out.append((registry, expanded, f"{base_name}{suffix}"))
+            out.append((
+                registry, resolve_model_refs(expanded, models),
+                f"{base_name}{suffix}", cell_fixtures,
+            ))
     return out

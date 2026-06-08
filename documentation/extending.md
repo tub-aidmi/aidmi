@@ -93,6 +93,18 @@ The base module exports helpers for tasks that strategies typically share:
 
 Use them where they fit; ignore them if you want full control.
 
+### Building on `strategy/structured_common.py`
+
+Strategies that follow the structured per-table pattern (one agent call per target table, returning typed Pydantic output) should build on `strategy/structured_common.py` rather than re-implementing the scaffolding. Three helpers cover most of the work:
+
+| Helper | Purpose |
+|--------|---------|
+| `make_table_agent(model, *, api=None, enable_query_tool=False, max_query_tool_rows=100, system_prompt=WRITER_SYSTEM_PROMPT)` | Constructs a PydanticAI `Agent` with `output_type=TableMapping` hardwired. Pass `api` and `enable_query_tool=True` to expose the `query_postgres` tool to the agent. |
+| `generate_table_mapping(agent, target_table_name, context)` | Async. Runs the agent for one target table and returns a `TableMapping` (includes `dbt_sql` and per-column notes). |
+| `manifest_from_mappings(mappings, source_table_names, strategy_name, strategy_config)` | Collects per-table `TableMapping` results into a `MappingManifest`. `source_table_names` (a list of raw table names) is required. |
+
+The built-in `structured_per_table`, `write_then_critique`, `plan_then_execute`, and `ensemble_vote` strategies all use these helpers internally. A custom strategy that follows the same pattern can use them too, inheriting consistent trace events and manifest structure.
+
 ### Iteration
 
 The orchestrator does not loop. If your strategy needs to self-correct on dbt errors, do it inside `generate`:
