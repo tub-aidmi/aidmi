@@ -118,8 +118,28 @@ async def run_jobs(
     *,
     concurrency: int,
     prefixes: tuple[str, ...] = DEFAULT_EXCLUSIVE_PREFIXES,
+    per_model_exclusive: bool = False,
 ) -> list[Any]:
     semaphore = asyncio.Semaphore(concurrency)
+
+    if per_model_exclusive:
+        model_locks: dict[str, asyncio.Lock] = {}
+        for job in jobs:
+            for name in model_names_in_config(job.config):
+                model_locks.setdefault(name, asyncio.Lock())
+
+        async def per_model_guarded(job: SweepJob) -> Any:
+            models = sorted(model_names_in_config(job.config))
+            async with semaphore:
+                for model in models:
+                    await model_locks[model].acquire()
+                try:
+                    return await run_job(job)
+                finally:
+                    for model in reversed(models):
+                        model_locks[model].release()
+
+        return list(await asyncio.gather(*(per_model_guarded(j) for j in jobs)))
 
     async def guarded(job: SweepJob) -> Any:
         async with semaphore:

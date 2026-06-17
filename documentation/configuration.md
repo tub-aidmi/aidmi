@@ -195,6 +195,8 @@ A grid YAML describes a sweep — multiple `(strategy, config)` cells run agains
 fixture: <fixture name or list>       # string or list; CLI --fixture overrides; list runs each fixture
 runs_per_cell: <int>                  # optional, default 1
 concurrency: <int>                    # optional, default 3; max parallel runs
+per_model_exclusive: <bool>           # optional, default false; when true, at most one in-flight job
+                                      # per distinct model_name (ignores exclusive_model_prefixes grouping)
 exclusive_model_prefixes: [<prefix>]  # optional, default ["ise-"]; models whose names start with any
                                       # prefix run one-at-a-time within that prefix group (others are
                                       # passthrough and run in parallel up to concurrency)
@@ -238,6 +240,8 @@ cells:
 ```
 
 **`exclusive_model_prefixes`** controls model-major scheduling. Models whose `model_name` starts with any listed prefix (e.g., `ise-`) are loaded one at a time: the sweep serializes all jobs for one exclusive model before starting the next. Models that do not match any prefix run in parallel up to `concurrency` with no serialization constraint.
+
+**`per_model_exclusive`** (alternative scheduling mode) caps each distinct `model_name` to one in-flight job at a time while still allowing up to `concurrency` jobs overall — useful when you have N models and want N parallel workers with no two jobs sharing the same model. When enabled, prefix-based exclusive grouping is skipped; set `exclusive_model_prefixes: []` if you rely solely on per-model locks.
 
 ### Cartesian expansion
 

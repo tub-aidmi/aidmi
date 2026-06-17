@@ -114,6 +114,7 @@ def sweep(
     )
     resolved_concurrency = concurrency or int(grid_data.get("concurrency", 3))
     prefixes = tuple(grid_data.get("exclusive_model_prefixes", list(DEFAULT_EXCLUSIVE_PREFIXES)))
+    per_model_exclusive = bool(grid_data.get("per_model_exclusive", False))
 
     cells = expand_grid(grid_data)
     jobs = expand_jobs(cells, fixtures, resolved_runs)
@@ -163,7 +164,13 @@ def sweep(
 
     try:
         results = asyncio.run(
-            run_jobs(jobs, run_job, concurrency=resolved_concurrency, prefixes=prefixes)
+            run_jobs(
+                jobs,
+                run_job,
+                concurrency=resolved_concurrency,
+                prefixes=prefixes,
+                per_model_exclusive=per_model_exclusive,
+            )
         )
     finally:
         fh.close()

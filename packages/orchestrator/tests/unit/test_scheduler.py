@@ -135,3 +135,59 @@ def test_run_jobs_respects_concurrency_cap() -> None:
 
     asyncio.run(run_jobs(jobs, run_job, concurrency=2, prefixes=("ise-",)))
     assert active["max"] <= 2
+
+
+def test_run_jobs_per_model_exclusive_three_models_parallel() -> None:
+    jobs = [
+        _job("a", model="model/a"),
+        _job("b", model="model/b"),
+        _job("c", model="model/c"),
+    ]
+    active = {"n": 0, "max": 0}
+
+    async def run_job(job: SweepJob) -> None:
+        active["n"] += 1
+        active["max"] = max(active["max"], active["n"])
+        await asyncio.sleep(0.02)
+        active["n"] -= 1
+
+    asyncio.run(
+        run_jobs(jobs, run_job, concurrency=3, per_model_exclusive=True),
+    )
+    assert active["max"] == 3
+
+
+def test_run_jobs_per_model_exclusive_same_model_serial() -> None:
+    jobs = [_job(f"j{i}", model="model/same") for i in range(3)]
+    active_models: dict[str, int] = {}
+    overlaps: list[str] = []
+
+    async def run_job(job: SweepJob) -> str:
+        model = "model/same"
+        if active_models.get(model, 0) > 0:
+            overlaps.append(job.spec_name)
+        active_models[model] = active_models.get(model, 0) + 1
+        await asyncio.sleep(0.02)
+        active_models[model] -= 1
+        return job.spec_name
+
+    asyncio.run(
+        run_jobs(jobs, run_job, concurrency=3, per_model_exclusive=True),
+    )
+    assert overlaps == []
+
+
+def test_run_jobs_per_model_exclusive_global_cap() -> None:
+    jobs = [_job(f"j{i}", model=f"model/{i}") for i in range(6)]
+    active = {"n": 0, "max": 0}
+
+    async def run_job(job: SweepJob) -> None:
+        active["n"] += 1
+        active["max"] = max(active["max"], active["n"])
+        await asyncio.sleep(0.01)
+        active["n"] -= 1
+
+    asyncio.run(
+        run_jobs(jobs, run_job, concurrency=3, per_model_exclusive=True),
+    )
+    assert active["max"] <= 3

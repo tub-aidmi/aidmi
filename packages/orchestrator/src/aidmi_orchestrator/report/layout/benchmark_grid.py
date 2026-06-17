@@ -10,6 +10,7 @@ _ROW_SUFFIXES = ("_writer_model_", "_planner_model_")
 
 CELL_BASE_LABELS: dict[str, str] = {
     "critique": "write_then_critique",
+    "freeform": "write_tools_freeform",
     "freeform_sc": "write_tools_freeform",
     "structured": "structured_per_table",
     "structured_sc": "structured_per_table_sc",
@@ -27,6 +28,8 @@ ROW_LABEL_ORDER = [
 ]
 
 MODEL_ORDER = [
+    "academic/openai-gpt-oss-120b",
+    "nvidia/mistral-medium-3.5-128b",
     "academic/qwen3.5-397b-a17b",
     "academic/devstral-2-123b-instruct-2512",
     "ise-ollama/qwen3.6:35b-a3b",
@@ -34,6 +37,8 @@ MODEL_ORDER = [
 ]
 
 MODEL_LABELS: dict[str, str] = {
+    "academic/openai-gpt-oss-120b": "gpt-oss-120b",
+    "nvidia/mistral-medium-3.5-128b": "mistral-128b",
     "academic/qwen3.5-397b-a17b": "qwen3.5-397b",
     "academic/devstral-2-123b-instruct-2512": "devstral-123b",
     "ise-ollama/qwen3.6:35b-a3b": "qwen3.6-35b",

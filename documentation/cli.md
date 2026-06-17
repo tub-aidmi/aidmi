@@ -99,6 +99,8 @@ Jobs expand in **rep → fixture → cell** order: for each repetition, every ce
 
 The sweep schedules jobs in model-major order for models whose `model_name` starts with any prefix listed in the grid's `exclusive_model_prefixes` (default `["ise-"]`). All jobs for one exclusive model finish before jobs for the next exclusive model start — necessary when the ISE cluster can only load one large model at a time. Models that do not match any exclusive prefix are treated as passthrough and run in parallel up to `--concurrency` without the serialization constraint.
 
+When the grid sets `per_model_exclusive: true`, each distinct `model_name` is limited to one in-flight job at a time (in addition to the global `--concurrency` cap). Prefix-based exclusive grouping is not used in that mode — typical for sweeps where you want one worker per model (e.g. `concurrency: 3` with three models).
+
 ### Progress output
 
 Each completed run prints a one-line summary:
