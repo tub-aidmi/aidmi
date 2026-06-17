@@ -246,9 +246,10 @@ The four built-in evaluators contribute the following:
 | `dbt_error_messages` | execution | List of error strings from failed models. |
 | `strategy_status` | execution | Echo of `strategy_result.self_reported_status`. |
 | `llm_calls_total`, `llm_calls_by_role` | llm_usage | Counts. |
-| `tokens_input_total`, `tokens_input_cached`, `tokens_input_uncached`, `tokens_output_total` | llm_usage | Token sums. |
+| `tokens_input_total`, `tokens_input_by_role`, `tokens_input_cached`, `tokens_input_uncached`, `tokens_output_total`, `tokens_output_by_role` | llm_usage | Token sums. |
 | `cache_hit_rate` | llm_usage | Cached / total input tokens, in `[0, 1]`. |
 | `dollar_cost_total`, `dollar_cost_by_role` | llm_usage | Computed via LiteLLM `model_cost` + optional override. `null` if no pricing data found. |
+| `latency_ms_by_role`, `latency_ms_sum_by_role` | llm_usage | Per-role mean and sum of call latencies (ms). |
 | `latency_ms_total` | llm_usage | Sum of all LLM call latencies. |
 | `latency_ms_p50_by_role`, `latency_ms_p95_by_role` | llm_usage | Per-role percentiles. |
 | `produced_column_count`, `produced_type_histogram` | schema | Always emitted. |

@@ -186,7 +186,7 @@ aidmi-orchestrator report \
 | `--out` | `./report` | Output directory for report files. Created if absent. |
 | `--matrix-metric` | `target_columns_covered` | Metric used to build the strategy × model matrix table in `summary.md`. |
 | `--metrics` | built-in list | Comma-separated list of headline metrics to display in the summary table. Overrides the default set. |
-| `--no-plots` | off | Skip plot artifacts. By default, SVG heatmaps and sibling CSVs are written under `plots/{fixture}/global/`. Requires the `plots` extra (`just install` or `uv sync --extra plots`). |
+| `--no-plots` | off | Skip plot artifacts. By default, SVG plots and sibling CSVs are written under `plots/{fixture}/global/`, `plots/{fixture}/by_strategy/{strategy}/`, and `plots/{fixture}/pairs/`. Requires the `plots` extra (`just install` or `uv sync --extra plots`). |
 
 ### Output files
 
@@ -197,6 +197,16 @@ aidmi-orchestrator report \
 | `summary.csv` | One row per cell `(fixture, spec, strategy, model)` with per-metric **means** as columns (wide format). |
 | `plots/{fixture}/global/{metric}.svg` | Strategy × model heatmap for that metric. Omitted when `--no-plots` is given. |
 | `plots/{fixture}/global/{metric}.csv` | Tidy data for the sibling SVG (`strategy`, `model`, `value`). Written together with the SVG. |
+| `plots/{fixture}/by_strategy/{strategy}/tokens_*_by_role.svg` | Stacked bar of mean per-role breakdown (tokens, LLM calls, latency) for multi-role strategies. |
+| `plots/{fixture}/by_strategy/{strategy}/rep_stability_{metric}.svg` | Box/strip plot of per-rep values by model (`dbt_success`, `preservation_row_ratio_mean`, `llm_calls_total`, `tokens_input_total`). |
+| `plots/{fixture}/by_strategy/{strategy}/outcome_funnel.svg` | Grouped bar of pass rate per pipeline stage by model. Thresholds: `FUNNEL_TARGET_COLUMNS_MIN` (0.9), `FUNNEL_PRESERVATION_ROW_RATIO_MIN` (0.95) in `strategy_plots.py`. |
+| `plots/{fixture}/by_strategy/{strategy}/preservation_profile.svg` | Grouped bar of row/distinct/null-inflation preservation metrics by model. |
+| `plots/{fixture}/by_strategy/{strategy}/schema_errors.svg` | Grouped bar of `type_mismatches` and `extraneous_columns` by model. |
+| `plots/{fixture}/by_strategy/{strategy}/tokens_in_out.svg` | Grouped bar of input vs output tokens by model. |
+| `plots/{fixture}/by_strategy/{strategy}/preservation_per_table.svg` | Grouped bar of mean `row_ratio` per target table by model. |
+| `plots/{fixture}/by_strategy/{strategy}/row_equality_per_table.svg` | Table × model heatmap of mean `row_count_match` (when reference equality data exists). |
+| `plots/{fixture}/pairs/self_correction/{metric}.svg` | Dumbbell plot comparing `structured_per_table` vs `structured_per_table_sc` by model. |
+| `plots/{fixture}/by_strategy/{strategy}/*.csv` | Tidy data for the sibling SVG in the same directory. |
 
 ## Examples
 

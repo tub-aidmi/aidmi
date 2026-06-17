@@ -69,10 +69,13 @@ def test_llm_usage_evaluator_aggregates_by_role():
     assert out["llm_calls_total"] == 2
     assert out["llm_calls_by_role"] == {"writer": 2}
     assert out["tokens_input_total"] == 1500
+    assert out["tokens_input_by_role"] == {"writer": 1500}
     assert out["tokens_input_cached"] == 200
     assert out["tokens_output_total"] == 700
+    assert out["tokens_output_by_role"] == {"writer": 700}
     assert 0 <= out["cache_hit_rate"] <= 1
     assert out["latency_ms_total"] >= 0
+    assert out["latency_ms_sum_by_role"]["writer"] == 200.0
     assert "writer" in out["latency_ms_p50_by_role"]
     assert out["latency_ms_p50_by_role"]["writer"] >= 0
     assert "writer" in out["latency_ms_p95_by_role"]

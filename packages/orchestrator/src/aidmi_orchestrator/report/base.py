@@ -17,6 +17,7 @@ class PlotScope(StrEnum):
 class PlotKind(StrEnum):
     HEATMAP = "heatmap"
     DISTRIBUTION = "distribution"
+    STACKED_BAR = "stacked_bar"
 
 
 @dataclass(frozen=True)

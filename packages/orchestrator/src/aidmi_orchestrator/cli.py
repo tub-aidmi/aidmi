@@ -209,7 +209,7 @@ def report(
     written = ["summary.md", "cells.csv", "summary.csv"]
     if not no_plots:
         try:
-            artifacts = write_plots(cells, series, out / "plots", plan)
+            artifacts = write_plots(cells, series, rows, out / "plots", plan)
         except RuntimeError as e:
             raise typer.BadParameter(str(e)) from None
         n_svg = sum(1 for p in artifacts if p.suffix == ".svg")

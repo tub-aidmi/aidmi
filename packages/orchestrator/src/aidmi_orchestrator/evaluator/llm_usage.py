@@ -28,12 +28,15 @@ class LlmUsageEvaluator:
 
     def evaluate(self, artifacts: RunArtifacts) -> dict[str, Any]:
         calls_by_role: dict[str, int] = defaultdict(int)
+        tokens_in_by_role: dict[str, int] = defaultdict(int)
+        tokens_out_by_role: dict[str, int] = defaultdict(int)
         tokens_in_total = 0
         tokens_in_cached = 0
         tokens_out_total = 0
         cost_total = 0.0
         cost_by_role: dict[str, float] = defaultdict(float)
         latency_by_role: dict[str, list[float]] = defaultdict(list)
+        latency_sum_by_role: dict[str, float] = defaultdict(float)
 
         for ev in artifacts.trace:
             if not isinstance(ev, LlmCallEvent):
@@ -45,10 +48,13 @@ class LlmUsageEvaluator:
             uncached = max(0, prompt - cached)
 
             calls_by_role[ev.role] += 1
+            tokens_in_by_role[ev.role] += prompt
+            tokens_out_by_role[ev.role] += completion
             tokens_in_total += prompt
             tokens_in_cached += cached
             tokens_out_total += completion
             latency_by_role[ev.role].append(ev.latency_ms)
+            latency_sum_by_role[ev.role] += ev.latency_ms
 
             price = lookup_price(ev.model_spec.provider, ev.model_spec.model_name, self._overrides)
             if price is not None:
@@ -77,13 +83,16 @@ class LlmUsageEvaluator:
             "llm_calls_total": sum(calls_by_role.values()),
             "llm_calls_by_role": dict(calls_by_role),
             "tokens_input_total": tokens_in_total,
+            "tokens_input_by_role": dict(tokens_in_by_role),
             "tokens_input_cached": tokens_in_cached,
             "tokens_input_uncached": tokens_in_total - tokens_in_cached,
             "tokens_output_total": tokens_out_total,
+            "tokens_output_by_role": dict(tokens_out_by_role),
             "cache_hit_rate": (tokens_in_cached / tokens_in_total) if tokens_in_total else 0.0,
             "dollar_cost_total": cost_total,
             "dollar_cost_by_role": dict(cost_by_role),
             "latency_ms_by_role": {r: sum(v) / len(v) for r, v in latency_by_role.items()},
+            "latency_ms_sum_by_role": dict(latency_sum_by_role),
             "latency_ms_total": latency_ms_total,
             "latency_ms_p50_by_role": {r: _p50(v) for r, v in latency_by_role.items()},
             "latency_ms_p95_by_role": {r: _p95(v) for r, v in latency_by_role.items()},

@@ -1,9 +1,7 @@
 """Heatmap plot spec and SVG rendering."""
 from __future__ import annotations
 
-from dataclasses import dataclass
 from pathlib import Path
-from typing import Union
 
 import numpy as np
 
@@ -11,32 +9,29 @@ from aidmi_orchestrator.report.base import MetricDescriptor, PlotKind, PlotScope
 from aidmi_orchestrator.report.aggregate import CellAggregate
 from aidmi_orchestrator.report.catalog import ReportPlan
 from aidmi_orchestrator.report.layout.benchmark_grid import build_strategy_model_matrix
+from aidmi_orchestrator.report.plot_specs import (
+    DumbbellPlotSpec,
+    FunnelPlotSpec,
+    GroupedBarPlotSpec,
+    HeatmapPlotSpec,
+    PlotSpec,
+    StrategyDistributionPlotSpec,
+    TableModelHeatmapPlotSpec,
+)
+from aidmi_orchestrator.report.role_aggregate import RoleStackedBarSpec
 
-
-@dataclass
-class HeatmapPlotSpec:
-    fixture: str
-    metric: str
-    row_labels: list[str]
-    col_labels: list[str]
-    values: np.ndarray
-    descriptor: MetricDescriptor
-
-
-@dataclass
-class DistributionPlotSpec:
-    fixture: str
-    metric: str
-    group_labels: list[str]
-    values_by_group: list[list[float]]
-    descriptor: MetricDescriptor
-
-
-PlotSpec = Union[HeatmapPlotSpec, DistributionPlotSpec]
+# Re-export for backward compatibility
+__all__ = [
+    "HeatmapPlotSpec",
+    "PlotSpec",
+    "build_global_heatmap_spec",
+    "build_global_heatmap_specs",
+    "render_heatmap_svg",
+    "render_plot",
+]
 
 
 def _extra_bottom_inches(metric: str, n_rows: int) -> float:
-    # Vertical colorbar labels extend below the heatmap; short grids need more room.
     return max(0.0, len(metric) * 0.045 - n_rows * 0.2)
 
 
@@ -169,5 +164,23 @@ def render_heatmap_svg(spec: HeatmapPlotSpec, svg_path: Path) -> None:
 def render_plot(spec: PlotSpec, svg_path: Path) -> None:
     if isinstance(spec, HeatmapPlotSpec):
         render_heatmap_svg(spec, svg_path)
+    elif isinstance(spec, RoleStackedBarSpec):
+        from aidmi_orchestrator.report.render.stacked_bar import render_stacked_bar_svg
+        render_stacked_bar_svg(spec, svg_path)
+    elif isinstance(spec, StrategyDistributionPlotSpec):
+        from aidmi_orchestrator.report.render.distribution import render_distribution_svg
+        render_distribution_svg(spec, svg_path)
+    elif isinstance(spec, FunnelPlotSpec):
+        from aidmi_orchestrator.report.render.funnel import render_funnel_svg
+        render_funnel_svg(spec, svg_path)
+    elif isinstance(spec, GroupedBarPlotSpec):
+        from aidmi_orchestrator.report.render.grouped_bar import render_grouped_bar_svg
+        render_grouped_bar_svg(spec, svg_path)
+    elif isinstance(spec, DumbbellPlotSpec):
+        from aidmi_orchestrator.report.render.dumbbell import render_dumbbell_svg
+        render_dumbbell_svg(spec, svg_path)
+    elif isinstance(spec, TableModelHeatmapPlotSpec):
+        from aidmi_orchestrator.report.render.table_heatmap import render_table_heatmap_svg
+        render_table_heatmap_svg(spec, svg_path)
     else:
         raise NotImplementedError(f"plot kind not implemented: {type(spec)!r}")

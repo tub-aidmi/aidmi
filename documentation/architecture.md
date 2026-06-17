@@ -132,10 +132,16 @@ results.jsonl
   → aggregate (CellAggregate + RepSeries)
   → build_report_plan (ReportContributor descriptors → headline metrics + plot recipes)
   → write_tables / write_markdown (root summary)
-  → write_plots (per-recipe SVG + sibling CSV under plots/{fixture}/)
+  → write_plots (global heatmaps + per-strategy plots under plots/{fixture}/by_strategy/ + pairs/)
 ```
 
-Report contributors live in `aidmi_orchestrator/report/contributors/` and mirror evaluator families. Each declares `MetricDescriptor`s (headline table columns, plot scopes, chart styling). Plot recipes pair a `PlotScope` (`global`, `by_strategy`, `by_model`) with a `PlotKind` (`heatmap`, `distribution`, …). v1 implements global heatmaps only.
+Report contributors live in `aidmi_orchestrator/report/contributors/` and mirror evaluator families. Each declares `MetricDescriptor`s (headline table columns, plot scopes, chart styling). Plot builders in `strategy_plots.py` emit:
+
+- **Global heatmaps** — strategy × model for headline scalars
+- **Per-strategy** — rep stability box plots, outcome funnel, preservation/schema/token grouped bars, per-table preservation, row-equality heatmap, role stacked bars (tokens, calls, latency)
+- **Pairs** — self-correction dumbbell (`structured_per_table` vs `structured_per_table_sc`)
+
+Funnel stage thresholds are module-level constants in `strategy_plots.py` (`FUNNEL_TARGET_COLUMNS_MIN`, `FUNNEL_PRESERVATION_ROW_RATIO_MIN`).
 
 ## Registries
 

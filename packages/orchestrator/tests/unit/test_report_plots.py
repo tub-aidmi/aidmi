@@ -64,7 +64,7 @@ def test_write_plots_emits_pairs(tmp_path) -> None:
     cells = aggregate(rows)
     series = build_rep_series(rows)
     plan = build_report_plan()
-    artifacts = write_plots(cells, series, tmp_path, plan)
+    artifacts = write_plots(cells, series, rows, tmp_path, plan)
     svgs = [p for p in artifacts if p.suffix == ".svg"]
     csvs = [p for p in artifacts if p.suffix == ".csv"]
     assert len(svgs) == len(csvs)
