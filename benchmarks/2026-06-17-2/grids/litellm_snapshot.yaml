@@ -1,0 +1,57 @@
+fixture: sf_pipedrive_snapshot
+runs_per_cell: 1
+concurrency: 3
+per_model_exclusive: true
+exclusive_model_prefixes: []
+
+models:
+  gptoss120b:
+    provider: litellm
+    model_name: academic/openai-gpt-oss-120b
+    base_url: http://localhost:4000/v1
+    api_key_env: LITELLM_API_KEY
+  mistral128b:
+    provider: litellm
+    model_name: nvidia/mistral-medium-3.5-128b
+    base_url: http://localhost:4000/v1
+    api_key_env: LITELLM_API_KEY
+  qwen36:
+    provider: litellm
+    model_name: ise-ollama/qwen3.6:35b-a3b
+    base_url: http://localhost:4000/v1
+    api_key_env: LITELLM_API_KEY
+
+cells:
+  - name: structured
+    strategy: structured_per_table
+    config:
+      writer_model: [gptoss120b, mistral128b, qwen36]
+      context_mode: metadata_plus_samples
+      enable_self_correction: true
+      max_self_correction_passes: 3
+
+  - name: freeform
+    strategy: write_tools_freeform
+    config:
+      writer_model: [gptoss120b, mistral128b, qwen36]
+      context_mode: metadata_plus_samples
+      enable_self_correction: true
+      max_self_correction_passes: 3
+      max_tool_turns: 30
+
+  - name: critique
+    strategy: write_then_critique
+    config:
+      writer_model: [gptoss120b, mistral128b, qwen36]
+      max_critique_rounds: 2
+
+  - name: plan
+    strategy: plan_then_execute
+    config:
+      planner_model: [gptoss120b, mistral128b, qwen36]
+
+  - name: ensemble
+    strategy: ensemble_vote
+    config:
+      writer_model: [gptoss120b, mistral128b, qwen36]
+      n_candidates: 3
