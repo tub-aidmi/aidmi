@@ -177,12 +177,12 @@ def report(
     out: Annotated[Path, typer.Option(help="report output directory")] = Path("./report"),
     matrix_metric: Annotated[str, typer.Option(help="metric for the strategy × model matrix")] = "target_columns_covered",
     metrics: Annotated[str | None, typer.Option(help="comma-separated headline metric override")] = None,
-    plots: Annotated[bool, typer.Option(help="also write PNG bar charts (requires the 'plots' extra)")] = False,
+    no_plots: Annotated[bool, typer.Option("--no-plots", help="skip SVG heatmaps")] = False,
 ):
-    """Aggregate sweep results into markdown/CSV tables (and optional plots)."""
+    """Aggregate sweep results into markdown/CSV tables and SVG heatmaps."""
     from aidmi_orchestrator.analysis import (
         DEFAULT_HEADLINE_METRICS, aggregate, load_results,
-        render_markdown, render_matrix, write_csvs, write_plots,
+        render_markdown, render_matrix, write_csvs, write_global_heatmaps,
     )
 
     rows = load_results(results)
@@ -196,12 +196,12 @@ def report(
     (out / "summary.md").write_text(md, encoding="utf-8")
     write_csvs(cells, out)
     written = ["summary.md", "cells.csv", "summary.csv"]
-    if plots:
+    if not no_plots:
         try:
-            pngs = write_plots(cells, out / "plots", headline)
+            svgs = write_global_heatmaps(cells, out / "plots")
         except RuntimeError as e:
             raise typer.BadParameter(str(e)) from None
-        written.append(f"plots/ ({len(pngs)} PNGs)")
+        written.append(f"plots/ ({len(svgs)} SVGs)")
     typer.echo(f"report over {len(rows)} runs / {len(cells)} cells -> {out}: {', '.join(written)}")
 
 

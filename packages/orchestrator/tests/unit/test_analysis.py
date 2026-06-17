@@ -4,7 +4,16 @@ from __future__ import annotations
 import json
 
 from aidmi_orchestrator.analysis import (
-    aggregate, load_results, render_markdown, render_matrix, write_csvs,
+    CellAggregate,
+    aggregate,
+    build_strategy_model_matrix,
+    heatmap_cell_base,
+    heatmap_row_key,
+    heatmap_row_label,
+    load_results,
+    render_markdown,
+    render_matrix,
+    write_csvs,
 )
 
 
@@ -77,3 +86,74 @@ def test_write_csvs(tmp_path) -> None:
     summary_csv = (tmp_path / "summary.csv").read_text(encoding="utf-8")
     assert "target_columns_covered" in cells_csv
     assert "a" in summary_csv
+
+
+def test_heatmap_cell_base_strips_model_suffix() -> None:
+    assert heatmap_cell_base("structured_sc_writer_model_qwen36") == "structured_sc"
+    assert heatmap_cell_base("plan_planner_model_qwen397") == "plan"
+    assert heatmap_cell_base("mock_control") is None
+
+
+def test_heatmap_row_key_and_label() -> None:
+    assert heatmap_row_key("structured_sc_writer_model_qwen36", "structured_per_table") == "structured_sc"
+    assert heatmap_row_label("structured_sc", "structured_per_table") == "structured_per_table_sc"
+    assert heatmap_row_key("mock_control", "mock") == "mock"
+    assert heatmap_row_label("mock", "mock") == "mock"
+
+
+def test_build_strategy_model_matrix() -> None:
+    cells = [
+        CellAggregate(
+            fixture_name="fx",
+            spec_name="critique_writer_model_qwen36",
+            strategy_name="write_then_critique",
+            model_name="ise-ollama/qwen3.6:35b-a3b",
+            n_runs=3,
+            metrics={"target_columns_covered": {"mean": 1.0, "std": 0.0, "n": 3.0}},
+        ),
+        CellAggregate(
+            fixture_name="fx",
+            spec_name="critique_writer_model_qwen9b",
+            strategy_name="write_then_critique",
+            model_name="ise-openai-nvidia/qwen35-9b",
+            n_runs=3,
+            metrics={"target_columns_covered": {"mean": 0.0, "std": 0.0, "n": 3.0}},
+        ),
+    ]
+    built = build_strategy_model_matrix(cells, "fx", "target_columns_covered")
+    assert built is not None
+    matrix, row_labels, col_labels = built
+    assert row_labels == ["write_then_critique"]
+    assert "qwen3.6-35b" in col_labels
+    assert matrix[0, col_labels.index("qwen3.6-35b")] == 1.0
+    assert matrix[0, col_labels.index("qwen3.5-9b")] == 0.0
+
+
+def test_build_strategy_model_matrix_missing_cell_is_nan() -> None:
+    cells = [
+        CellAggregate(
+            fixture_name="fx",
+            spec_name="critique_writer_model_qwen36",
+            strategy_name="write_then_critique",
+            model_name="ise-ollama/qwen3.6:35b-a3b",
+            n_runs=1,
+            metrics={"dbt_success": {"mean": 1.0, "std": 0.0, "n": 1.0}},
+        ),
+        CellAggregate(
+            fixture_name="fx",
+            spec_name="plan_planner_model_qwen9b",
+            strategy_name="plan_then_execute",
+            model_name="ise-openai-nvidia/qwen35-9b",
+            n_runs=1,
+            metrics={"dbt_success": {"mean": 0.0, "std": 0.0, "n": 1.0}},
+        ),
+    ]
+    built = build_strategy_model_matrix(cells, "fx", "dbt_success")
+    assert built is not None
+    matrix, row_labels, col_labels = built
+    assert "write_then_critique" in row_labels
+    assert "qwen3.5-9b" in col_labels
+    import numpy as np
+    critique_i = row_labels.index("write_then_critique")
+    qwen9b_j = col_labels.index("qwen3.5-9b")
+    assert np.isnan(matrix[critique_i, qwen9b_j])

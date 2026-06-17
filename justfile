@@ -14,7 +14,7 @@ env:
   cp -n .env.example .env
 
 install:
-  uv sync --all-packages
+  uv sync --all-packages --extra plots
 
 setup: install
 
@@ -107,7 +107,7 @@ report campaign *inputs:
       exit 1
     fi
   fi
-  uv run --package aidmi-orchestrator aidmi-orchestrator report \
+  uv run --extra plots --package aidmi-orchestrator aidmi-orchestrator report \
     "${dirs[@]}" --out "benchmarks/$campaign/report"
 
 sweep-demo:
