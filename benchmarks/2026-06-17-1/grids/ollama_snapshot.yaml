@@ -1,0 +1,57 @@
+fixture: sf_pipedrive_snapshot
+runs_per_cell: 2
+concurrency: 1
+exclusive_model_prefixes: []
+
+models:
+  qwen36:
+    provider: ollama
+    model_name: batiai/qwen3.6-35b:q4
+    base_url: http://localhost:11434
+  gemma26:
+    provider: ollama
+    model_name: gemma4:26b
+    base_url: http://localhost:11434
+  devstral24:
+    provider: ollama
+    model_name: devstral-small-2:24b
+    base_url: http://localhost:11434
+
+cells:
+  - name: structured
+    strategy: structured_per_table
+    config:
+      writer_model: [qwen36, gemma26, devstral24]
+      context_mode: metadata_plus_samples
+      enable_self_correction: true
+      max_self_correction_passes: 3
+      serial_llm_calls: true
+
+  - name: freeform
+    strategy: write_tools_freeform
+    config:
+      writer_model: [qwen36, gemma26, devstral24]
+      context_mode: metadata_plus_samples
+      enable_self_correction: true
+      max_self_correction_passes: 3
+      max_tool_turns: 30
+
+  - name: critique
+    strategy: write_then_critique
+    config:
+      writer_model: [qwen36, gemma26, devstral24]
+      max_critique_rounds: 2
+      serial_llm_calls: true
+
+  - name: plan
+    strategy: plan_then_execute
+    config:
+      planner_model: [qwen36, gemma26, devstral24]
+      serial_llm_calls: true
+
+  - name: ensemble
+    strategy: ensemble_vote
+    config:
+      writer_model: [qwen36, gemma26, devstral24]
+      n_candidates: 3
+      serial_llm_calls: true
