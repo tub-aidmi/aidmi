@@ -27,7 +27,19 @@ def test_exclusive_models_filters_by_prefix() -> None:
     assert exclusive_models(cfg, ("ise-",)) == frozenset({"ise-ollama/q"})
 
 
-def test_expand_jobs_cells_times_fixtures_times_reps() -> None:
+def test_expand_jobs_rep_fixture_cell_order() -> None:
+    cells = [("s", {"x": 1}, "a", None), ("s", {"x": 2}, "b", None)]
+    jobs = expand_jobs(cells, fixtures=["fx1", "fx2"], runs_per_cell=2)
+    assert len(jobs) == 8
+    assert [
+        (j.spec_name, j.fixture_name, j.rep_index) for j in jobs
+    ] == [
+        ("a", "fx1", 0), ("b", "fx1", 0), ("a", "fx2", 0), ("b", "fx2", 0),
+        ("a", "fx1", 1), ("b", "fx1", 1), ("a", "fx2", 1), ("b", "fx2", 1),
+    ]
+
+
+def test_expand_jobs_respects_cell_fixture_restrictions() -> None:
     cells = [("s", {"x": 1}, "a", None), ("s", {"x": 2}, "b", ["only_fx2"])]
     jobs = expand_jobs(cells, fixtures=["fx1", "fx2"], runs_per_cell=2)
     a_jobs = [j for j in jobs if j.spec_name == "a"]
@@ -36,6 +48,12 @@ def test_expand_jobs_cells_times_fixtures_times_reps() -> None:
     assert len(b_jobs) == 2  # restricted to only_fx2, 2 reps
     assert {j.fixture_name for j in b_jobs} == {"only_fx2"}
     assert {j.rep_index for j in a_jobs} == {0, 1}
+    assert [
+        (j.spec_name, j.fixture_name, j.rep_index) for j in jobs
+    ] == [
+        ("a", "fx1", 0), ("a", "fx2", 0), ("b", "only_fx2", 0),
+        ("a", "fx1", 1), ("a", "fx2", 1), ("b", "only_fx2", 1),
+    ]
 
 
 def test_group_jobs_splits_exclusive_and_passthrough() -> None:

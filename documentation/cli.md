@@ -91,6 +91,10 @@ aidmi-orchestrator sweep \
 | `--workspace` | `./aidmi_workspace` | Workspace directory. |
 | `--verbose`, `-v` | off | Same as [`run`](#aidmi-orchestrator-run): stream trace JSON lines to stderr. Only active when `--concurrency 1`; a warning is printed and mirroring is suppressed otherwise. |
 
+### Rep-major scheduling
+
+Jobs expand in **rep → fixture → cell** order: for each repetition, every cell runs on one fixture before moving to the next fixture, then the next repetition starts. That way an interrupted sweep still has every cell at rep 0, and results for one fixture are complete across the strategy/model grid before the next fixture starts.
+
 ### Model-major scheduling
 
 The sweep schedules jobs in model-major order for models whose `model_name` starts with any prefix listed in the grid's `exclusive_model_prefixes` (default `["ise-"]`). All jobs for one exclusive model finish before jobs for the next exclusive model start — necessary when the ISE cluster can only load one large model at a time. Models that do not match any exclusive prefix are treated as passthrough and run in parallel up to `--concurrency` without the serialization constraint.

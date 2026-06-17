@@ -41,10 +41,28 @@ def expand_jobs(
     fixtures: list[str],
     runs_per_cell: int,
 ) -> list[SweepJob]:
+    sweep_fixtures: list[str] = []
+    seen_fixtures: set[str] = set()
+    for fixture in fixtures:
+        if fixture not in seen_fixtures:
+            seen_fixtures.add(fixture)
+            sweep_fixtures.append(fixture)
+    for _, _, _, cell_fixtures in cells:
+        if cell_fixtures:
+            for fixture in cell_fixtures:
+                if fixture not in seen_fixtures:
+                    seen_fixtures.add(fixture)
+                    sweep_fixtures.append(fixture)
+
     jobs: list[SweepJob] = []
-    for registry, config, spec_name, cell_fixtures in cells:
-        for fixture in (cell_fixtures or fixtures):
-            for rep in range(runs_per_cell):
+    for rep in range(runs_per_cell):
+        for fixture in sweep_fixtures:
+            for registry, config, spec_name, cell_fixtures in cells:
+                if cell_fixtures is not None:
+                    if fixture not in cell_fixtures:
+                        continue
+                elif fixture not in fixtures:
+                    continue
                 jobs.append(SweepJob(registry, config, spec_name, fixture, rep))
     return jobs
 
