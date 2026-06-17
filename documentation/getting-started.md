@@ -6,14 +6,16 @@ This page walks through installing the workspace, running the bundled `sp1_users
 
 Docker Desktop or Docker Engine (Compose v2 plugin) running on your machine—for the Postgres service in Compose and for `testcontainers` during pytest. With only rootless Podman and no Docker, tests may still work if pytest’s bundled socket detection finds a Docker-compatible Podman socket; that path is undocumented.
 
+Install [`just`](https://github.com/casey/just) for task recipes (`brew install just` on macOS).
+
 ## Install
 
 ```bash
 git clone git@github.com:tub-aidmi/aidmi.git
 cd aidmi
 nix develop                # optional: provides python 3.13, uv, docker-compose tooling
-make env                   # cp .env.example → .env (first time only)
-make install               # uv sync --all-packages
+just env                   # cp .env.example → .env (first time only)
+just install               # uv sync --all-packages
 ```
 
 `uv sync --all-packages` is required (rather than plain `uv sync`) because `aidmi-orchestrator` is a workspace member package; without `--all-packages` only the root project's dependencies are installed.
@@ -22,10 +24,10 @@ make install               # uv sync --all-packages
 
 Run the deterministic test suite. This starts a Postgres container, runs the orchestrator end-to-end with the mock strategy, executes dbt twice (once for the generated mapping, once for the reference dbt project bundled with the fixture), and asserts the produced rows equal the reference.
 
-You do **not** need `make up`; tests spin up Postgres via testcontainers instead.
+You do **not** need `just up`; tests spin up Postgres via testcontainers instead.
 
 ```bash
-make test
+just test
 ```
 
 Or run one package directly:
@@ -34,15 +36,15 @@ Or run one package directly:
 uv run --package aidmi-orchestrator pytest packages/orchestrator/tests/ -m "not requires_llm"
 ```
 
-Expected output: `make test` prints `2 passed` (pipeline) then `49 passed` (orchestrator, excluding `@pytest.mark.requires_llm`). Typical wall-clock is about 50–60 seconds (Postgres container startup plus two dbt runs).
+Expected output: `just test` prints `2 passed` (pipeline) then `49 passed` (orchestrator, excluding `@pytest.mark.requires_llm`). Typical wall-clock is about 50–60 seconds (Postgres container startup plus two dbt runs).
 
 ## Run the bundled demo via the CLI
 
 With a `.env` in the repo root, `aidmi-orchestrator` loads variables via `python-dotenv`. Staging Postgres is either `AIDMI_STAGING_DB_URL` or, if that is unset, a URL assembled from `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB`, and optionally `POSTGRES_HOST` / `POSTGRES_PORT` (see [`cli.md`](cli.md#environment)).
 
 ```bash
-make up                    # Postgres on localhost (.env defaults in .env.example)
-make demo                  # mock strategy; same as uv run aidmi-orchestrator run ...
+just up                    # Postgres on localhost (.env defaults in .env.example)
+just demo                  # mock strategy; same as uv run aidmi-orchestrator run ...
 ```
 
 The command prints a `BenchmarkResult` as JSON and writes artifacts under `./aidmi_workspace/runs/<ulid>/`. Add `-v` / `--verbose` to stream [`trace.jsonl`](data-formats.md#tracejsonl) lines to stderr as they are recorded, or pin `--run-id` and tail the same path from another shell (details in [`cli.md`](cli.md)).
@@ -51,10 +53,10 @@ Stop Postgres:
 
 
 ```bash
-make down
+just down
 ```
 
-Drop the volume as well (`make down-v`) if you want a clean data directory next time.
+Drop the volume as well (`just down-v`) if you want a clean data directory next time.
 
 ## What the run produced
 
@@ -96,10 +98,10 @@ The full schema of `result.json` is documented in [data formats](data-formats.md
 
 ## Run an LLM-driven strategy
 
-Set credentials in `.env` (see [`.env.example`](../.env.example)) or export them for the shell. Postgres from `make up` must match either the composed `POSTGRES_*` URL or `AIDMI_STAGING_DB_URL` if you override it.
+Set credentials in `.env` (see [`.env.example`](../.env.example)) or export them for the shell. Postgres from `just up` must match either the composed `POSTGRES_*` URL or `AIDMI_STAGING_DB_URL` if you override it.
 
 ```bash
-make up
+just up
 
 uv run --package aidmi-orchestrator aidmi-orchestrator run \
   --fixture sp1_users \
@@ -113,8 +115,8 @@ uv run --package aidmi-orchestrator aidmi-orchestrator run \
 `aidmi-orchestrator sweep` runs a YAML-defined grid of `(strategy, config)` cells against one fixture and writes one `BenchmarkResult` per cell to a results JSONL.
 
 ```bash
-make up
-make sweep
+just up
+just sweep-demo
 ```
 
 Equivalent:
@@ -123,6 +125,14 @@ Equivalent:
 uv run --package aidmi-orchestrator aidmi-orchestrator sweep \
   --grid packages/orchestrator/examples/day1_grid.yaml \
   --out aidmi_workspace/results/demo
+```
+
+Campaign benchmarks live under `benchmarks/<YYYY-MM-DD-N>/` (e.g. `2026-06-17-1` for the first run on a given day):
+
+```bash
+just up
+just sweep 2026-06-17-1 ollama_snapshot
+just report 2026-06-17-1
 ```
 
 The bundled `day1_grid.yaml` defines 6 cells: 1 mock + 3 `structured_per_table` (one per context mode) + 2 `write_tools_freeform` (with and without self-correction). LLM cells fail loudly when their API keys are missing; the mock cell always succeeds.
@@ -145,12 +155,12 @@ Prerequisites:
 - `LITELLM_API_KEY` when your strategy YAML sets `api_key_env: LITELLM_API_KEY`.
 - Edit [`packages/orchestrator/examples/strategy_specs/write_tools_freeform_litellm_qwen.yaml`](../packages/orchestrator/examples/strategy_specs/write_tools_freeform_litellm_qwen.yaml): set `base_url` for your LiteLLM OpenAI-compatible endpoint (must include `/v1`).
 - For local Ollama: model running at `http://localhost:11434` and `model_name` set in [`write_tools_freeform_ollama_qwen.yaml`](../packages/orchestrator/examples/strategy_specs/write_tools_freeform_ollama_qwen.yaml) (no API key).
-- Postgres from `make up`.
+- Postgres from `just up`.
 
 **Check Salesforce credentials (no Postgres, no LLM):**
 
 ```bash
-make sf-auth-check
+just sf-auth-check
 ```
 
 This loads `.env`, performs SOAP login, and runs two tiny SOQL reads on Contact and Account.
@@ -158,33 +168,33 @@ This loads `.env`, performs SOAP login, and runs two tiny SOQL reads on Contact 
 Quick path (LiteLLM):
 
 ```bash
-make litellm-smoke-fixture     # LiteLLM + sp1_users (checks model wiring)
-make up
-make sf-pipedrive-litellm     # Salesforce extract → LLM dbt → run
+just litellm-smoke     # LiteLLM + sp1_users (checks model wiring)
+just up
+just sf-pipedrive-litellm     # Salesforce extract → LLM dbt → run
 ```
 
 Quick path (local Ollama):
 
 ```bash
-make ollama-smoke-fixture     # Ollama + sp1_users (checks model wiring)
-make up
-make sf-pipedrive-ollama      # Salesforce extract → LLM dbt → run
+just ollama-smoke     # Ollama + sp1_users (checks model wiring)
+just up
+just sf-pipedrive-ollama      # Salesforce extract → LLM dbt → run
 ```
 
-Equivalent without Make (LiteLLM):
+Equivalent without Just (LiteLLM):
 
 ```bash
-make up
+just up
 
 uv run --package aidmi-orchestrator aidmi-orchestrator run \
   --fixture sf_pipedrive \
   --strategy-spec packages/orchestrator/examples/strategy_specs/write_tools_freeform_litellm_qwen.yaml
 ```
 
-Equivalent without Make (local Ollama):
+Equivalent without Just (local Ollama):
 
 ```bash
-make up
+just up
 
 uv run --package aidmi-orchestrator aidmi-orchestrator run \
   --fixture sf_pipedrive \

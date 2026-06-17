@@ -6,7 +6,7 @@ SOAP login via [`simple-salesforce`](https://github.com/simple-salesforce/simple
 
 Set **`SF_USERNAME`**, **`SF_PASSWORD`**, and **`SF_SECURITY_TOKEN`** in `.env` (see [.env.example](../.env.example)). Quote values that contain **`#`**, **`!`**, **`$`**, or spaces — e.g. `SF_PASSWORD="p#ss!word"`.
 
-`aidmi-orchestrator` and `make sf-auth-check` load `.env` from the repo root; file values take precedence over shell exports.
+`aidmi-orchestrator` and `just sf-auth-check` load `.env` from the repo root; file values take precedence over shell exports.
 
 ## Debugging failed logins
 

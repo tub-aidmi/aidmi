@@ -17,23 +17,23 @@ User-facing documentation for the orchestrator (sub-project 2) lives in [`docume
 
 ## Dev setup
 
-Requirements: Docker (Docker Desktop or Engine with Compose), Python 3.13, [`uv`](https://docs.astral.sh/uv/). Optional `nix develop` for Node, Compose binaries, Python, and uv in one shell ([`flake.nix`](flake.nix)).
+Requirements: Docker (Docker Desktop or Engine with Compose), Python 3.13, [`uv`](https://docs.astral.sh/uv/), [`just`](https://github.com/casey/just) (`brew install just`). Optional `nix develop` for Node, Compose binaries, Python, and uv in one shell ([`flake.nix`](flake.nix)).
 
 Quick path:
 
 ```bash
-make env                   # cp .env.example → .env (first time only)
-make install               # uv sync --all-packages
-make test                  # pytest for pipeline + orchestrator (uses testcontainers; no Postgres compose needed)
+just env                   # cp .env.example → .env (first time only)
+just install               # uv sync --all-packages
+just test                  # pytest for pipeline + orchestrator (uses testcontainers; no Postgres compose needed)
 
-make up                    # Postgres for CLI runs via docker-compose.yml
-make demo                  # bundled mock-strategy orchestrator demo
-make down                  # tear down Postgres
+just up                    # Postgres for CLI runs via docker-compose.yml
+just demo                  # bundled mock-strategy orchestrator demo
+just down                  # tear down Postgres
 ```
 
-The full target list (`make`, `make help`) includes `demo`, `sweep`, `psql`, `logs`, `down-v`, etc.
+Run `just` or `just --list` for all recipes (`sweep`, `report`, `psql`, `logs`, `down-v`, etc.).
 
-Equivalent without Make:
+Equivalent without Just:
 
 ```bash
 nix develop                                              # optional: node, compose tooling, python 3.13, uv

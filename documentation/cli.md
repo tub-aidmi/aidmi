@@ -187,13 +187,13 @@ aidmi-orchestrator report \
 | File | Contents |
 |------|---------|
 | `summary.md` | Markdown table of headline metrics per cell (mean ± std), followed by a strategy × model matrix for `--matrix-metric`. |
-| `cells.csv` | One row per `(strategy_spec_name, fixture, rep)` with all metrics flattened. |
-| `summary.csv` | One row per `(strategy_spec_name, fixture)` with per-metric mean and std. |
+| `cells.csv` | One row per `(fixture, spec, strategy, model, metric)` with `mean`, `std`, and `n`. |
+| `summary.csv` | One row per cell `(fixture, spec, strategy, model)` with per-metric **means** as columns (wide format). |
 | `plots/` | PNG bar charts per headline metric (only when `--plots` is given). |
 
 ## Examples
 
-Run the mock strategy on the SP1 fixture (typically `make up` from repo root plus a `.env` matching [`.env.example`](../.env.example)):
+Run the mock strategy on the SP1 fixture (typically `just up` from repo root plus a `.env` matching [`.env.example`](../.env.example)):
 
 ```bash
 aidmi-orchestrator run \
@@ -209,6 +209,14 @@ aidmi-orchestrator sweep \
   --grid packages/orchestrator/examples/day1_grid.yaml \
   --out aidmi_workspace/results/2026-05-17-day1 \
   --runs-per-cell 2
+```
+
+Local Ollama benchmark (Postgres up, models pulled; campaign dir `benchmarks/2026-06-17-1/`):
+
+```bash
+just up
+just sweep 2026-06-17-1 ollama_snapshot
+just report 2026-06-17-1
 ```
 
 Run a custom strategy from your own code:

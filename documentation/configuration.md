@@ -47,7 +47,10 @@ config:
   max_query_tool_rows: 100             # int, default 100 (ignored unless mode is live_query_tool)
   enable_self_correction: false        # bool, default false; re-runs dbt after each table pass
   max_self_correction_passes: 3        # int, default 3; ignored unless enable_self_correction
+  serial_llm_calls: false              # bool, default false; await per-table LLM work one at a time
 ```
+
+When `serial_llm_calls` is `true`, per-table writer calls (and self-correction regenerations) run sequentially instead of via `asyncio.gather`. Use this for local Ollama or other single-slot backends. Pair with `concurrency: 1` in grid YAML so the sweep itself does not run cells in parallel.
 
 #### `write_tools_freeform`
 
@@ -82,9 +85,10 @@ config:
     model_name: my-critic-model
     api_key_env: LITELLM_API_KEY
   max_critique_rounds: 2               # int ≥ 1, default 2; alternates write/critique passes
+  serial_llm_calls: false              # bool, default false; await per-table LLM work one at a time
 ```
 
-The writer produces an initial dbt project; the critic reviews the SQL for correctness and mapping quality, returning structured feedback. The writer then revises up to `max_critique_rounds` times. This strategy also accepts `context_mode`, `samples_per_table`, and `max_query_tool_rows` with the same defaults as `structured_per_table`.
+The writer produces an initial dbt project; the critic reviews the SQL for correctness and mapping quality, returning structured feedback. The writer then revises up to `max_critique_rounds` times. This strategy also accepts `context_mode`, `samples_per_table`, `max_query_tool_rows`, and `serial_llm_calls` with the same defaults as `structured_per_table`.
 
 #### `plan_then_execute`
 
@@ -100,9 +104,10 @@ config:
     provider: litellm
     model_name: my-writer-model
     api_key_env: LITELLM_API_KEY
+  serial_llm_calls: false              # bool, default false; await per-table LLM work one at a time
 ```
 
-The planner produces a structured mapping plan (table-by-table column assignments); the writer turns the plan into dbt SQL. Using a cheaper/smaller writer model with a stronger planner is a common configuration. This strategy also accepts `context_mode`, `samples_per_table`, and `max_query_tool_rows` with the same defaults as `structured_per_table`.
+The planner produces a structured mapping plan (table-by-table column assignments); the writer turns the plan into dbt SQL. Using a cheaper/smaller writer model with a stronger planner is a common configuration. This strategy also accepts `context_mode`, `samples_per_table`, `max_query_tool_rows`, and `serial_llm_calls` with the same defaults as `structured_per_table`.
 
 #### `ensemble_vote`
 
@@ -119,9 +124,10 @@ config:
     model_name: my-judge-model
     api_key_env: LITELLM_API_KEY
   n_candidates: 3                      # int ≥ 1, default 3; independent generation passes
+  serial_llm_calls: false              # bool, default false; await per-candidate and per-table LLM work one at a time
 ```
 
-Runs `n_candidates` independent write passes with the writer model, then has the judge select the best candidate per target table. This strategy also accepts `context_mode`, `samples_per_table`, and `max_query_tool_rows` with the same defaults as `structured_per_table`.
+Runs `n_candidates` independent write passes with the writer model, then has the judge select the best candidate per target table. This strategy also accepts `context_mode`, `samples_per_table`, `max_query_tool_rows`, and `serial_llm_calls` with the same defaults as `structured_per_table`.
 
 ### `ModelSpec`
 

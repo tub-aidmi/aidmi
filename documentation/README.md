@@ -27,7 +27,8 @@ The orchestrator requires a running Postgres instance for staging. In tests this
 
 - Python 3.13
 - `uv` (workspace package manager)
-- Docker Desktop or Docker Engine with Compose—for local staging Postgres (`make up`), and for Postgres started by pytest via `testcontainers`. Rootless Podman may happen to work with pytest’s bundled socket detection; Docker is assumed in the docs.
+- Docker Desktop or Docker Engine with Compose—for local staging Postgres (`just up`), and for Postgres started by pytest via `testcontainers`. Rootless Podman may happen to work with pytest’s bundled socket detection; Docker is assumed in the docs.
+- [`just`](https://github.com/casey/just) task runner for dev and benchmark recipes
 - One or more LLM API keys (OpenAI, Anthropic, or a local Ollama server) for the LLM-driven strategies. The bundled `mock` strategy requires no LLM and is useful for harness validation.
 
 See [Getting started](getting-started.md) for the install procedure.
