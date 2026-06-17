@@ -180,28 +180,34 @@ def report(
     no_plots: Annotated[bool, typer.Option("--no-plots", help="skip SVG heatmaps")] = False,
 ):
     """Aggregate sweep results into markdown/CSV tables and SVG heatmaps."""
-    from aidmi_orchestrator.analysis import (
-        DEFAULT_HEADLINE_METRICS, aggregate, load_results,
-        render_markdown, render_matrix, write_csvs, write_global_heatmaps,
-    )
+    import aidmi_orchestrator.report  # noqa: F401 — register contributors
+    from aidmi_orchestrator.report.aggregate import aggregate, build_rep_series, load_results
+    from aidmi_orchestrator.report.catalog import build_report_plan
+    from aidmi_orchestrator.report.render.markdown import render_markdown, render_matrix
+    from aidmi_orchestrator.report.render.plots import write_plots
+    from aidmi_orchestrator.report.render.tables import write_tables
 
     rows = load_results(results)
     if not rows:
         raise typer.BadParameter("no result rows found in the given paths")
     cells = aggregate(rows)
-    headline = [m.strip() for m in metrics.split(",")] if metrics else DEFAULT_HEADLINE_METRICS
+    series = build_rep_series(rows)
+    plan = build_report_plan()
+    headline = [m.strip() for m in metrics.split(",")] if metrics else plan.headline_metrics
 
     out.mkdir(parents=True, exist_ok=True)
     md = render_markdown(cells, headline) + "\n" + render_matrix(cells, matrix_metric)
     (out / "summary.md").write_text(md, encoding="utf-8")
-    write_csvs(cells, out)
+    write_tables(cells, out)
     written = ["summary.md", "cells.csv", "summary.csv"]
     if not no_plots:
         try:
-            svgs = write_global_heatmaps(cells, out / "plots")
+            artifacts = write_plots(cells, series, out / "plots", plan)
         except RuntimeError as e:
             raise typer.BadParameter(str(e)) from None
-        written.append(f"plots/ ({len(svgs)} SVGs)")
+        n_svg = sum(1 for p in artifacts if p.suffix == ".svg")
+        n_csv = sum(1 for p in artifacts if p.suffix == ".csv")
+        written.append(f"plots/ ({n_svg} SVGs, {n_csv} CSVs)")
     typer.echo(f"report over {len(rows)} runs / {len(cells)} cells -> {out}: {', '.join(written)}")
 
 

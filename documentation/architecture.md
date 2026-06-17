@@ -123,6 +123,20 @@ For one orchestrator run:
 
 A sweep is `benchmark.sweep` looping the above once per cell.
 
+## Report pipeline
+
+`aidmi-orchestrator report` aggregates `results.jsonl` without re-running evaluators:
+
+```
+results.jsonl
+  → aggregate (CellAggregate + RepSeries)
+  → build_report_plan (ReportContributor descriptors → headline metrics + plot recipes)
+  → write_tables / write_markdown (root summary)
+  → write_plots (per-recipe SVG + sibling CSV under plots/{fixture}/)
+```
+
+Report contributors live in `aidmi_orchestrator/report/contributors/` and mirror evaluator families. Each declares `MetricDescriptor`s (headline table columns, plot scopes, chart styling). Plot recipes pair a `PlotScope` (`global`, `by_strategy`, `by_model`) with a `PlotKind` (`heatmap`, `distribution`, …). v1 implements global heatmaps only.
+
 ## Registries
 
 All four registries follow the same shape:

@@ -1,20 +1,18 @@
-"""analysis: aggregate results.jsonl into report tables."""
+"""report: aggregate results.jsonl into report tables."""
 from __future__ import annotations
 
 import json
 
-from aidmi_orchestrator.analysis import (
-    CellAggregate,
-    aggregate,
+import aidmi_orchestrator.report  # noqa: F401
+from aidmi_orchestrator.report.aggregate import CellAggregate, aggregate, load_results
+from aidmi_orchestrator.report.layout.benchmark_grid import (
     build_strategy_model_matrix,
     heatmap_cell_base,
     heatmap_row_key,
     heatmap_row_label,
-    load_results,
-    render_markdown,
-    render_matrix,
-    write_csvs,
 )
+from aidmi_orchestrator.report.render.markdown import render_markdown, render_matrix
+from aidmi_orchestrator.report.render.tables import write_tables
 
 
 def _row(spec: str, fixture: str = "fx", model: str = "ise-x/q", *,
@@ -52,7 +50,7 @@ def test_aggregate_means_stds_and_rates() -> None:
     assert cell.metrics["dbt_success"]["mean"] == 2 / 3
     assert cell.metrics["ran_ok"]["mean"] == 2 / 3
     assert cell.metrics["wall_clock_seconds"]["mean"] == 10.0
-    assert "per_table_equality" not in cell.metrics  # nested dicts skipped
+    assert "per_table_equality" not in cell.metrics
 
 
 def test_aggregate_groups_by_fixture_and_spec() -> None:
@@ -62,7 +60,7 @@ def test_aggregate_groups_by_fixture_and_spec() -> None:
 
 
 def test_render_markdown_contains_cells_and_metrics() -> None:
-    md = render_markdown(aggregate([_row("a"), _row("b", covered=0.25)]))
+    md = render_markdown(aggregate([_row("a"), _row("b", covered=0.25)]), ["target_columns_covered"])
     assert "## fx" in md
     assert "| a " in md and "| b " in md
     assert "target_columns_covered" in md
@@ -80,8 +78,8 @@ def test_render_matrix_strategy_by_model() -> None:
     assert "s1" in matrix
 
 
-def test_write_csvs(tmp_path) -> None:
-    write_csvs(aggregate([_row("a")]), tmp_path)
+def test_write_tables(tmp_path) -> None:
+    write_tables(aggregate([_row("a")]), tmp_path)
     cells_csv = (tmp_path / "cells.csv").read_text(encoding="utf-8")
     summary_csv = (tmp_path / "summary.csv").read_text(encoding="utf-8")
     assert "target_columns_covered" in cells_csv

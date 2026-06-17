@@ -180,7 +180,7 @@ aidmi-orchestrator report \
 | `--out` | `./report` | Output directory for report files. Created if absent. |
 | `--matrix-metric` | `target_columns_covered` | Metric used to build the strategy × model matrix table in `summary.md`. |
 | `--metrics` | built-in list | Comma-separated list of headline metrics to display in the summary table. Overrides the default set. |
-| `--no-plots` | off | Skip SVG heatmaps. By default, heatmaps are written under `plots/{fixture}/global/`. Requires the `plots` extra (`just install` or `uv sync --extra plots`). |
+| `--no-plots` | off | Skip plot artifacts. By default, SVG heatmaps and sibling CSVs are written under `plots/{fixture}/global/`. Requires the `plots` extra (`just install` or `uv sync --extra plots`). |
 
 ### Output files
 
@@ -189,7 +189,8 @@ aidmi-orchestrator report \
 | `summary.md` | Markdown table of headline metrics per cell (mean ± std), followed by a strategy × model matrix for `--matrix-metric`. |
 | `cells.csv` | One row per `(fixture, spec, strategy, model, metric)` with `mean`, `std`, and `n`. |
 | `summary.csv` | One row per cell `(fixture, spec, strategy, model)` with per-metric **means** as columns (wide format). |
-| `plots/{fixture}/global/*.svg` | Strategy × model heatmaps per metric (SVG). Omitted when `--no-plots` is given. |
+| `plots/{fixture}/global/{metric}.svg` | Strategy × model heatmap for that metric. Omitted when `--no-plots` is given. |
+| `plots/{fixture}/global/{metric}.csv` | Tidy data for the sibling SVG (`strategy`, `model`, `value`). Written together with the SVG. |
 
 ## Examples
 

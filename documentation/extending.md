@@ -194,6 +194,25 @@ bench = Benchmark(
 
 If you don't pass `evaluators=`, the harness reads `fixture.applicable_evaluators` and constructs the default list.
 
+## Adding report metrics
+
+Evaluators produce metrics at run time; **report contributors** declare how those metrics appear in `summary.md`, `cells.csv`, and plots. Register a contributor alongside (or instead of) extending an evaluator when you add new scalar metrics:
+
+```python
+from aidmi_orchestrator.report.base import MetricDescriptor, PlotScope, register_report_contributor
+
+class SqlLineCountContributor:
+    name = "sql_line_count"
+
+    def metrics(self) -> list[MetricDescriptor]:
+        g = frozenset({PlotScope.GLOBAL})
+        return [MetricDescriptor("sql_line_count", "count", headline=True, plot_scopes=g)]
+
+register_report_contributor("sql_line_count", SqlLineCountContributor)
+```
+
+Import the module before `aidmi-orchestrator report` (or add it to `report/contributors/`). Each plot SVG under `plots/{fixture}/` gets a sibling `.csv` with that plot's data only.
+
 ## Writing a fixture
 
 A fixture is a Python sub-package whose `__init__.py` calls `register_fixture(...)`.
