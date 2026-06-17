@@ -1,13 +1,12 @@
 """WriteThenCritique: per-table writers + one global critic, bounded revision rounds."""
 from __future__ import annotations
-import asyncio
 from datetime import datetime
 from typing import Literal
 from pydantic import BaseModel, Field
 from pydantic_ai import Agent
 
 from aidmi_orchestrator.domain import ModelSpec, StrategyResult
-from aidmi_orchestrator.strategy.base import build_context_prompt, write_proposal
+from aidmi_orchestrator.strategy.base import build_context_prompt, run_coroutines, write_proposal
 from aidmi_orchestrator.strategy.structured_common import (
     generate_table_mapping, make_table_agent, manifest_from_mappings, TableMapping,
 )
@@ -27,6 +26,7 @@ class WriteThenCritiqueConfig(BaseModel):
     context_mode: Literal["metadata_only", "metadata_plus_samples", "live_query_tool"] = "metadata_plus_samples"
     samples_per_table: int = 3
     max_query_tool_rows: int = 100
+    serial_llm_calls: bool = False
 
 
 class WriteThenCritique:
@@ -53,8 +53,9 @@ class WriteThenCritique:
         critic_agent = Agent(critic, output_type=CritiqueReport, system_prompt=CRITIC_SYSTEM_PROMPT)
 
         target_table_names = [t.name for t in api.target_schema.tables]
-        initial = await asyncio.gather(
-            *(generate_table_mapping(writer_agent, n, context) for n in target_table_names)
+        initial = await run_coroutines(
+            [generate_table_mapping(writer_agent, n, context) for n in target_table_names],
+            serial=self.config.serial_llm_calls,
         )
         mappings = {m.target_table: m for m in initial}
 
@@ -75,7 +76,9 @@ class WriteThenCritique:
             return result.output
 
         mappings, approved = await run_critique_rounds(
-            mappings, critique, revise, max_rounds=self.config.max_critique_rounds,
+            mappings, critique, revise,
+            max_rounds=self.config.max_critique_rounds,
+            serial=self.config.serial_llm_calls,
         )
 
         sql_by_table = {name: m.dbt_sql for name, m in mappings.items()}

@@ -1,13 +1,12 @@
 """EnsembleVote: N independent candidates per table; a judge picks each winner."""
 from __future__ import annotations
-import asyncio
 from datetime import datetime
 from typing import Literal
 from pydantic import BaseModel, Field
 from pydantic_ai import Agent
 
 from aidmi_orchestrator.domain import ModelSpec, StrategyResult
-from aidmi_orchestrator.strategy.base import build_context_prompt, write_proposal
+from aidmi_orchestrator.strategy.base import build_context_prompt, run_coroutines, write_proposal
 from aidmi_orchestrator.strategy.structured_common import (
     TableMapping, generate_table_mapping, make_table_agent, manifest_from_mappings,
 )
@@ -33,6 +32,7 @@ class EnsembleVoteConfig(BaseModel):
     context_mode: Literal["metadata_only", "metadata_plus_samples", "live_query_tool"] = "metadata_plus_samples"
     samples_per_table: int = 3
     max_query_tool_rows: int = 100
+    serial_llm_calls: bool = False
 
 
 class EnsembleVote:
@@ -59,10 +59,11 @@ class EnsembleVote:
         judge_agent = Agent(judge, output_type=JudgeChoice, system_prompt=JUDGE_SYSTEM_PROMPT)
 
         async def one_table(name: str) -> TableMapping:
-            candidates = list(await asyncio.gather(*(
-                generate_table_mapping(writer_agent, name, context)
-                for _ in range(self.config.n_candidates)
-            )))
+            candidates = list(await run_coroutines(
+                [generate_table_mapping(writer_agent, name, context)
+                 for _ in range(self.config.n_candidates)],
+                serial=self.config.serial_llm_calls,
+            ))
             choice = (await judge_agent.run(
                 judge_user_prompt(name, context, [c.dbt_sql for c in candidates])
             )).output
@@ -82,7 +83,10 @@ class EnsembleVote:
             })
 
         target_table_names = [t.name for t in api.target_schema.tables]
-        mappings = await asyncio.gather(*(one_table(n) for n in target_table_names))
+        mappings = await run_coroutines(
+            [one_table(n) for n in target_table_names],
+            serial=self.config.serial_llm_calls,
+        )
 
         sql_by_table = {m.target_table: m.dbt_sql for m in mappings}
         source_tables = sorted({(t.db_schema, t.name) for t in api.source_summary.tables})

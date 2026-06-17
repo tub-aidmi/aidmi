@@ -1,8 +1,9 @@
 """Post-proposal dbt validation loop for structured strategies."""
 from __future__ import annotations
 
-import asyncio
 from typing import Any, Awaitable, Callable
+
+from aidmi_orchestrator.strategy.base import run_coroutines
 
 
 async def retry_failing_tables(
@@ -10,6 +11,7 @@ async def retry_failing_tables(
     regenerate: Callable[[str, str], Awaitable[None]],
     *,
     max_passes: int,
+    serial: bool = False,
 ) -> bool:
     """Run dbt up to max_passes times; between runs, regenerate only failing tables.
 
@@ -35,7 +37,10 @@ async def retry_failing_tables(
         if not failing:
             return False
         try:
-            await asyncio.gather(*(regenerate(name, err) for name, err in failing))
+            await run_coroutines(
+                [regenerate(name, err) for name, err in failing],
+                serial=serial,
+            )
         except Exception:
             return False
     return False

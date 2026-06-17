@@ -1,7 +1,10 @@
 """Strategy Protocol + registry + shared helpers."""
 from __future__ import annotations
+import asyncio
 from pathlib import Path
-from typing import Any, Protocol, runtime_checkable
+from typing import Any, Awaitable, Protocol, TypeVar, runtime_checkable
+
+T = TypeVar("T")
 
 from pydantic import BaseModel
 
@@ -32,6 +35,12 @@ def register_strategy(name: str, cls: type, config_cls: type[BaseModel] | None =
 
 def list_strategies() -> list[str]:
     return sorted(_STRATEGIES)
+
+
+async def run_coroutines(coros: list[Awaitable[T]], *, serial: bool) -> list[T]:
+    if serial:
+        return [await c for c in coros]
+    return list(await asyncio.gather(*coros))
 
 
 def make_strategy(name: str, config_dict: dict[str, Any] | None = None) -> Strategy:
@@ -142,6 +151,7 @@ __all__ = [
     "register_strategy",
     "list_strategies",
     "make_strategy",
+    "run_coroutines",
     "build_context_prompt",
     "write_proposal",
     "ensure_sources_yaml_raw_schema",

@@ -1,13 +1,12 @@
 """PlanThenExecute: one global planner call, then per-table writers following the plan."""
 from __future__ import annotations
-import asyncio
 from datetime import datetime
 from typing import Literal
 from pydantic import BaseModel, Field
 from pydantic_ai import Agent
 
 from aidmi_orchestrator.domain import ModelSpec, StrategyResult
-from aidmi_orchestrator.strategy.base import build_context_prompt, write_proposal
+from aidmi_orchestrator.strategy.base import build_context_prompt, run_coroutines, write_proposal
 from aidmi_orchestrator.strategy.structured_common import (
     make_table_agent, manifest_from_mappings,
 )
@@ -59,6 +58,7 @@ class PlanThenExecuteConfig(BaseModel):
     context_mode: Literal["metadata_only", "metadata_plus_samples", "live_query_tool"] = "metadata_plus_samples"
     samples_per_table: int = 3
     max_query_tool_rows: int = 100
+    serial_llm_calls: bool = False
 
 
 class PlanThenExecute:
@@ -98,7 +98,10 @@ class PlanThenExecute:
             return result.output.model_copy(update={"target_table": name})
 
         target_table_names = [t.name for t in api.target_schema.tables]
-        mappings = await asyncio.gather(*(one_table(n) for n in target_table_names))
+        mappings = await run_coroutines(
+            [one_table(n) for n in target_table_names],
+            serial=self.config.serial_llm_calls,
+        )
 
         mappings = [
             m.model_copy(update={"reasoning": f"{plan.overview}\n{m.reasoning}".strip()})

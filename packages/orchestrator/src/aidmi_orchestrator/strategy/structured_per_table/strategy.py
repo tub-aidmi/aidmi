@@ -1,11 +1,10 @@
-"""StructuredPerTable: one PydanticAI agent per target table, parallel via asyncio.gather."""
+"""StructuredPerTable: one PydanticAI agent per target table."""
 from __future__ import annotations
-import asyncio
 from typing import Literal
 from pydantic import BaseModel
 
 from aidmi_orchestrator.domain import ModelSpec, StrategyResult
-from aidmi_orchestrator.strategy.base import build_context_prompt, write_proposal
+from aidmi_orchestrator.strategy.base import build_context_prompt, run_coroutines, write_proposal
 from aidmi_orchestrator.strategy.structured_common import (
     generate_table_mapping, make_table_agent, manifest_from_mappings,
     retry_user_prompt,
@@ -22,6 +21,7 @@ class StructuredPerTableConfig(BaseModel):
     max_query_tool_rows: int = 100
     enable_self_correction: bool = False
     max_self_correction_passes: int = 3
+    serial_llm_calls: bool = False
 
 
 class StructuredPerTable:
@@ -47,8 +47,9 @@ class StructuredPerTable:
         )
 
         target_table_names = [t.name for t in api.target_schema.tables]
-        mappings = await asyncio.gather(
-            *(generate_table_mapping(agent, n, context) for n in target_table_names)
+        mappings = await run_coroutines(
+            [generate_table_mapping(agent, n, context) for n in target_table_names],
+            serial=self.config.serial_llm_calls,
         )
 
         sql_by_table = {m.target_table: m.dbt_sql for m in mappings}
@@ -77,6 +78,7 @@ class StructuredPerTable:
             dbt_ok = await retry_failing_tables(
                 api.run_dbt, regenerate,
                 max_passes=self.config.max_self_correction_passes,
+                serial=self.config.serial_llm_calls,
             )
 
         manifest = manifest_from_mappings(
