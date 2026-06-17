@@ -35,6 +35,11 @@ class DistributionPlotSpec:
 PlotSpec = Union[HeatmapPlotSpec, DistributionPlotSpec]
 
 
+def _extra_bottom_inches(metric: str, n_rows: int) -> float:
+    # Vertical colorbar labels extend below the heatmap; short grids need more room.
+    return max(0.0, len(metric) * 0.045 - n_rows * 0.2)
+
+
 def _cmap_for_descriptor(descriptor: MetricDescriptor) -> tuple[str, float | None, float | None]:
     if descriptor.vmin is not None and descriptor.vmax is not None:
         name = "YlOrRd_r" if descriptor.lower_is_better else "YlGn"
@@ -113,7 +118,11 @@ def render_heatmap_svg(spec: HeatmapPlotSpec, svg_path: Path) -> None:
         vmax = vmin + 1.0
 
     fig, ax = plt.subplots(
-        figsize=(max(6.0, len(spec.col_labels) * 1.4), max(3.5, len(spec.row_labels) * 0.55)),
+        figsize=(
+            max(6.0, len(spec.col_labels) * 1.4),
+            max(3.5, len(spec.row_labels) * 0.55) + _extra_bottom_inches(spec.metric, len(spec.row_labels)),
+        ),
+        constrained_layout=True,
     )
     im = ax.imshow(matrix, aspect="auto", cmap=cmap, vmin=vmin, vmax=vmax)
 
@@ -150,11 +159,10 @@ def render_heatmap_svg(spec: HeatmapPlotSpec, svg_path: Path) -> None:
                 text_color = "white" if value > (vmin + vmax) / 2 else "black"
             ax.text(j, i, label, ha="center", va="center", color=text_color, fontsize=10)
 
-    cbar = fig.colorbar(im, ax=ax, fraction=0.035, pad=0.02)
+    cbar = fig.colorbar(im, ax=ax, fraction=0.035, pad=0.04)
     cbar.set_label(spec.metric)
-    fig.tight_layout()
     svg_path.parent.mkdir(parents=True, exist_ok=True)
-    fig.savefig(svg_path, format="svg", bbox_inches="tight")
+    fig.savefig(svg_path, format="svg", bbox_inches="tight", pad_inches=0.1)
     plt.close(fig)
 
 
