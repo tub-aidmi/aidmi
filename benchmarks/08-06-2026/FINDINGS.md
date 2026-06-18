@@ -1,6 +1,6 @@
 # Benchmark Campaign — Findings
 
-> Orchestrator-expansion campaign, run 2026-06-07/08 against the TU Berlin ISE LiteLLM proxy. Aggregated report: `benchmarks/report/` (`summary.md`, `cells.csv`, `summary.csv`). Raw rows: `benchmarks/results/{main,side_context,side_selfcorr}/results.jsonl`.
+> Orchestrator-expansion campaign, run 2026-06-07/08 against the TU Berlin ISE LiteLLM proxy. Aggregated report: `benchmarks/08-06-2026/report/` (`summary.md`, `cells.csv`, `summary.csv`, `plots/`). Raw rows: `benchmarks/08-06-2026/results/main/results.jsonl`.
 
 ## Setup
 
