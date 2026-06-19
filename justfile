@@ -78,6 +78,7 @@ sf-auth-check:
 # Campaign dirs: benchmarks/<YYYY-MM-DD-N>/ (e.g. 2026-06-17-1)
 # Usage: just sweep 2026-06-17-1 ollama_snapshot
 #        just sweep 08-06-2026 main_grid results/main
+#        just archive-dbt 2026-06-17-1   # backfill dbt from workspace into results/dbt/
 
 sweep campaign grid out="results" *FLAGS:
   @test -f .env || cp -n .env.example .env
@@ -85,6 +86,9 @@ sweep campaign grid out="results" *FLAGS:
     --grid benchmarks/{{campaign}}/grids/{{grid}}.yaml \
     --out benchmarks/{{campaign}}/{{out}} \
     {{FLAGS}}
+
+archive-dbt campaign out="results":
+  {{orch}} archive-dbt --out benchmarks/{{campaign}}/{{out}}
 
 report campaign *inputs:
   #!/usr/bin/env bash

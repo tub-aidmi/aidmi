@@ -12,7 +12,10 @@ A run produces several files on disk. This page is the reference for each.
 
 <sweep-out>/
 ├── results.jsonl
-└── sweep_config.yaml
+├── sweep_config.yaml
+└── dbt/
+    └── <run-id>/
+        └── dbt_project/
 ```
 
 `<run-id>` is a [ULID](https://github.com/ulid/spec) (Crockford base32; sortable; 26 characters). Used as the directory name. Each run uses two Postgres schemas derived from the lowercase run id:

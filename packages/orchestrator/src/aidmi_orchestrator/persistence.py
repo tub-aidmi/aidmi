@@ -1,5 +1,6 @@
 """File writers for run artifacts. No business logic."""
 from __future__ import annotations
+import shutil
 from pathlib import Path
 from aidmi_orchestrator.domain import (
     StrategyResult, MappingManifest, BenchmarkResult,
@@ -47,3 +48,19 @@ def write_benchmark_result(run_dir: Path, result: BenchmarkResult) -> None:
     (run_dir / "result.json").write_text(
         result.model_dump_json(indent=2), encoding="utf-8"
     )
+
+
+_DBT_ARCHIVE_IGNORE = shutil.ignore_patterns("target", "dbt_packages", "logs")
+
+
+def archive_run_dbt(run_dir: Path, dest_dir: Path) -> bool:
+    """Copy source dbt project from a run into dest_dir/dbt_project/. Returns False if missing."""
+    src = run_dir / "dbt_project"
+    if not src.is_dir():
+        return False
+    dest = dest_dir / "dbt_project"
+    if dest.exists():
+        return True
+    dest_dir.mkdir(parents=True, exist_ok=True)
+    shutil.copytree(src, dest, ignore=_DBT_ARCHIVE_IGNORE)
+    return True

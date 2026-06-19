@@ -8,6 +8,7 @@ from aidmi_orchestrator.persistence import (
     write_strategy_result,
     write_mapping_manifest,
     write_benchmark_result,
+    archive_run_dbt,
 )
 
 
@@ -44,3 +45,29 @@ def test_write_benchmark_result(tmp_path):
     write_benchmark_result(tmp_path, r)
     data = json.loads((tmp_path / "result.json").read_text())
     assert data["metrics"]["dbt_success"] is True
+
+
+def test_archive_run_dbt_copies_source(tmp_path):
+    run_dir = tmp_path / "run"
+    scaffold_dbt_project(run_dir / "dbt_project")
+    (run_dir / "dbt_project" / "models" / "users.sql").write_text("SELECT 1", encoding="utf-8")
+    (run_dir / "dbt_project" / "target").mkdir()
+    (run_dir / "dbt_project" / "target" / "compiled.sql").write_text("big", encoding="utf-8")
+
+    dest = tmp_path / "dest"
+    assert archive_run_dbt(run_dir, dest) is True
+    assert (dest / "dbt_project" / "dbt_project.yml").exists()
+    assert (dest / "dbt_project" / "models" / "users.sql").read_text() == "SELECT 1"
+    assert not (dest / "dbt_project" / "target").exists()
+
+
+def test_archive_run_dbt_idempotent(tmp_path):
+    run_dir = tmp_path / "run"
+    scaffold_dbt_project(run_dir / "dbt_project")
+    dest = tmp_path / "dest"
+    assert archive_run_dbt(run_dir, dest) is True
+    assert archive_run_dbt(run_dir, dest) is True
+
+
+def test_archive_run_dbt_missing_source(tmp_path):
+    assert archive_run_dbt(tmp_path / "run", tmp_path / "dest") is False

@@ -88,6 +88,7 @@ aidmi-orchestrator sweep \
 | `--runs-per-cell` | from grid, then 1 | Number of repetitions per cell. Falls back to the grid YAML's `runs_per_cell:` key, then to 1. Note: the value 1 acts as "unset" — `--runs-per-cell 1` cannot override a grid file's `runs_per_cell` greater than 1. To force single runs, edit the grid file or use a copy with `runs_per_cell: 1`. |
 | `--concurrency` | from grid, then 3 | Maximum number of parallel runs. Falls back to the grid YAML's `concurrency:` key, then to 3. |
 | `--resume` / `--no-resume` | `--resume` | When `--resume` (default), skip any `(spec, fixture, rep)` tuple whose result row already exists in `results.jsonl`. `--no-resume` truncates the file and re-runs everything. |
+| `--archive-dbt` / `--no-archive-dbt` | `--archive-dbt` | Copy each run's dbt source (`dbt_project.yml` + `models/`) into `<out>/dbt/<run-id>/`. Excludes `target/`. |
 | `--workspace` | `./aidmi_workspace` | Workspace directory. |
 | `--verbose`, `-v` | off | Same as [`run`](#aidmi-orchestrator-run): stream trace JSON lines to stderr. Only active when `--concurrency 1`; a warning is printed and mirroring is suppressed otherwise. |
 
@@ -145,7 +146,10 @@ expands into three cells, one per `context_mode` value. Each row records a disti
 ```
 <out>/
 ├── results.jsonl       # one BenchmarkResult per line, streamed as cells complete
-└── sweep_config.yaml   # the grid that was run, for reproducibility
+├── sweep_config.yaml   # the grid that was run, for reproducibility
+└── dbt/
+    └── <run-id>/
+        └── dbt_project/   # source SQL archived per run (when --archive-dbt, default)
 ```
 
 Each run's full per-cell artifacts (trace, dbt project, result.json) are also written under `<workspace>/runs/<run-id>/` so individual cells can be inspected offline.
@@ -159,6 +163,18 @@ Each run's full per-cell artifacts (trace, dbt project, result.json) are also wr
 A cell that fails (strategy crash, dbt error, missing API key) does not stop the sweep. The cell's `BenchmarkResult` is written with `error` set to a string describing the failure, and the next cell starts. The `results.jsonl` always contains exactly one row per cell.
 
 A `KeyboardInterrupt` or other signal stops the sweep at the next cell boundary. Already-completed cells remain in `results.jsonl`.
+
+## `aidmi-orchestrator archive-dbt`
+
+Backfill dbt source projects from workspace runs into a sweep output directory. Use for historical sweeps that wrote `results.jsonl` before `--archive-dbt` existed.
+
+```
+aidmi-orchestrator archive-dbt \
+  --out DIR \
+  [--workspace DIR]
+```
+
+Reads `run_id` from `<out>/results.jsonl` and copies each `workspace/runs/<run-id>/dbt_project/` to `<out>/dbt/<run-id>/dbt_project/`. Skips runs already archived; reports missing sources.
 
 ## `aidmi-orchestrator report`
 

@@ -19,6 +19,7 @@ import aidmi_orchestrator.evaluator  # noqa: F401
 import aidmi_orchestrator.fixtures  # noqa: F401
 
 from aidmi_orchestrator.benchmark import Benchmark, expand_grid, parse_strategy_spec
+from aidmi_orchestrator.persistence import archive_run_dbt
 from aidmi_orchestrator.fixtures.base import get_fixture
 from aidmi_orchestrator.strategy.base import make_strategy
 
@@ -97,6 +98,7 @@ def sweep(
     workspace: Annotated[Path, typer.Option(help="workspace directory")] = Path("./aidmi_workspace"),
     concurrency: Annotated[int | None, typer.Option(help="parallel runs (overrides grid YAML 'concurrency', default 3)")] = None,
     resume: Annotated[bool, typer.Option("--resume/--no-resume", help="skip (spec, fixture, rep) tuples already in results.jsonl")] = True,
+    archive_dbt: Annotated[bool, typer.Option("--archive-dbt/--no-archive-dbt", help="copy each run's dbt source into out/dbt/<run_id>/")] = True,
     verbose: Annotated[bool, typer.Option("-v", "--verbose", help="stream trace JSONL to stderr (concurrency 1 only)")] = False,
 ):
     """Sweep (strategy, config) cells across fixtures with model-major scheduling."""
@@ -141,7 +143,7 @@ def sweep(
         typer.echo("verbose trace mirroring disabled for concurrency > 1", err=True)
 
     total = len(jobs)
-    counter = {"done": 0}
+    counter = {"done": 0, "archived": 0}
     lock = asyncio.Lock()
     fh = open(results_path, "a", encoding="utf-8")
 
@@ -154,6 +156,11 @@ def sweep(
         async with lock:
             fh.write(result.model_dump_json() + "\n")
             fh.flush()
+            if archive_dbt and archive_run_dbt(
+                workspace / "runs" / result.run_id,
+                out / "dbt" / result.run_id,
+            ):
+                counter["archived"] += 1
             counter["done"] += 1
             status = "ERROR" if result.error else "ok"
             typer.echo(
@@ -175,7 +182,45 @@ def sweep(
     finally:
         fh.close()
     failed = sum(1 for r in results if r.error)
-    typer.echo(f"wrote {len(results)} result rows to {results_path} ({failed} with errors)")
+    msg = f"wrote {len(results)} result rows to {results_path} ({failed} with errors)"
+    if archive_dbt:
+        msg += f"; archived dbt for {counter['archived']} runs under {out / 'dbt'}"
+    typer.echo(msg)
+
+
+@app.command("archive-dbt")
+def archive_dbt_cmd(
+    out: Annotated[Path, typer.Option(help="sweep output directory containing results.jsonl")],
+    workspace: Annotated[Path, typer.Option(help="workspace directory")] = Path("./aidmi_workspace"),
+):
+    """Backfill dbt source projects from workspace runs into out/dbt/<run_id>/."""
+    import json
+
+    results_path = out / "results.jsonl"
+    if not results_path.is_file():
+        raise typer.BadParameter(f"no results.jsonl at {results_path}")
+
+    archived = 0
+    skipped = 0
+    missing = 0
+    for line in results_path.read_text(encoding="utf-8").splitlines():
+        if not line.strip():
+            continue
+        run_id = json.loads(line)["run_id"]
+        dest = out / "dbt" / run_id
+        if (dest / "dbt_project").exists():
+            skipped += 1
+            continue
+        if archive_run_dbt(workspace / "runs" / run_id, dest):
+            archived += 1
+        else:
+            missing += 1
+            typer.echo(f"missing dbt source for {run_id}", err=True)
+
+    typer.echo(
+        f"archive-dbt: {archived} copied, {skipped} already present, {missing} missing "
+        f"-> {out / 'dbt'}"
+    )
 
 
 @app.command()
