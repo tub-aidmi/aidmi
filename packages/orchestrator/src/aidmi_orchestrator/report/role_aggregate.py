@@ -28,6 +28,7 @@ class RoleStackedBarSpec:
     role_labels: list[str]
     segments: list[dict[str, float]]
     totals: list[float]
+    n_by_model: list[int]
 
 
 def _strategy_label(row: dict[str, Any]) -> str:
@@ -90,6 +91,7 @@ def build_role_stacked_bar_spec(
 
     segments: list[dict[str, float]] = []
     totals: list[float] = []
+    n_by_model: list[int] = []
     for model in col_models:
         dicts = by_model.get(model, [])
         seg: dict[str, float] = {}
@@ -100,9 +102,11 @@ def build_role_stacked_bar_spec(
         if seg:
             segments.append(seg)
             totals.append(sum(seg.values()))
+            n_by_model.append(len(dicts))
         else:
             segments.append({})
             totals.append(0.0)
+            n_by_model.append(0)
 
     return RoleStackedBarSpec(
         fixture=fixture,
@@ -112,6 +116,7 @@ def build_role_stacked_bar_spec(
         role_labels=role_labels,
         segments=segments,
         totals=totals,
+        n_by_model=n_by_model,
     )
 
 

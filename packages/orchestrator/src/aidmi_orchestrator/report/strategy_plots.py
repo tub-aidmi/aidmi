@@ -129,6 +129,7 @@ def _build_grouped_bar(
             ]
             row_vals.append(statistics.mean(vals) if vals else 0.0)
         values.append(row_vals)
+    n_by_model = [len(by_model.get(model, [])) for model in models]
     return GroupedBarPlotSpec(
         fixture=fixture,
         strategy=strategy,
@@ -136,6 +137,7 @@ def _build_grouped_bar(
         series_labels=present,
         col_labels=col_labels,
         values=values,
+        n_by_model=n_by_model,
     )
 
 
@@ -221,6 +223,7 @@ def build_funnel_specs(rows: list[dict[str, Any]]) -> list[FunnelPlotSpec]:
                 stage_labels=stage_labels,
                 col_labels=col_labels,
                 pass_rates=pass_rates,
+                n_by_model=[len(by_model.get(model, [])) for model in models],
             ))
     return specs
 
@@ -283,6 +286,7 @@ def _build_preservation_per_table_spec(
         series_labels=table_labels,
         col_labels=col_labels,
         values=values,
+        n_by_model=[len(by_model.get(model, [])) for model in models],
     )
 
 
@@ -305,7 +309,10 @@ def build_row_equality_heatmap_specs(rows: list[dict[str, Any]]) -> list[TableMo
             by_model = _by_model(cell_rows)
             models = ordered_models(set(by_model))
             col_labels = _model_col_labels(models)
-            matrix = np.full((len(table_labels), len(models)), np.nan)
+            shape = (len(table_labels), len(models))
+            matrix = np.full(shape, np.nan)
+            std_matrix = np.full(shape, np.nan)
+            n_matrix = np.full(shape, np.nan)
             for i, table in enumerate(table_labels):
                 for j, model in enumerate(models):
                     vals = []
@@ -316,6 +323,8 @@ def build_row_equality_heatmap_specs(rows: list[dict[str, Any]]) -> list[TableMo
                             vals.append(1.0 if entry["row_count_match"] else 0.0)
                     if vals:
                         matrix[i, j] = statistics.mean(vals)
+                        n_matrix[i, j] = len(vals)
+                        std_matrix[i, j] = statistics.stdev(vals) if len(vals) > 1 else 0.0
             specs.append(TableModelHeatmapPlotSpec(
                 fixture=fixture,
                 strategy=strategy,
@@ -323,6 +332,8 @@ def build_row_equality_heatmap_specs(rows: list[dict[str, Any]]) -> list[TableMo
                 row_labels=table_labels,
                 col_labels=col_labels,
                 values=matrix,
+                std=std_matrix,
+                n=n_matrix,
             ))
     return specs
 
@@ -345,6 +356,7 @@ def build_self_correction_specs(rows: list[dict[str, Any]]) -> list[DumbbellPlot
             for metric in SELF_CORRECTION_METRICS:
                 base_vals: list[float] = []
                 variant_vals: list[float] = []
+                n_by_model: list[int] = []
                 for model in common_models:
                     b = [
                         numeric_metrics(r)[metric]
@@ -360,6 +372,7 @@ def build_self_correction_specs(rows: list[dict[str, Any]]) -> list[DumbbellPlot
                         break
                     base_vals.append(statistics.mean(b))
                     variant_vals.append(statistics.mean(v))
+                    n_by_model.append(len(b))
                 else:
                     specs.append(DumbbellPlotSpec(
                         fixture=fixture,
@@ -369,5 +382,6 @@ def build_self_correction_specs(rows: list[dict[str, Any]]) -> list[DumbbellPlot
                         col_labels=col_labels,
                         base_values=base_vals,
                         variant_values=variant_vals,
+                        n_by_model=n_by_model,
                     ))
     return specs

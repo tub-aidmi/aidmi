@@ -77,6 +77,7 @@ def test_build_grouped_bar_preservation_profile() -> None:
         "preservation_distinct_ratio_mean",
         "preservation_null_inflation_mean",
     ]
+    assert specs[0].n_by_model == [1]
 
 
 def test_build_rep_stability_requires_two_reps() -> None:
@@ -95,10 +96,15 @@ def test_build_preservation_per_table() -> None:
 
 
 def test_build_row_equality_heatmap() -> None:
-    rows = [_row(metrics={"per_table_equality": {"users": {"row_count_match": True}}})]
+    rows = [
+        _row(metrics={"per_table_equality": {"users": {"row_count_match": True}}}, rep=0),
+        _row(metrics={"per_table_equality": {"users": {"row_count_match": False}}}, rep=1),
+    ]
     specs = build_row_equality_heatmap_specs(rows)
     assert len(specs) == 1
     assert specs[0].row_labels == ["users"]
+    assert specs[0].n[0, 0] == 2
+    assert specs[0].std[0, 0] == pytest.approx(0.707, rel=1e-2)
 
 
 def test_build_self_correction_dumbbell() -> None:

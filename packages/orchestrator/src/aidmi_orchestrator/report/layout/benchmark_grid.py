@@ -82,14 +82,14 @@ def build_strategy_model_matrix(
     cells: list[CellAggregate],
     fixture: str,
     metric: str,
-) -> tuple[Any, list[str], list[str]] | None:
+) -> tuple[Any, Any, Any, list[str], list[str]] | None:
     import numpy as np
 
     f_cells = [c for c in cells if c.fixture_name == fixture and metric in c.metrics]
     if not f_cells:
         return None
 
-    by_row_model: dict[tuple[str, str], float] = {}
+    by_row_model: dict[tuple[str, str], dict[str, float]] = {}
     key_to_strategy: dict[str, str] = {}
     models: set[str] = set()
     row_keys: set[str] = set()
@@ -98,19 +98,24 @@ def build_strategy_model_matrix(
         row_keys.add(row_key)
         key_to_strategy.setdefault(row_key, c.strategy_name)
         models.add(c.model_name)
-        by_row_model[(row_key, c.model_name)] = c.metrics[metric]["mean"]
+        by_row_model[(row_key, c.model_name)] = c.metrics[metric]
 
     row_labels = ordered_row_labels(row_keys, key_to_strategy)
     col_models = ordered_models(models)
     key_by_label = {heatmap_row_label(k, key_to_strategy[k]): k for k in row_keys}
 
-    matrix = np.full((len(row_labels), len(col_models)), np.nan)
+    shape = (len(row_labels), len(col_models))
+    matrix = np.full(shape, np.nan)
+    std_matrix = np.full(shape, np.nan)
+    n_matrix = np.full(shape, np.nan)
     for i, label in enumerate(row_labels):
         row_key = key_by_label[label]
         for j, model in enumerate(col_models):
-            value = by_row_model.get((row_key, model))
-            if value is not None:
-                matrix[i, j] = value
+            agg = by_row_model.get((row_key, model))
+            if agg is not None:
+                matrix[i, j] = agg["mean"]
+                std_matrix[i, j] = agg["std"]
+                n_matrix[i, j] = agg["n"]
 
     col_labels = [MODEL_LABELS.get(m, m) for m in col_models]
-    return matrix, row_labels, col_labels
+    return matrix, std_matrix, n_matrix, row_labels, col_labels

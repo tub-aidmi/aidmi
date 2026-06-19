@@ -120,11 +120,12 @@ def test_build_strategy_model_matrix() -> None:
     ]
     built = build_strategy_model_matrix(cells, "fx", "target_columns_covered")
     assert built is not None
-    matrix, row_labels, col_labels = built
+    matrix, std_matrix, n_matrix, row_labels, col_labels = built
     assert row_labels == ["write_then_critique"]
     assert "qwen3.6-35b" in col_labels
     assert matrix[0, col_labels.index("qwen3.6-35b")] == 1.0
     assert matrix[0, col_labels.index("qwen3.5-9b")] == 0.0
+    assert n_matrix[0, col_labels.index("qwen3.6-35b")] == 3.0
 
 
 def test_build_strategy_model_matrix_missing_cell_is_nan() -> None:
@@ -148,7 +149,7 @@ def test_build_strategy_model_matrix_missing_cell_is_nan() -> None:
     ]
     built = build_strategy_model_matrix(cells, "fx", "dbt_success")
     assert built is not None
-    matrix, row_labels, col_labels = built
+    matrix, _std_matrix, _n_matrix, row_labels, col_labels = built
     assert "write_then_critique" in row_labels
     assert "qwen3.5-9b" in col_labels
     import numpy as np

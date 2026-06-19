@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from aidmi_orchestrator.report.format import uniform_plot_n
 from aidmi_orchestrator.report.plot_specs import DumbbellPlotSpec
 
 
@@ -41,8 +42,12 @@ def render_dumbbell_svg(spec: DumbbellPlotSpec, svg_path: Path) -> None:
     ax.set_xticklabels(spec.col_labels, rotation=35, ha="right")
     ax.set_xlabel("Model")
     ax.set_ylabel(spec.metric)
+    plot_n = uniform_plot_n(spec.n_by_model)
+    metric_part = spec.metric if plot_n == 1 else f"Mean {spec.metric}"
+    suffix = f" (n={plot_n})" if plot_n and plot_n > 1 else ""
     ax.set_title(
-        f"Self-correction — {spec.metric} — {spec.base_label} vs {spec.variant_label} — {spec.fixture}"
+        f"Self-correction — {metric_part}{suffix} — "
+        f"{spec.base_label} vs {spec.variant_label} — {spec.fixture}"
     )
     ax.legend(loc="upper right")
 

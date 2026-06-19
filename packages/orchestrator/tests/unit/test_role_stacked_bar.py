@@ -82,6 +82,8 @@ def test_build_role_stacked_bar_spec_means_across_reps() -> None:
     assert spec.totals[qwen36_i] == 250.0
     assert spec.segments[qwen9b_i]["writer"] == 300.0
     assert spec.totals[qwen9b_i] == 390.0
+    assert spec.n_by_model[qwen36_i] == 2
+    assert spec.n_by_model[qwen9b_i] == 1
 
 
 def test_build_role_stacked_bar_spec_skips_missing_metric() -> None:

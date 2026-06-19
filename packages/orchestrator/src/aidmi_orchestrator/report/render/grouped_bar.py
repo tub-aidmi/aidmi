@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from aidmi_orchestrator.report.format import mean_plot_title, uniform_plot_n
 from aidmi_orchestrator.report.plot_specs import GroupedBarPlotSpec
 
 _PLOT_TITLES = {
@@ -48,8 +49,10 @@ def render_grouped_bar_svg(spec: GroupedBarPlotSpec, svg_path: Path) -> None:
     ax.set_xticks(x)
     ax.set_xticklabels(spec.col_labels, rotation=35, ha="right")
     ax.set_xlabel("Model")
-    title = _PLOT_TITLES.get(spec.plot_id, spec.plot_id)
-    ax.set_title(f"{title} — {spec.strategy} — {spec.fixture}")
+    title_label = _PLOT_TITLES.get(spec.plot_id, spec.plot_id)
+    context = f"{spec.strategy} — {spec.fixture}"
+    plot_n = uniform_plot_n(spec.n_by_model)
+    ax.set_title(mean_plot_title(title_label, context, plot_n))
     ax.legend(title="Series", loc="upper right")
 
     svg_path.parent.mkdir(parents=True, exist_ok=True)

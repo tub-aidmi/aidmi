@@ -4,14 +4,7 @@ from __future__ import annotations
 import statistics
 
 from aidmi_orchestrator.report.aggregate import CellAggregate
-
-
-def _fmt(agg: dict[str, float] | None) -> str:
-    if agg is None:
-        return "-"
-    if agg["std"]:
-        return f"{agg['mean']:.3g}±{agg['std']:.2g}"
-    return f"{agg['mean']:.4g}"
+from aidmi_orchestrator.report.format import fmt_agg
 
 
 def render_markdown(
@@ -28,7 +21,7 @@ def render_markdown(
         lines.append("| spec | model | n | " + " | ".join(present) + " |")
         lines.append("|" + "---|" * (len(present) + 3))
         for c in sorted(f_cells, key=lambda c: c.spec_name):
-            cols = [_fmt(c.metrics.get(m)) for m in present]
+            cols = [fmt_agg(c.metrics.get(m)) for m in present]
             lines.append(f"| {c.spec_name} | {c.model_name} | {c.n_runs} | " + " | ".join(cols) + " |")
         lines.append("")
     return "\n".join(lines)

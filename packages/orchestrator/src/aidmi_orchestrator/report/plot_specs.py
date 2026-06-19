@@ -28,6 +28,7 @@ class FunnelPlotSpec:
     stage_labels: list[str]
     col_labels: list[str]
     pass_rates: list[list[float]]
+    n_by_model: list[int]
 
 
 @dataclass
@@ -38,6 +39,7 @@ class GroupedBarPlotSpec:
     series_labels: list[str]
     col_labels: list[str]
     values: list[list[float]]
+    n_by_model: list[int]
 
 
 @dataclass
@@ -49,6 +51,7 @@ class DumbbellPlotSpec:
     col_labels: list[str]
     base_values: list[float]
     variant_values: list[float]
+    n_by_model: list[int]
 
 
 @dataclass
@@ -59,6 +62,8 @@ class TableModelHeatmapPlotSpec:
     row_labels: list[str]
     col_labels: list[str]
     values: np.ndarray
+    std: np.ndarray
+    n: np.ndarray
 
 
 @dataclass
@@ -69,6 +74,8 @@ class HeatmapPlotSpec:
     col_labels: list[str]
     values: np.ndarray
     descriptor: MetricDescriptor
+    std: np.ndarray
+    n: np.ndarray
 
 
 @dataclass

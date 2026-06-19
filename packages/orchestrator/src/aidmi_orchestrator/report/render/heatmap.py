@@ -5,6 +5,7 @@ from pathlib import Path
 
 import numpy as np
 
+from aidmi_orchestrator.report.format import fmt_mean_std, mean_plot_title, uniform_plot_n
 from aidmi_orchestrator.report.base import MetricDescriptor, PlotKind, PlotScope
 from aidmi_orchestrator.report.aggregate import CellAggregate
 from aidmi_orchestrator.report.catalog import ReportPlan
@@ -55,7 +56,7 @@ def build_global_heatmap_spec(
     built = build_strategy_model_matrix(cells, fixture, metric)
     if built is None:
         return None
-    matrix, row_labels, col_labels = built
+    matrix, std_matrix, n_matrix, row_labels, col_labels = built
     return HeatmapPlotSpec(
         fixture=fixture,
         metric=metric,
@@ -63,6 +64,8 @@ def build_global_heatmap_spec(
         col_labels=col_labels,
         values=matrix,
         descriptor=descriptor,
+        std=std_matrix,
+        n=n_matrix,
     )
 
 
@@ -130,29 +133,38 @@ def render_heatmap_svg(spec: HeatmapPlotSpec, svg_path: Path) -> None:
     ax.set_yticks(range(len(spec.row_labels)))
     ax.set_yticklabels(spec.row_labels)
     ax.set_ylabel("Strategy")
-    ax.set_title(f"Mean {spec.metric} — {spec.fixture}", pad=28)
+
+    finite_n = spec.n[np.isfinite(spec.n)]
+    plot_n = uniform_plot_n([int(v) for v in finite_n]) if finite_n.size else None
+    ax.set_title(mean_plot_title(spec.metric, spec.fixture, plot_n), pad=28)
 
     rate_style = spec.descriptor.vmin is not None and spec.descriptor.vmax == 1.0
     for i in range(matrix.shape[0]):
         for j in range(matrix.shape[1]):
             value = matrix[i, j]
             if not np.isfinite(value):
-                label, text_color = "n/a", "black"
-            elif rate_style:
-                label = f"{value:.2f}"
+                ax.text(j, i, "n/a", ha="center", va="center", color="black", fontsize=10)
+                continue
+            cell_n = int(spec.n[i, j]) if np.isfinite(spec.n[i, j]) else 0
+            cell_std = float(spec.std[i, j]) if np.isfinite(spec.std[i, j]) else 0.0
+            mean_line, std_line = fmt_mean_std(
+                value, cell_std, n=cell_n, rate=rate_style, metric=spec.metric,
+            )
+            if rate_style:
                 text_color = "white" if value >= 0.45 else "black"
             elif value >= 1000:
-                label = f"{value:.3g}"
                 text_color = "white" if value > (vmin + vmax) / 2 else "black"
             elif abs(value) < 10 and spec.metric not in (
                 "tokens_input_total", "tokens_output_total", "wall_clock_seconds", "llm_calls_total",
             ):
-                label = f"{value:.2f}"
                 text_color = "white" if value >= (vmin + vmax) / 2 else "black"
             else:
-                label = f"{value:.3g}"
                 text_color = "white" if value > (vmin + vmax) / 2 else "black"
-            ax.text(j, i, label, ha="center", va="center", color=text_color, fontsize=10)
+            if std_line:
+                ax.text(j, i - 0.15, mean_line, ha="center", va="center", color=text_color, fontsize=9)
+                ax.text(j, i + 0.15, std_line, ha="center", va="center", color=text_color, fontsize=8)
+            else:
+                ax.text(j, i, mean_line, ha="center", va="center", color=text_color, fontsize=10)
 
     cbar = fig.colorbar(im, ax=ax, fraction=0.035, pad=0.04)
     cbar.set_label(spec.metric)

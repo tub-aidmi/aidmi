@@ -24,10 +24,18 @@ def heatmap_csv_rows(spec) -> list[dict]:
     for i, strategy in enumerate(spec.row_labels):
         for j, model in enumerate(spec.col_labels):
             value = spec.values[i, j]
+            cell_n = spec.n[i, j] if hasattr(spec, "n") else float("nan")
+            cell_std = spec.std[i, j] if hasattr(spec, "std") else float("nan")
+            n_int = int(cell_n) if np.isfinite(cell_n) else None
+            std_out = ""
+            if n_int and n_int > 1 and np.isfinite(cell_std):
+                std_out = cell_std
             rows.append({
                 "strategy": strategy,
                 "model": model,
                 "value": "" if not np.isfinite(value) else value,
+                "std": std_out,
+                "n": "" if n_int is None else n_int,
             })
     return rows
 
@@ -60,28 +68,38 @@ def funnel_csv_rows(spec) -> list[dict]:
 
 def grouped_bar_csv_rows(spec) -> list[dict]:
     rows: list[dict] = []
+    n_by_model = getattr(spec, "n_by_model", [])
     for series, vals in zip(spec.series_labels, spec.values):
-        for model, value in zip(spec.col_labels, vals):
-            rows.append({
+        for j, (model, value) in enumerate(zip(spec.col_labels, vals)):
+            row: dict = {
                 "strategy": spec.strategy,
                 "model": model,
                 "series": series,
                 "value": value,
-            })
+            }
+            if n_by_model and j < len(n_by_model):
+                row["n"] = n_by_model[j]
+            rows.append(row)
     return rows
 
 
 def dumbbell_csv_rows(spec) -> list[dict]:
     rows: list[dict] = []
-    for model, base, variant in zip(spec.col_labels, spec.base_values, spec.variant_values):
-        rows.append({
+    n_by_model = getattr(spec, "n_by_model", [])
+    for j, (model, base, variant) in enumerate(
+        zip(spec.col_labels, spec.base_values, spec.variant_values)
+    ):
+        row: dict = {
             "fixture": spec.fixture,
             "model": model,
             "base_strategy": spec.base_label,
             "variant_strategy": spec.variant_label,
             "base_value": base,
             "variant_value": variant,
-        })
+        }
+        if n_by_model and j < len(n_by_model):
+            row["n"] = n_by_model[j]
+        rows.append(row)
     return rows
 
 
@@ -90,11 +108,19 @@ def table_heatmap_csv_rows(spec) -> list[dict]:
     for i, table in enumerate(spec.row_labels):
         for j, model in enumerate(spec.col_labels):
             value = spec.values[i, j]
+            cell_n = spec.n[i, j] if hasattr(spec, "n") else float("nan")
+            cell_std = spec.std[i, j] if hasattr(spec, "std") else float("nan")
+            n_int = int(cell_n) if np.isfinite(cell_n) else None
+            std_out = ""
+            if n_int and n_int > 1 and np.isfinite(cell_std):
+                std_out = cell_std
             rows.append({
                 "strategy": spec.strategy,
                 "table": table,
                 "model": model,
                 "value": "" if not np.isfinite(value) else value,
+                "std": std_out,
+                "n": "" if n_int is None else n_int,
             })
     return rows
 
@@ -128,7 +154,7 @@ def write_plot_csv(spec: PlotSpec, csv_path: Path) -> None:
     from aidmi_orchestrator.report.role_aggregate import RoleStackedBarSpec
 
     if isinstance(spec, HeatmapPlotSpec):
-        write_rows(csv_path, ["strategy", "model", "value"], heatmap_csv_rows(spec))
+        write_rows(csv_path, ["strategy", "model", "value", "std", "n"], heatmap_csv_rows(spec))
     elif isinstance(spec, StrategyDistributionPlotSpec):
         write_rows(
             csv_path, ["strategy", "model", "rep_index", "value"],
@@ -137,15 +163,24 @@ def write_plot_csv(spec: PlotSpec, csv_path: Path) -> None:
     elif isinstance(spec, FunnelPlotSpec):
         write_rows(csv_path, ["strategy", "model", "stage", "pass_rate"], funnel_csv_rows(spec))
     elif isinstance(spec, GroupedBarPlotSpec):
-        write_rows(csv_path, ["strategy", "model", "series", "value"], grouped_bar_csv_rows(spec))
+        write_rows(
+            csv_path, ["strategy", "model", "series", "value", "n"],
+            grouped_bar_csv_rows(spec),
+        )
     elif isinstance(spec, DumbbellPlotSpec):
         write_rows(
             csv_path,
-            ["fixture", "model", "base_strategy", "variant_strategy", "base_value", "variant_value"],
+            [
+                "fixture", "model", "base_strategy", "variant_strategy",
+                "base_value", "variant_value", "n",
+            ],
             dumbbell_csv_rows(spec),
         )
     elif isinstance(spec, TableModelHeatmapPlotSpec):
-        write_rows(csv_path, ["strategy", "table", "model", "value"], table_heatmap_csv_rows(spec))
+        write_rows(
+            csv_path, ["strategy", "table", "model", "value", "std", "n"],
+            table_heatmap_csv_rows(spec),
+        )
     elif isinstance(spec, RoleStackedBarSpec):
         write_rows(
             csv_path,

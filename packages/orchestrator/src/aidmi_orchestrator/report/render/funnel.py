@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from aidmi_orchestrator.report.format import uniform_plot_n
 from aidmi_orchestrator.report.plot_specs import FunnelPlotSpec
 
 
@@ -39,7 +40,9 @@ def render_funnel_svg(spec: FunnelPlotSpec, svg_path: Path) -> None:
     ax.set_xticklabels(spec.col_labels, rotation=35, ha="right")
     ax.set_xlabel("Model")
     ax.set_ylabel("Pass rate")
-    ax.set_title(f"Outcome funnel — {spec.strategy} — {spec.fixture}")
+    plot_n = uniform_plot_n(spec.n_by_model)
+    suffix = f" (n={plot_n})" if plot_n and plot_n > 1 else ""
+    ax.set_title(f"Outcome funnel — {spec.strategy} — {spec.fixture}{suffix}")
     ax.legend(title="Stage", loc="upper right")
 
     svg_path.parent.mkdir(parents=True, exist_ok=True)
