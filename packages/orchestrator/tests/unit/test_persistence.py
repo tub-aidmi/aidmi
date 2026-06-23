@@ -32,7 +32,7 @@ def test_write_mapping_manifest_skips_when_none(tmp_path):
 def test_write_benchmark_result(tmp_path):
     r = BenchmarkResult(
         run_id="r1",
-        fixture_name="sp1_users",
+        fixture_name="master",
         strategy_name="mock",
         strategy_spec_name="mock_spec",
         strategy_config={},

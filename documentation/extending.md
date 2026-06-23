@@ -260,8 +260,6 @@ my_research/fixtures/my_crm/
         └── users.sql
 ```
 
-For a fixture against a real live source (e.g., Salesforce), `_load_source` constructs a dlt verified source with credentials read from environment variables. No data files needed; the directory contains only `__init__.py`, the target schema, and optionally a reference dbt project.
-
 ### `target_schema.json`
 
 A serialized `TargetSchema` Pydantic model:

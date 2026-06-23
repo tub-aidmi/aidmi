@@ -37,6 +37,10 @@ psql:
 
 # --- Fixtures ---
 
+init-db *FIXTURES:
+  @test -f .env || cp -n .env.example .env
+  {{orch-py}} python -m aidmi_orchestrator.scripts.init_fixtures {{FIXTURES}}
+
 gen-target-schema fixture:
   {{orch-py}} python -m aidmi_orchestrator.scripts.gen_target_schema --fixture {{fixture}}
 
@@ -60,31 +64,20 @@ run fixture spec:
   {{orch}} run --fixture {{fixture}} --strategy-spec {{specs}}/{{spec}}.yaml
 
 demo:
-  just run sp1_users mock
+  just init-db mock
+  just run mock mock
 
 litellm-smoke:
-  just run sp1_users write_tools_freeform_litellm_qwen
+  just init-db master
+  just run master write_tools_freeform_litellm_qwen
 
 ollama-smoke:
-  just run sp1_users write_tools_freeform_ollama_qwen
-
-sf-pipedrive-litellm:
-  just run sf_pipedrive write_tools_freeform_litellm_qwen
-
-sf-pipedrive-ollama:
-  just run sf_pipedrive write_tools_freeform_ollama_qwen
-
-# --- Salesforce scripts ---
-
-sf-snapshot:
-  {{orch-py}} python packages/orchestrator/scripts/snapshot_sf_pipedrive.py
-
-sf-auth-check:
-  {{orch-py}} python packages/orchestrator/scripts/sf_auth_probe.py
+  just init-db master
+  just run master write_tools_freeform_ollama_qwen
 
 # --- Benchmarks ---
-# Campaign dirs: benchmarks/<YYYY-MM-DD-N>/ (e.g. 2026-06-17-1)
-# Usage: just sweep 2026-06-17-1 ollama_snapshot
+# Historic campaign results: benchmarks/historic/<campaign>/
+# Usage: just sweep historic/2026-06-17-1 ollama_snapshot
 #        just sweep 08-06-2026 main_grid results/main
 #        just archive-dbt 2026-06-17-1   # backfill dbt from workspace into results/dbt/
 

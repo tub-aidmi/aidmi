@@ -103,5 +103,5 @@ class BenchmarkResult(BaseModel):
     strategy_result: StrategyResult
     metrics: dict[str, Any]
     error: str | None = None
-    staging_raw_dataset: str = ""
-    staging_out_dataset: str = ""
+    source_schema: str = ""
+    out_schema: str = ""

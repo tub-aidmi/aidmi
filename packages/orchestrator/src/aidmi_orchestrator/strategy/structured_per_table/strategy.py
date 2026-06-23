@@ -56,7 +56,7 @@ class StructuredPerTable:
         source_tables = sorted(
             {(t.db_schema, t.name) for t in api.source_summary.tables}
         )
-        write_proposal(api.dbt_project_path, sql_by_table, source_tables, api.staging_raw_dataset)
+        write_proposal(api.dbt_project_path, sql_by_table, source_tables, api.source_schema)
 
         mappings_by_table = {m.target_table: m for m in mappings}
 

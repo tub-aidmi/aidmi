@@ -2,17 +2,19 @@
 from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Callable
 
 
 @dataclass
 class Fixture:
     name: str
     description: str
-    source_factory: Callable[[], Any]
+    source_schema: str
+    source_sql_path: Path
+    destination_sql_path: Path
     target_schema_path: Path | None
     reference_dbt_path: Path | None
     applicable_evaluators: list[str]
+    golden_schema: str | None = None
 
 
 _FIXTURES: dict[str, Fixture] = {}

@@ -50,7 +50,7 @@ def test_strategy_result_minimal():
 def test_benchmark_result_with_metrics():
     r = BenchmarkResult(
         run_id="01HXX000000000000000000000",
-        fixture_name="sp1_users",
+        fixture_name="master",
         strategy_name="mock",
         strategy_spec_name="mock_spec",
         strategy_config={"mapping_source": "x.json"},

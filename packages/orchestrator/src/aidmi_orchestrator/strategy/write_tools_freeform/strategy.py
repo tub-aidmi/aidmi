@@ -74,7 +74,7 @@ class WriteToolsFreeform:
         )
 
         models_dir = api.dbt_project_path / "models"
-        ensure_sources_yaml_raw_schema(models_dir, api.staging_raw_dataset)
+        ensure_sources_yaml_raw_schema(models_dir, api.source_schema)
         produced = [
             p.stem for p in models_dir.glob("*.sql")
         ] if models_dir.exists() else []

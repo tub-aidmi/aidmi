@@ -25,8 +25,8 @@ def test_read_table_sample(staging_db_url, tmp_path):
         target_schema=None,
         dbt_project_path=tmp_path / "dbt",
         staging_db_url=staging_db_url,
-        staging_raw_dataset="",
-        staging_out_dataset="",
+        source_schema="",
+        out_schema="",
         trace=trace,
         _pipeline_run=None,
     )
@@ -43,8 +43,8 @@ def test_query_postgres_rejects_non_select(staging_db_url, tmp_path):
         target_schema=None,
         dbt_project_path=tmp_path / "dbt",
         staging_db_url=staging_db_url,
-        staging_raw_dataset="",
-        staging_out_dataset="",
+        source_schema="",
+        out_schema="",
         trace=trace,
         _pipeline_run=None,
     )
@@ -60,8 +60,8 @@ def test_query_postgres_row_cap(staging_db_url, tmp_path):
         target_schema=None,
         dbt_project_path=tmp_path / "dbt",
         staging_db_url=staging_db_url,
-        staging_raw_dataset="",
-        staging_out_dataset="",
+        source_schema="",
+        out_schema="",
         trace=trace,
         _pipeline_run=None,
     )

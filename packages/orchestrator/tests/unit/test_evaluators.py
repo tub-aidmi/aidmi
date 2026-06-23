@@ -13,8 +13,8 @@ def _artifacts(trace=None, final=None):
         dbt_project_path=Path("/tmp/x"),
         dlt_pipelines_dir=Path("/tmp/x/.dlt_pipelines"),
         staging_db_url="postgresql://x",
-        staging_raw_dataset="src_r1_raw",
-        staging_out_dataset="src_r1_out",
+        source_schema="src_r1_raw",
+        out_schema="src_r1_out",
         trace=trace or [],
         strategy_result=StrategyResult(
             target_tables_written=["users"], self_reported_status="complete"
@@ -112,7 +112,7 @@ def test_schema_evaluator_coverage_vs_input(staging_db_url, tmp_path):
     artifacts = _artifacts()
     artifacts.target_schema_input = target
     artifacts.staging_db_url = staging_db_url
-    artifacts.staging_out_dataset = "src_se1_out"
+    artifacts.out_schema = "src_se1_out"
     artifacts.strategy_result.target_tables_written = ["users"]
     artifacts.final_transform_result = type("TR", (), {"overall_status": "success", "models": []})()
 

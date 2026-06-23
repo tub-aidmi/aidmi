@@ -26,8 +26,8 @@ def test_end_to_end(staging_db_url, tmp_path):
         source=source,
         staging=StagingConfig(
             db_url=staging_db_url,
-            raw_dataset_name="staging_raw",
-            out_dataset_name="staging_out",
+            source_schema="staging_raw",
+            out_schema="staging_out",
         ),
         target=dlt.destinations.filesystem(
             bucket_url=output_dir.as_uri(),

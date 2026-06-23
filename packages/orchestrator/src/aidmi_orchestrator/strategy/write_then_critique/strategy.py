@@ -83,7 +83,7 @@ class WriteThenCritique:
 
         sql_by_table = {name: m.dbt_sql for name, m in mappings.items()}
         source_tables = sorted({(t.db_schema, t.name) for t in api.source_summary.tables})
-        write_proposal(api.dbt_project_path, sql_by_table, source_tables, api.staging_raw_dataset)
+        write_proposal(api.dbt_project_path, sql_by_table, source_tables, api.source_schema)
 
         manifest = manifest_from_mappings(
             list(mappings.values()),

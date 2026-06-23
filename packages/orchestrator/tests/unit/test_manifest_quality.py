@@ -14,7 +14,7 @@ from aidmi_orchestrator.evaluator.manifest_quality import ManifestQualityEvaluat
 def _artifacts(strategy_result: StrategyResult, target: TargetSchema | None) -> RunArtifacts:
     return RunArtifacts(
         run_id="r", dbt_project_path=Path("/nonexistent"), dlt_pipelines_dir=Path("/nonexistent"),
-        staging_db_url="postgresql://", staging_raw_dataset="raw", staging_out_dataset="out",
+        staging_db_url="postgresql://", source_schema="raw", out_schema="out",
         trace=[], strategy_result=strategy_result, target_schema_input=target,
         fixture=FixtureMetadata(name="f", description="", reference_dbt_path=None, applicable_evaluators=[]),
         wall_clock_seconds=1.0, final_transform_result=None,

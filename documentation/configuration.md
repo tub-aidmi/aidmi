@@ -282,7 +282,7 @@ cells:
 ### Complete example
 
 ```yaml
-fixture: [sp1_users, sf_pipedrive_snapshot]
+fixture: [mock, master]
 runs_per_cell: 3
 concurrency: 3
 exclusive_model_prefixes: ["ise-"]
@@ -295,9 +295,9 @@ models:
 cells:
   - name: mock_control
     strategy: mock
-    fixtures: [sp1_users]
+    fixtures: [mock]
     config:
-      mapping_source: packages/orchestrator/src/aidmi_orchestrator/fixtures/sp1_users/mock_mapping.json
+      mapping_source: packages/orchestrator/src/aidmi_orchestrator/fixtures/mock/mock_mapping.json
   - name: structured
     strategy: structured_per_table
     config:
@@ -305,7 +305,7 @@ cells:
       context_mode: metadata_plus_samples
 ```
 
-Total: 1 (mock, sp1_users only) + 1×2 fixtures = 3 cells. With `runs_per_cell: 3`, 9 benchmark runs.
+Total: 1 (mock, mock fixture only) + 1×2 fixtures = 3 cells. With `runs_per_cell: 3`, 9 benchmark runs.
 
 ## Pricing override
 

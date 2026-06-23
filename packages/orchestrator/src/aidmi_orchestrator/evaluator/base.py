@@ -22,8 +22,8 @@ class RunArtifacts:
     dbt_project_path: Path
     dlt_pipelines_dir: Path
     staging_db_url: str
-    staging_raw_dataset: str
-    staging_out_dataset: str
+    source_schema: str
+    out_schema: str
     trace: list[TraceEvent]
     strategy_result: StrategyResult
     target_schema_input: TargetSchema | None

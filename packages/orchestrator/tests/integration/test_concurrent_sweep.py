@@ -4,13 +4,13 @@ from __future__ import annotations
 import asyncio
 import json
 
-# Trigger registrations
 import aidmi_orchestrator.strategy  # noqa: F401
 import aidmi_orchestrator.evaluator  # noqa: F401
 import aidmi_orchestrator.fixtures  # noqa: F401
 
 from aidmi_orchestrator.benchmark import Benchmark
 from aidmi_orchestrator.fixtures.base import get_fixture
+from aidmi_orchestrator.scripts.init_fixtures import init_fixture
 from aidmi_orchestrator.scheduler import (
     SweepJob, completed_keys, expand_jobs, filter_resumed, run_jobs,
 )
@@ -18,10 +18,11 @@ from aidmi_orchestrator.strategy.base import make_strategy
 
 
 def test_concurrent_mock_sweep_and_resume(staging_db_url, tmp_path):
-    fixture = get_fixture("sp1_users")
+    fixture = get_fixture("mock")
+    init_fixture("mock", staging_db_url)
     mapping_source = str(fixture.target_schema_path.parent / "mock_mapping.json")
     cells = [("mock", {"mapping_source": mapping_source}, "mock", None)]
-    jobs = expand_jobs(cells, fixtures=["sp1_users"], runs_per_cell=2)
+    jobs = expand_jobs(cells, fixtures=["mock"], runs_per_cell=2)
     assert len(jobs) == 2
 
     bench = Benchmark(fixture, workspace=tmp_path, staging_db_url=staging_db_url)

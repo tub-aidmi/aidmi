@@ -6,22 +6,23 @@ from typing import Any
 from pydantic import BaseModel
 
 
-def staging_schemas_for_run(run_id: str) -> tuple[str, str]:
-    """Return (raw_schema, out_schema) Postgres dataset names for a ULID run_id."""
-    base = f"src_{run_id.lower()}"
-    return f"{base}_raw", f"{base}_out"
+def out_schema_for_run(run_id: str) -> str:
+    return f"run_{run_id.lower()}_out"
 
 
 @dataclass
 class StagingConfig:
     db_url: str
-    raw_dataset_name: str
-    out_dataset_name: str
+    source_schema: str
+    out_schema: str
 
     @classmethod
-    def for_run(cls, db_url: str, run_id: str) -> StagingConfig:
-        raw, out = staging_schemas_for_run(run_id)
-        return cls(db_url=db_url, raw_dataset_name=raw, out_dataset_name=out)
+    def for_run(cls, db_url: str, fixture_source_schema: str, run_id: str) -> StagingConfig:
+        return cls(
+            db_url=db_url,
+            source_schema=fixture_source_schema,
+            out_schema=out_schema_for_run(run_id),
+        )
 
 
 @dataclass
@@ -39,8 +40,8 @@ class CliMigrationConfig(BaseModel):
     source_url: str
     source_table_or_glob: str
     staging_db_url: str
-    staging_raw_dataset: str
-    staging_out_dataset: str
+    staging_source_schema: str
+    staging_out_schema: str
     target_kind: str
     target_url: str
     target_dataset: str
@@ -79,8 +80,8 @@ def cli_config_to_run(cfg: CliMigrationConfig) -> MigrationRun:
         source=source,
         staging=StagingConfig(
             db_url=cfg.staging_db_url,
-            raw_dataset_name=cfg.staging_raw_dataset,
-            out_dataset_name=cfg.staging_out_dataset,
+            source_schema=cfg.staging_source_schema,
+            out_schema=cfg.staging_out_schema,
         ),
         target=target,
         target_dataset=cfg.target_dataset,

@@ -1,12 +1,10 @@
-"""run_orchestrator — the 6-step sequential flow."""
+"""run_orchestrator — sequential flow."""
 from __future__ import annotations
-import asyncio
 from datetime import datetime
 from pathlib import Path
 from typing import IO
 
 from aidmi_pipeline.config import MigrationRun, StagingConfig
-from aidmi_pipeline.migration import extract_source
 
 from aidmi_orchestrator.api import OrchestratorAPI
 from aidmi_orchestrator.discover import discover
@@ -50,9 +48,9 @@ async def run_orchestrator(
     trace = TraceSink(run_dir / "trace.jsonl", mirror_to=trace_mirror)
     target_schema = _load_target_schema(fixture.target_schema_path)
 
-    staging = StagingConfig.for_run(staging_db_url, run_id)
+    staging = StagingConfig.for_run(staging_db_url, fixture.source_schema, run_id)
     pipeline_run = MigrationRun(
-        source=fixture.source_factory(),
+        source=None,
         staging=staging,
         target=None,
         target_dataset="",
@@ -60,35 +58,24 @@ async def run_orchestrator(
         dbt_project_path=dbt_project_path,
     )
 
-    # 1. extract
-    extract_result = await asyncio.to_thread(extract_source, pipeline_run)
-    trace.record(StrategyEvent(
-        timestamp=datetime.utcnow(),
-        label="extract_complete",
-        data={"rows_extracted": extract_result.rows_extracted},
-    ))
-
-    # 2. discover
-    source_summary = discover(staging.db_url, staging.raw_dataset_name, samples_per_table=100)
+    source_summary = discover(staging.db_url, staging.source_schema, samples_per_table=100)
     trace.record(StrategyEvent(
         timestamp=datetime.utcnow(),
         label="discover_complete",
         data={"table_count": len(source_summary.tables)},
     ))
 
-    # 3. build api
     api = OrchestratorAPI(
         source_summary=source_summary,
         target_schema=target_schema,
         dbt_project_path=dbt_project_path,
         staging_db_url=staging.db_url,
-        staging_raw_dataset=staging.raw_dataset_name,
-        staging_out_dataset=staging.out_dataset_name,
+        source_schema=staging.source_schema,
+        out_schema=staging.out_schema,
         trace=trace,
         _pipeline_run=pipeline_run,
     )
 
-    # 4. run strategy
     try:
         strategy_result = await strategy.generate(api)
     except Exception as e:
@@ -100,7 +87,6 @@ async def run_orchestrator(
         trace.close()
         raise StrategyExecutionError(run_id, e) from e
 
-    # 5. final canonical dbt run (best-effort — failures are observed, not raised)
     final_transform = None
     try:
         final_transform = await api.run_dbt()
@@ -111,7 +97,6 @@ async def run_orchestrator(
             data={"error": repr(e), "type": type(e).__name__},
         ))
 
-    # 6. persist
     write_strategy_result(run_dir, strategy_result)
     write_mapping_manifest(run_dir, strategy_result.manifest)
     trace.close()
@@ -128,8 +113,8 @@ async def run_orchestrator(
         dbt_project_path=dbt_project_path,
         dlt_pipelines_dir=dlt_pipelines_dir,
         staging_db_url=staging.db_url,
-        staging_raw_dataset=staging.raw_dataset_name,
-        staging_out_dataset=staging.out_dataset_name,
+        source_schema=staging.source_schema,
+        out_schema=staging.out_schema,
         trace=TraceSink.read_all(run_dir / "trace.jsonl"),
         strategy_result=strategy_result,
         target_schema_input=target_schema,

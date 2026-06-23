@@ -64,9 +64,9 @@ class DataPreservationEvaluator:
 
         with psycopg2.connect(artifacts.staging_db_url) as conn:
             with conn.cursor() as cur:
-                raw_tables = _schema_columns(cur, artifacts.staging_raw_dataset)
-                out_tables = _schema_columns(cur, artifacts.staging_out_dataset)
-                raw_counts = {t: _row_count(cur, artifacts.staging_raw_dataset, t) for t in raw_tables}
+                raw_tables = _schema_columns(cur, artifacts.source_schema)
+                out_tables = _schema_columns(cur, artifacts.out_schema)
+                raw_counts = {t: _row_count(cur, artifacts.source_schema, t) for t in raw_tables}
                 total_raw = sum(raw_counts.values())
 
                 notes_by_table = (
@@ -79,7 +79,7 @@ class DataPreservationEvaluator:
                 for t in artifacts.strategy_result.target_tables_written:
                     if t not in out_tables:
                         continue
-                    out_n = _row_count(cur, artifacts.staging_out_dataset, t)
+                    out_n = _row_count(cur, artifacts.out_schema, t)
                     if out_n == 0:
                         empty_tables += 1
                     note = notes_by_table.get(t)
@@ -111,9 +111,9 @@ class DataPreservationEvaluator:
                                 continue
                             s_table, s_col = resolved
                             sn, s_non_null, s_distinct = _col_stats(
-                                cur, artifacts.staging_raw_dataset, s_table, s_col)
+                                cur, artifacts.source_schema, s_table, s_col)
                             tn, t_non_null, t_distinct = _col_stats(
-                                cur, artifacts.staging_out_dataset, note.target_table, cn.target_column)
+                                cur, artifacts.out_schema, note.target_table, cn.target_column)
                             if sn and tn:
                                 null_inflations.append((1 - t_non_null / tn) - (1 - s_non_null / sn))
                                 if s_distinct:

@@ -15,7 +15,6 @@ The tool is intended for research: comparing prompts, agent topologies, models, 
 | [Data formats](data-formats.md) | The on-disk artifacts a run produces. |
 | [Extending](extending.md) | Writing new strategies, evaluators, fixtures, and LLM providers. |
 | [Architecture](architecture.md) | Internal package layout, control flow, registries. |
-| [Salesforce SOAP auth (`sf_pipedrive`)](salesforce-auth.md) | `SF_USERNAME` / password / token, Trusted IPs, SOAP login troubleshooting. |
 
 ## Scope
 

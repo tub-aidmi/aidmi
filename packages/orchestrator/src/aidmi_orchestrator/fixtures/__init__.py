@@ -1,5 +1,7 @@
 """Fixture sub-packages register themselves on import."""
 from aidmi_orchestrator.fixtures import base  # noqa: F401
-from aidmi_orchestrator.fixtures import sf_pipedrive  # noqa: F401
-from aidmi_orchestrator.fixtures import sf_pipedrive_snapshot  # noqa: F401
-from aidmi_orchestrator.fixtures import sp1_users  # noqa: F401
+from aidmi_orchestrator.fixtures import mock  # noqa: F401
+from aidmi_orchestrator.fixtures import master  # noqa: F401
+from aidmi_orchestrator.fixtures import wrong_field_names  # noqa: F401
+from aidmi_orchestrator.fixtures import messy_data  # noqa: F401
+from aidmi_orchestrator.fixtures import missing_relations  # noqa: F401

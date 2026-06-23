@@ -55,7 +55,7 @@ def test_run_post_agent_dbt_loop_returns_true_on_first_success(tmp_path: Path) -
     (models_dir / "persons.sql").write_text("select 1", encoding="utf-8")
 
     api = SimpleNamespace(
-        staging_raw_dataset="src_test_raw",
+        source_schema="src_test_raw",
         dbt_project_path=tmp_path,
         run_dbt=AsyncMock(
             return_value=SimpleNamespace(overall_status="success", models=[]),
@@ -96,7 +96,7 @@ def test_run_post_agent_dbt_loop_reprompts_agent_then_succeeds(tmp_path: Path) -
     success = SimpleNamespace(overall_status="success", models=[])
 
     api = SimpleNamespace(
-        staging_raw_dataset="src_test_raw",
+        source_schema="src_test_raw",
         dbt_project_path=tmp_path,
         run_dbt=AsyncMock(side_effect=[fail, success]),
     )
@@ -136,7 +136,7 @@ def test_run_post_agent_dbt_loop_returns_false_when_passes_exhausted(tmp_path: P
     )
 
     api = SimpleNamespace(
-        staging_raw_dataset="src_test_raw",
+        source_schema="src_test_raw",
         dbt_project_path=tmp_path,
         run_dbt=AsyncMock(return_value=fail),
     )

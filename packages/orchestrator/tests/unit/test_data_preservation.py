@@ -41,7 +41,7 @@ def _artifacts(db_url: str, manifest: MappingManifest | None, written: list[str]
     sr = StrategyResult(target_tables_written=written, manifest=manifest, self_reported_status="complete")
     return RunArtifacts(
         run_id="r", dbt_project_path=Path("/nonexistent"), dlt_pipelines_dir=Path("/nonexistent"),
-        staging_db_url=db_url, staging_raw_dataset=RAW, staging_out_dataset=OUT,
+        staging_db_url=db_url, source_schema=RAW, out_schema=OUT,
         trace=[], strategy_result=sr, target_schema_input=None,
         fixture=FixtureMetadata(name="f", description="", reference_dbt_path=None, applicable_evaluators=[]),
         wall_clock_seconds=1.0, final_transform_result=None,

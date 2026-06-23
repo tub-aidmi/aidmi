@@ -21,9 +21,16 @@ class _StandinStrategy:
 
 
 def _dummy_fixture() -> Fixture:
+    from pathlib import Path
     return Fixture(
-        name="dummy", description="", source_factory=lambda: None,
-        target_schema_path=None, reference_dbt_path=None, applicable_evaluators=[],
+        name="dummy",
+        description="",
+        source_schema="fixture_dummy_src",
+        source_sql_path=Path("/dev/null"),
+        destination_sql_path=Path("/dev/null"),
+        target_schema_path=None,
+        reference_dbt_path=None,
+        applicable_evaluators=[],
     )
 
 
@@ -52,7 +59,7 @@ def test_evaluator_crash_is_isolated(tmp_path):
     from aidmi_orchestrator.evaluator.base import FixtureMetadata, RunArtifacts
     artifacts = RunArtifacts(
         run_id="r", dbt_project_path=tmp_path, dlt_pipelines_dir=tmp_path,
-        staging_db_url="postgresql://", staging_raw_dataset="raw", staging_out_dataset="out",
+        staging_db_url="postgresql://", source_schema="raw", out_schema="out",
         trace=[], strategy_result=StrategyResult(target_tables_written=[], self_reported_status="complete"),
         target_schema_input=None,
         fixture=FixtureMetadata(name="f", description="", reference_dbt_path=None, applicable_evaluators=[]),
@@ -189,6 +196,6 @@ def test_expand_grid_unknown_model_ref_raises():
 
 
 def test_expand_grid_passes_cell_fixtures_through():
-    spec = {"cells": [{"strategy": "mock", "fixtures": ["sp1_users"], "config": {}}]}
+    spec = {"cells": [{"strategy": "mock", "fixtures": ["master"], "config": {}}]}
     (_, _, _, fixtures), = expand_grid(spec)
-    assert fixtures == ["sp1_users"]
+    assert fixtures == ["master"]

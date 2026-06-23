@@ -8,6 +8,7 @@ import aidmi_orchestrator.evaluator  # noqa: F401
 import aidmi_orchestrator.fixtures  # noqa: F401
 
 from aidmi_orchestrator.fixtures.base import get_fixture
+from aidmi_orchestrator.scripts.init_fixtures import init_fixture
 from aidmi_orchestrator.strategy.base import make_strategy
 from aidmi_orchestrator.benchmark import Benchmark
 
@@ -20,7 +21,8 @@ pytestmark = pytest.mark.requires_llm
     reason="OPENAI_API_KEY not set",
 )
 def test_structured_per_table_openai_smoke(staging_db_url, tmp_path):
-    fixture = get_fixture("sp1_users")
+    fixture = get_fixture("master")
+    init_fixture("master", staging_db_url)
     strategy = make_strategy("structured_per_table", {
         "writer_model": {
             "provider": "openai",

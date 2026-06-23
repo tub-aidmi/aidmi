@@ -54,6 +54,8 @@ def _run_reference_dbt(
 ) -> str:
     """Run the reference dbt project, materializing into <raw_dataset>_reference."""
     import dlt
+    from aidmi_pipeline.sources_yaml import ensure_sources_yaml_raw_schema
+
     ref_dataset = f"{raw_dataset}_reference"
     pipeline = dlt.pipeline(
         pipeline_name=f"ref_{ref_dataset}",
@@ -80,6 +82,8 @@ def _run_reference_dbt(
                 )
 
     venv = dlt.dbt.get_venv(pipeline, venv_path="")
+    models_dir = reference_path / "models"
+    ensure_sources_yaml_raw_schema(models_dir, raw_dataset)
     runner = dlt.dbt.package(pipeline, str(reference_path), venv=venv)
     runner.run_all()
     return ref_dataset
@@ -97,7 +101,7 @@ class RowEqualityEvaluator:
     def evaluate(self, artifacts: RunArtifacts) -> dict[str, Any]:
         ref_dataset = _run_reference_dbt(
             artifacts.staging_db_url,
-            artifacts.staging_raw_dataset,
+            artifacts.source_schema,
             artifacts.fixture.reference_dbt_path,
             artifacts.dlt_pipelines_dir,
         )
@@ -107,7 +111,7 @@ class RowEqualityEvaluator:
         for tname in artifacts.strategy_result.target_tables_written:
             with psycopg2.connect(artifacts.staging_db_url) as conn:
                 with conn.cursor(cursor_factory=RealDictCursor) as cur:
-                    cur.execute(f'SELECT * FROM "{artifacts.staging_out_dataset}"."{tname}"')
+                    cur.execute(f'SELECT * FROM "{artifacts.out_schema}"."{tname}"')
                     produced = [dict(r) for r in cur.fetchall()]
                     cur.execute(f'SELECT * FROM "{ref_dataset}"."{tname}"')
                     reference = [dict(r) for r in cur.fetchall()]

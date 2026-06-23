@@ -53,14 +53,14 @@ def _count_rows_in_dataset(db_url: str, dataset: str) -> int:
 
 def extract_source(run: MigrationRun) -> ExtractResult:
     pipeline = dlt.pipeline(
-        pipeline_name=f"extract_{run.staging.raw_dataset_name}",
+        pipeline_name=f"extract_{run.staging.source_schema}",
         destination=dlt.destinations.postgres(run.staging.db_url),
-        dataset_name=run.staging.raw_dataset_name,
+        dataset_name=run.staging.source_schema,
     )
     pipeline.run(run.source, write_disposition="replace")
     return ExtractResult(
         rows_extracted=_count_rows_in_dataset(
-            run.staging.db_url, run.staging.raw_dataset_name
+            run.staging.db_url, run.staging.source_schema
         )
     )
 
@@ -90,11 +90,11 @@ def _overall_status(models: list[DbtModelOutcome]) -> Literal["success", "partia
 
 def transform(run: MigrationRun) -> TransformResult:
     models_dir = run.dbt_project_path / "models"
-    ensure_sources_yaml_raw_schema(models_dir, run.staging.raw_dataset_name)
+    ensure_sources_yaml_raw_schema(models_dir, run.staging.source_schema)
     pipeline = dlt.pipeline(
-        pipeline_name=f"dbt_{run.staging.out_dataset_name}",
+        pipeline_name=f"dbt_{run.staging.out_schema}",
         destination=dlt.destinations.postgres(run.staging.db_url),
-        dataset_name=run.staging.out_dataset_name,
+        dataset_name=run.staging.out_schema,
     )
     venv = dlt.dbt.get_venv(pipeline, venv_path="")
     runner = dlt.dbt.package(pipeline, str(run.dbt_project_path), venv=venv)
@@ -128,12 +128,12 @@ def load_target(run: MigrationRun) -> LoadResult:
     total_rows = 0
     for table in run.target_tables:
         rows_in_staging = _count_table_rows(
-            run.staging.db_url, run.staging.out_dataset_name, table
+            run.staging.db_url, run.staging.out_schema, table
         )
         pipeline.run(
             sql_table(
                 credentials=run.staging.db_url,
-                schema=run.staging.out_dataset_name,
+                schema=run.staging.out_schema,
                 table=table,
             ),
             write_disposition="replace",

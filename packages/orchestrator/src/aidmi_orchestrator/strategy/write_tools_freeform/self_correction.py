@@ -9,7 +9,7 @@ from aidmi_pipeline.sources_yaml import ensure_sources_yaml_raw_schema
 
 
 class _DbtRunnable(Protocol):
-    staging_raw_dataset: str
+    source_schema: str
     dbt_project_path: Any
 
     async def run_dbt(self) -> Any: ...
@@ -49,7 +49,7 @@ async def run_post_agent_dbt_loop(
     )
 
     for attempt in range(max_passes):
-        ensure_sources_yaml_raw_schema(models_dir, api.staging_raw_dataset)
+        ensure_sources_yaml_raw_schema(models_dir, api.source_schema)
         try:
             result = await api.run_dbt()
             if getattr(result, "overall_status", None) == "success":
