@@ -1,6 +1,7 @@
 """Strategy Protocol + registry + shared helpers."""
 from __future__ import annotations
 import asyncio
+import re
 from pathlib import Path
 from typing import Any, Awaitable, Protocol, TypeVar, runtime_checkable
 
@@ -101,7 +102,35 @@ def build_context_prompt(
     else:
         lines.append("\n# Target schema\n(no constraint supplied — design one.)")
 
+    if source_summary.tables:
+        slug = source_summary.tables[0].db_schema
+        lines.insert(
+            1,
+            f"dbt source slug: `{slug}` — use this exact string as the first argument to `source()`.\n",
+        )
+
     return "\n".join(lines)
+
+
+_SOURCE_CALL_RE = re.compile(
+    r"\{\{\s*source\s*\(\s*['\"]([^'\"]+)['\"]\s*,\s*['\"]([^'\"]+)['\"]\s*\)\s*\}\}",
+)
+
+
+def normalize_source_refs(
+    sql: str,
+    *,
+    canonical_slug: str,
+    known_tables: set[str],
+) -> str:
+    """Rewrite source() calls that use the wrong logical slug but a known table name."""
+    def repl(match: re.Match[str]) -> str:
+        slug, table = match.group(1), match.group(2)
+        if table in known_tables and slug != canonical_slug:
+            return f"{{{{ source('{canonical_slug}', '{table}') }}}}"
+        return match.group(0)
+
+    return _SOURCE_CALL_RE.sub(repl, sql)
 
 
 def write_proposal(
@@ -118,8 +147,16 @@ def write_proposal(
     """
     models_dir = dbt_project_path / "models"
     models_dir.mkdir(parents=True, exist_ok=True)
+    tables_by_schema: dict[str, set[str]] = {}
+    for schema, tname in source_tables:
+        tables_by_schema.setdefault(schema, set()).add(tname)
     for target_table, sql in sql_by_table.items():
-        (models_dir / f"{target_table}.sql").write_text(sql, encoding="utf-8")
+        normalized = sql
+        for schema, tables in tables_by_schema.items():
+            normalized = normalize_source_refs(
+                normalized, canonical_slug=schema, known_tables=tables,
+            )
+        (models_dir / f"{target_table}.sql").write_text(normalized, encoding="utf-8")
 
     src_yaml_lines = ["version: 2", "sources:"]
     schemas = {schema for schema, _ in source_tables}
@@ -153,6 +190,7 @@ __all__ = [
     "make_strategy",
     "run_coroutines",
     "build_context_prompt",
+    "normalize_source_refs",
     "write_proposal",
     "ensure_sources_yaml_raw_schema",
     "build_manifest_from_notes",

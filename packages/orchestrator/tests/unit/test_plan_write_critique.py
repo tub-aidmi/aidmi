@@ -168,6 +168,37 @@ def test_retry_failing_tables_with_progress_regenerates_then_succeeds() -> None:
     assert progress == [(1, 3), (2, 3)]
 
 
+def test_strategy_stops_when_initial_dbt_fails(tmp_path) -> None:
+    planner = TestModel(custom_output_args=PLAN_ARGS)
+    writer = TestModel(custom_output_args=MAPPING_ARGS)
+    critic = TestModel(custom_output_args={
+        "verdicts": [{"target_table": "users", "verdict": "approved", "comments": ""}],
+    })
+
+    def make_llm(spec, role):
+        if role == "planner":
+            return planner
+        if role == "critic":
+            return critic
+        return writer
+
+    api = _fake_api_with_dbt(tmp_path, make_llm=make_llm, dbt_success=False)
+    strategy = PlanWriteCritique(PlanWriteCritiqueConfig(
+        planner_model=ModelSpec(provider="litellm", model_name="planner"),
+        max_dbt_correction_initial=2,
+        max_dbt_correction_per_critique=0,
+    ))
+    result = asyncio.run(strategy.generate(api))
+    assert result.self_reported_status == "gave_up"
+    recorded_labels = [
+        call.args[0].label
+        for call in api.trace.record.call_args_list
+        if call.args and hasattr(call.args[0], "label")
+    ]
+    assert "critique_round_complete" not in recorded_labels
+    assert (tmp_path / "models" / "users.sql").exists()
+
+
 def test_strategy_complete_when_critic_approves(tmp_path) -> None:
     planner = TestModel(custom_output_args=PLAN_ARGS)
     writer = TestModel(custom_output_args=MAPPING_ARGS)

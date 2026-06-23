@@ -135,7 +135,7 @@ class PlanWriteCritique:
                 fixed.dbt_sql, encoding="utf-8"
             )
 
-        initial_dbt_ok = False
+        initial_dbt_ok: bool | None = None
         if self.config.max_dbt_correction_initial > 0:
             log_progress(
                 f"Running initial dbt self-correction "
@@ -156,10 +156,32 @@ class PlanWriteCritique:
         else:
             log_progress("Skipping initial dbt correction (max_dbt_correction_initial=0)")
 
+        if initial_dbt_ok is False:
+            log_progress("Stopping — initial dbt self-correction did not succeed")
+            api.trace.record(StrategyEvent(
+                timestamp=datetime.utcnow(),
+                label="initial_dbt_correction_complete",
+                data={"success": False},
+            ))
+            sql_by_table = {name: m.dbt_sql for name, m in mappings.items()}
+            write_proposal(api.dbt_project_path, sql_by_table, source_tables, api.source_schema)
+            manifest = manifest_from_mappings(
+                list(mappings.values()),
+                source_table_names=[t.name for t in api.source_summary.tables],
+                strategy_name=self.name,
+                strategy_config=self.config.model_dump(),
+            )
+            return StrategyResult(
+                target_tables_written=list(sql_by_table),
+                target_schema=api.target_schema,
+                manifest=manifest,
+                self_reported_status="gave_up",
+            )
+
         api.trace.record(StrategyEvent(
             timestamp=datetime.utcnow(),
             label="initial_dbt_correction_complete",
-            data={"success": initial_dbt_ok},
+            data={"success": initial_dbt_ok if initial_dbt_ok is not None else True},
         ))
 
         critic_agent = Agent(

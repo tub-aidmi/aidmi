@@ -7,7 +7,11 @@ from pathlib import Path
 
 import yaml
 
-from aidmi_orchestrator.strategy.base import ensure_sources_yaml_raw_schema
+from aidmi_orchestrator.strategy.base import (
+    ensure_sources_yaml_raw_schema,
+    normalize_source_refs,
+    write_proposal,
+)
 from aidmi_orchestrator.strategy.write_tools_freeform.tools import make_run_dbt
 
 
@@ -61,3 +65,34 @@ def test_make_run_dbt_returns_error_dict_on_failure() -> None:
     out = asyncio.run(_invoke())
     assert out["overall_status"] == "error"
     assert "RuntimeError" in out["error"]
+
+
+def test_normalize_source_refs_rewrites_wrong_slug() -> None:
+    sql = "SELECT 1 FROM {{ source('src_master', 'master_kunden') }}"
+    out = normalize_source_refs(
+        sql,
+        canonical_slug="fixture_master_src",
+        known_tables={"master_kunden"},
+    )
+    assert "{{ source('fixture_master_src', 'master_kunden') }}" in out
+    assert "src_master" not in out
+
+
+def test_normalize_source_refs_leaves_correct_slug() -> None:
+    sql = "SELECT 1 FROM {{ source('fixture_master_src', 'master_kunden') }}"
+    assert normalize_source_refs(
+        sql,
+        canonical_slug="fixture_master_src",
+        known_tables={"master_kunden"},
+    ) == sql
+
+
+def test_write_proposal_normalizes_source_refs(tmp_path: Path) -> None:
+    write_proposal(
+        tmp_path,
+        {"Account": "SELECT 1 FROM {{ source('src_master', 'master_kunden') }}"},
+        [("fixture_master_src", "master_kunden")],
+        "fixture_master_src",
+    )
+    written = (tmp_path / "models" / "Account.sql").read_text(encoding="utf-8")
+    assert "{{ source('fixture_master_src', 'master_kunden') }}" in written
