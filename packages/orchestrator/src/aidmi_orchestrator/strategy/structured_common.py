@@ -15,6 +15,7 @@ You receive a description of a source database (schemas, columns, optionally sam
 
 Rules:
 - Use `{{ source('<source_slug>', '<table>') }}` where `<source_slug>` is the dbt source slug from context (the schema name before the dot), e.g. `fixture_master_src.master_kunden` → first argument `'fixture_master_src'`.
+- `query_postgres(sql)` runs plain PostgreSQL against staging — NOT dbt. Use quoted schema/table names, e.g. `SELECT * FROM "fixture_master_src"."master_kunden" LIMIT 10`. Never pass `{{ source(...) }}` or other Jinja to `query_postgres`.
 - Declare sources in `sources.yml` with `schema: "<source_schema>"` as a YAML string — the physical Postgres schema where fixture source tables live (shown in context, e.g. `fixture_master_src`). Do not point sources at `{{ target.schema }}`; that is the per-run output schema where dbt models materialize.
 - Use `{{ config(materialized='table') }}` at the top.
 - The output column names and types must match the target spec exactly.

@@ -104,10 +104,17 @@ def build_context_prompt(
 
     if source_summary.tables:
         slug = source_summary.tables[0].db_schema
-        lines.insert(
-            1,
-            f"dbt source slug: `{slug}` — use this exact string as the first argument to `source()`.\n",
+        hint = (
+            f"dbt source slug: `{slug}` — use this exact string as the first argument to "
+            f"`source()` in dbt models.\n"
         )
+        if mode == "live_query_tool":
+            t = source_summary.tables[0]
+            hint += (
+                f"`query_postgres` uses plain PostgreSQL only (no `{{{{ source(...) }}}}`): "
+                f'e.g. `SELECT * FROM "{t.db_schema}"."{t.name}" LIMIT 10`.\n'
+            )
+        lines.insert(1, hint)
 
     return "\n".join(lines)
 

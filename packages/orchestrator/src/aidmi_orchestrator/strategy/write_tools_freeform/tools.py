@@ -9,6 +9,8 @@ from typing import Any
 import time
 from datetime import datetime
 
+import psycopg2
+
 from aidmi_orchestrator.trace import ToolCallEvent
 
 
@@ -69,7 +71,31 @@ def make_read_file(api):
 def make_query_postgres(api, row_cap: int):
     async def query_postgres(sql: str) -> list[dict]:
         start = time.perf_counter()
-        rows = api.query_postgres(sql, row_cap=row_cap)
+        try:
+            rows = api.query_postgres(sql, row_cap=row_cap)
+        except ValueError as e:
+            latency_ms = (time.perf_counter() - start) * 1000
+            msg = str(e)
+            api.trace.record(ToolCallEvent(
+                timestamp=datetime.utcnow(), tool_name="query_postgres",
+                args={"sql": sql[:500], "row_cap": row_cap}, result={"error": msg},
+                latency_ms=latency_ms,
+            ))
+            return [{"error": msg}]
+        except psycopg2.Error as e:
+            latency_ms = (time.perf_counter() - start) * 1000
+            msg = str(e).strip()
+            if "{{" in sql or "source(" in sql:
+                msg += (
+                    " Hint: query_postgres expects plain PostgreSQL "
+                    '(e.g. SELECT * FROM "schema"."table") — not dbt {{ source(...) }}.'
+                )
+            api.trace.record(ToolCallEvent(
+                timestamp=datetime.utcnow(), tool_name="query_postgres",
+                args={"sql": sql[:500], "row_cap": row_cap}, result={"error": msg},
+                latency_ms=latency_ms,
+            ))
+            return [{"error": msg}]
         latency_ms = (time.perf_counter() - start) * 1000
         api.trace.record(ToolCallEvent(
             timestamp=datetime.utcnow(), tool_name="query_postgres",

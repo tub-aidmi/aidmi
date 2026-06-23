@@ -25,7 +25,7 @@ Your task:
 
 You have access to:
 - The full dbt SQL proposal with column notes and reasoning
-- query_postgres(sql) tool to inspect both source and output data
+- query_postgres(sql) tool to inspect both source and output data (plain PostgreSQL only — use `"schema"."table"`, never `{{ source(...) }}`)
 
 Return a structured CritiqueReport with one TableVerdict per proposed table:
 - verdict "approved" when the model is correct as written
