@@ -1,0 +1,23 @@
+name: plan_write_critique_litellm
+strategy: plan_write_critique
+config:
+  planner_model:
+    provider: litellm
+    model_name: nvidia/mistral-large-3-675b-instruct-2512
+    base_url: http://localhost:4000/v1
+    api_key_env: LITELLM_API_KEY
+  writer_model:
+    provider: litellm
+    model_name: nvidia/mistral-medium-3.5-128b
+    base_url: http://localhost:4000/v1
+    api_key_env: LITELLM_API_KEY
+  critic_model:
+    provider: litellm
+    model_name: nvidia/mistral-large-3-675b-instruct-2512
+    base_url: http://localhost:4000/v1
+    api_key_env: LITELLM_API_KEY
+  max_dbt_correction_initial: 5
+  max_critique_rounds: 5
+  max_dbt_correction_per_critique: 3
+  max_query_tool_rows: 100
+  serial_llm_calls: false
