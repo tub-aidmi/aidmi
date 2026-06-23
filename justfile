@@ -35,6 +35,14 @@ logs:
 psql:
   {{compose}} exec postgres psql -U "${POSTGRES_USER:-postgres}" -d "${POSTGRES_DB:-postgres}"
 
+# --- Fixtures ---
+
+gen-target-schema fixture:
+  {{orch-py}} python -m aidmi_orchestrator.scripts.gen_target_schema --fixture {{fixture}}
+
+gen-target-schema-file input output:
+  {{orch-py}} python -m aidmi_orchestrator.scripts.gen_target_schema --input {{input}} --output {{output}}
+
 # --- Tests ---
 
 test-pipeline:
