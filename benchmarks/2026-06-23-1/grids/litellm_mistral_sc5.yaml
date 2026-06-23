@@ -1,0 +1,55 @@
+fixture: master
+runs_per_cell: 1
+concurrency: 1
+per_model_exclusive: true
+exclusive_model_prefixes: []
+
+models:
+  mistral128b:
+    provider: litellm
+    model_name: nvidia/mistral-medium-3.5-128b
+    base_url: http://localhost:4000/v1
+    api_key_env: LITELLM_API_KEY
+
+cells:
+  - name: structured
+    strategy: structured_per_table
+    config:
+      writer_model: mistral128b
+      context_mode: metadata_plus_samples
+      enable_self_correction: true
+      max_self_correction_passes: 5
+
+  - name: freeform
+    strategy: write_tools_freeform
+    config:
+      writer_model: mistral128b
+      context_mode: metadata_plus_samples
+      enable_self_correction: true
+      max_self_correction_passes: 5
+      max_tool_turns: 30
+
+  - name: critique
+    strategy: write_then_critique
+    config:
+      writer_model: mistral128b
+      max_critique_rounds: 2
+
+  - name: plan
+    strategy: plan_then_execute
+    config:
+      planner_model: mistral128b
+
+  - name: plan_write_critique
+    strategy: plan_write_critique
+    config:
+      planner_model: mistral128b
+      max_dbt_correction_initial: 3
+      max_critique_rounds: 2
+      max_dbt_correction_per_critique: 2
+
+  - name: ensemble
+    strategy: ensemble_vote
+    config:
+      writer_model: mistral128b
+      n_candidates: 3
