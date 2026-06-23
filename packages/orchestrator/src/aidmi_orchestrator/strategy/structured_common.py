@@ -15,7 +15,7 @@ You receive a description of a source database (schemas, columns, optionally sam
 
 Rules:
 - Use `{{ source('<source_slug>', '<table>') }}` where `<source_slug>` is the logical source name from context before the dot, e.g. `src_xyz_raw.contacts` → first argument `'src_xyz_raw'` if that slug is declared in `sources.yml`.
-- Declare sources in `sources.yml` with `schema: "<raw_schema_slug>"` as a YAML string — the PHYSICAL Postgres schema where extract landed (`src_<run>_raw`). Do not point sources at `{{ target.schema }}`; that is reserved for transformed model outputs in `src_<run>_out`.
+- Declare sources in `sources.yml` with `schema: "<source_schema>"` as a YAML string — the physical Postgres schema where fixture source tables live (shown in context, e.g. `fixture_master_src`). Do not point sources at `{{ target.schema }}`; that is the per-run output schema where dbt models materialize.
 - Use `{{ config(materialized='table') }}` at the top.
 - The output column names and types must match the target spec exactly.
 - For enum-typed target columns, map source values to the declared enum domain.

@@ -18,12 +18,14 @@ A run produces several files on disk. This page is the reference for each.
         └── dbt_project/
 ```
 
-`<run-id>` is a [ULID](https://github.com/ulid/spec) (Crockford base32; sortable; 26 characters). Used as the directory name. Each run uses two Postgres schemas derived from the lowercase run id:
+`<run-id>` is a slug `{hash8}_{strategy}_{fixture}` (hash first; max 63 characters for Postgres). Used as the directory name and as the dbt output Postgres schema. Example: `bj5d9w9w_write_tools_freeform_master`.
 
-- `src_<run-id-lower>_raw` — dlt extract (source tables).
-- `src_<run-id-lower>_out` — dbt models (transformed output).
+Each run uses two Postgres schemas:
 
-`staging_raw_dataset` and `staging_out_dataset` in `result.json` record these names verbatim.
+- `fixture_<name>_src` — shared fixture source tables (not per-run).
+- `<run-id>` — dbt models (transformed output); same string as `run_id`.
+
+`source_schema` and `out_schema` in `result.json` record these names verbatim.
 
 ## trace.jsonl
 
@@ -207,7 +209,7 @@ The `BenchmarkResult` for a single run.
 
 ```json
 {
-  "run_id": "01HXX0000000000000000000",
+  "run_id": "bj5d9w9w_write_tools_freeform_master",
   "fixture_name": "sp1_users",
   "strategy_name": "mock",
   "strategy_spec_name": "mock",
@@ -218,14 +220,14 @@ The `BenchmarkResult` for a single run.
   "strategy_result": { ... },
   "metrics": { ... },
   "error": null,
-  "staging_raw_dataset": "src_01hxx00000000000000000000_raw",
-  "staging_out_dataset": "src_01hxx00000000000000000000_out"
+  "source_schema": "fixture_sp1_users_src",
+  "out_schema": "a1b2c3d4_mock_sp1_users"
 }
 ```
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `run_id` | string | ULID, matches the directory name. |
+| `run_id` | string | Run slug (`{hash8}_{strategy}_{fixture}`), matches the directory name and output Postgres schema. |
 | `fixture_name` | string | The fixture this run targeted. |
 | `strategy_name` | string | Registered strategy implementation (`mock`, `structured_per_table`, `write_tools_freeform`, …). |
 | `strategy_spec_name` | string | Label for the exact spec (YAML `name` for `run`, or grid cell `name` with optional cartesian suffixes for `sweep`). |
@@ -235,8 +237,8 @@ The `BenchmarkResult` for a single run.
 | `strategy_result` | object | The strategy's own `StrategyResult` (mirrored in `strategy_result.json` for convenience). |
 | `metrics` | object | All evaluator outputs merged. Schema is free-form; each evaluator contributes its own keys. |
 | `error` | string or null | Populated when the orchestrator caught a strategy crash. The run still produces a `result.json`; evaluators that can run on partial state still execute. |
-| `staging_raw_dataset` | string | Postgres schema for extract (e.g. `src_01abc…_raw`). Empty when the run failed before artifacts were built. |
-| `staging_out_dataset` | string | Postgres schema for dbt output (e.g. `src_01abc…_out`). Empty when the run failed before artifacts were built. |
+| `source_schema` | string | Postgres schema for fixture source tables (e.g. `fixture_master_src`). Empty when the run failed before artifacts were built. |
+| `out_schema` | string | Postgres schema for dbt output (same as `run_id`, lowercased). Empty when the run failed before artifacts were built. |
 
 ### Default metric keys
 

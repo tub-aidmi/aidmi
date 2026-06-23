@@ -13,8 +13,8 @@ Layout you must produce:
 
 Use {{ config(materialized='table') }} at the top of each model.
 
-Important: extracted data lands in a Postgres RAW schema (`src_<run_id_lower>_raw`) shown in context.
-Transformed dbt models are materialized into a separate OUT schema (`src_<run_id_lower>_out`) at run time.
+Important: extracted data lands in the fixture's Postgres source schema shown in context (e.g. `fixture_master_src`).
+Transformed dbt models are materialized into a per-run output schema (the run slug, e.g. `a1b2c3d4_write_tools_freeform_master`) at run time.
 Under `sources:`, each block must declare the physical Postgres schema for raw tables:
 
   schema: "<the_raw_schema_from_the_prompt>"
@@ -23,13 +23,13 @@ Under `sources:`, each block must declare the physical Postgres schema for raw t
 
 If you mistakenly use "{{ target.schema }}" for sources, dbt would resolve sources to the OUT schema where those tables do not exist. The orchestrator fixes `sources.yml` before compile, but matching the prompt avoids confusion.
 
-Example `models/sources.yml` when context shows raw schema `src_01abc_raw`:
+Example `models/sources.yml` when context shows source schema `fixture_master_src`:
 
 version: 2
 
 sources:
   - name: source_crm
-    schema: "src_01abc_raw"
+    schema: "fixture_master_src"
     tables:
       - name: contacts
 

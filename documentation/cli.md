@@ -38,7 +38,7 @@ aidmi-orchestrator run \
 |--------|---------|-------------|
 | `--fixture` | required | Name of a registered fixture (e.g., `sp1_users`). |
 | `--strategy-spec` | required | Path to YAML with required `name` (written to results as `strategy_spec_name`), `strategy` (registry id), and `config`. See [Configuration](configuration.md). |
-| `--run-id` | auto (ULID) | Optional run identifier. Used as the directory name under `<workspace>/runs/` and to derive Postgres schemas `src_<run-id-lower>_raw` and `src_<run-id-lower>_out`. |
+| `--run-id` | auto (slug) | Optional run identifier. Used as the directory name under `<workspace>/runs/`, as `run_id` in results, and as the Postgres output schema name. Auto-generated as `{hash8}_{strategy}_{fixture}`. |
 | `--workspace` | `./aidmi_workspace` | Directory where per-run artifacts are written. |
 | `--verbose`, `-v` | off | Streams each [`trace.jsonl`](data-formats.md#tracejsonl) record to stderr as it is appended (same JSON lines written on disk). |
 

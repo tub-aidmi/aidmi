@@ -3,12 +3,9 @@ from __future__ import annotations
 import asyncio
 import copy
 import itertools
-import string
 from datetime import datetime
 from pathlib import Path
 from typing import Any, IO
-
-from ulid import ULID
 
 from aidmi_orchestrator.domain import BenchmarkResult, StrategyResult
 from aidmi_orchestrator.evaluator.base import (
@@ -17,6 +14,7 @@ from aidmi_orchestrator.evaluator.base import (
 from aidmi_orchestrator.fixtures.base import Fixture
 from aidmi_orchestrator.orchestrator import run_orchestrator, StrategyExecutionError
 from aidmi_orchestrator.persistence import write_benchmark_result
+from aidmi_orchestrator.run_id import make_run_id, slug
 from aidmi_orchestrator.strategy.base import Strategy
 
 
@@ -33,12 +31,6 @@ def parse_strategy_spec(spec: dict[str, Any]) -> tuple[str, str, dict[str, Any]]
     if not registry.strip() or not spec_name.strip():
         raise ValueError("strategy spec 'strategy' and 'name' must be non-empty")
     return registry, spec_name.strip(), dict(spec.get("config", {}) or {})
-
-
-def _grid_spec_fragment(value: Any) -> str:
-    s = str(value).lower()
-    safe = "".join(ch if ch in (string.ascii_lowercase + string.digits + "_") else "_" for ch in s)
-    return safe.strip("_") or "val"
 
 
 class Benchmark:
@@ -66,7 +58,7 @@ class Benchmark:
         run_id: str | None = None,
         trace_mirror: IO[str] | None = None,
     ) -> BenchmarkResult:
-        run_id = run_id or str(ULID())
+        run_id = run_id or make_run_id(strategy.name, self.fixture.name)
         started_at = datetime.utcnow()
         error: str | None = None
         artifacts: RunArtifacts | None = None
@@ -163,7 +155,7 @@ def expand_grid(grid: dict[str, Any]) -> list[tuple[str, dict[str, Any], str, li
             for k, v in zip(list_keys, combo):
                 expanded[k] = v
             suffix = "".join(
-                f"_{k}_{_grid_spec_fragment(v)}" for k, v in zip(list_keys, combo)
+                f"_{k}_{slug(v)}" for k, v in zip(list_keys, combo)
             )
             out.append((
                 registry, resolve_model_refs(expanded, models),

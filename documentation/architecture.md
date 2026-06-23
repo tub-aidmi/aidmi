@@ -216,7 +216,7 @@ The orchestrator depends on `aidmi_pipeline` (sub-project 1) for two functions:
 
 The orchestrator constructs a `MigrationRun` with:
 - `source` — the fixture's `source_factory()` result.
-- `staging` — `StagingConfig.for_run(db_url, run_id)`, i.e. `raw_dataset_name=src_<run_id_lower>_raw` and `out_dataset_name=src_<run_id_lower>_out`. Extract uses the raw schema; dlt's dbt integration sets `target.schema` to the **out** schema so models materialize there. The ULID portion is lowercased to match Postgres / dlt normalization.
+- `staging` — `StagingConfig.for_run(db_url, fixture_source_schema, run_id)`. Source tables live in the fixture schema (e.g. `fixture_master_src`); dbt models materialize into the **out** schema, which is the run slug (e.g. `bj5d9w9w_write_tools_freeform_master`). dlt's dbt integration sets `target.schema` to the out schema.
 - `target` and `target_dataset` — `None` and `""`, unused during generation.
 - `target_tables` — empty, unused.
 - `dbt_project_path` — the per-run scaffolded directory.

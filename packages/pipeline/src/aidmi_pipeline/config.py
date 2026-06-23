@@ -7,7 +7,7 @@ from pydantic import BaseModel
 
 
 def out_schema_for_run(run_id: str) -> str:
-    return f"run_{run_id.lower()}_out"
+    return run_id.lower()
 
 
 @dataclass

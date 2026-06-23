@@ -65,7 +65,7 @@ def _require_staging_url() -> str:
 def run(
     fixture: Annotated[str, typer.Option(help="registered fixture name")],
     strategy_spec: Annotated[Path, typer.Option(help="path to a strategy YAML")],
-    run_id: Annotated[str | None, typer.Option(help="optional run id (ULID auto-generated otherwise)")] = None,
+    run_id: Annotated[str | None, typer.Option(help="optional run id (auto-generated slug otherwise)")] = None,
     workspace: Annotated[Path, typer.Option(help="workspace directory")] = Path("./aidmi_workspace"),
     verbose: Annotated[bool, typer.Option("-v", "--verbose", help="stream trace JSONL lines to stderr as they are recorded")] = False,
 ):
