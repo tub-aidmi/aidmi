@@ -1,0 +1,25 @@
+fixture: master
+runs_per_cell: 1
+concurrency: 1
+per_model_exclusive: true
+exclusive_model_prefixes: []
+
+models:
+  qwen36:
+    provider: litellm
+    model_name: ise-ollama/qwen3.6:35b-a3b
+    base_url: http://localhost:4000/v1
+    api_key_env: LITELLM_API_KEY
+
+cells:
+  - name: plan_write_critique_litellm
+    strategy: plan_write_critique
+    config:
+      planner_model: qwen36
+      writer_model: qwen36
+      critic_model: qwen36
+      max_dbt_correction_initial: 5
+      max_critique_rounds: 5
+      max_dbt_correction_per_critique: 3
+      max_query_tool_rows: 100
+      serial_llm_calls: false
