@@ -131,10 +131,14 @@ class PlanWriteCritique:
             )
             fixed = result.output.model_copy(update={"target_table": table_name})
             mappings[table_name] = fixed
-            (api.dbt_project_path / "models" / f"{table_name}.sql").write_text(
-                fixed.dbt_sql, encoding="utf-8"
+            write_proposal(
+                api.dbt_project_path,
+                {name: m.dbt_sql for name, m in mappings.items()},
+                source_tables,
+                api.source_schema,
             )
 
+        table_names = list(mappings)
         initial_dbt_ok: bool | None = None
         if self.config.max_dbt_correction_initial > 0:
             log_progress(
@@ -146,6 +150,7 @@ class PlanWriteCritique:
                 regenerate,
                 max_passes=self.config.max_dbt_correction_initial,
                 serial=self.config.serial_llm_calls,
+                all_table_names=table_names,
                 progress_callback=lambda pass_num, total: log_progress(
                     f"  dbt correction pass {pass_num}/{total}"
                 ),
@@ -221,8 +226,11 @@ class PlanWriteCritique:
                 )
                 fixed = result.output.model_copy(update={"target_table": table_name})
                 current_mappings[table_name] = fixed
-                (api.dbt_project_path / "models" / f"{table_name}.sql").write_text(
-                    fixed.dbt_sql, encoding="utf-8"
+                write_proposal(
+                    api.dbt_project_path,
+                    {name: m.dbt_sql for name, m in current_mappings.items()},
+                    source_tables,
+                    api.source_schema,
                 )
 
             if self.config.max_dbt_correction_per_critique <= 0:
@@ -233,6 +241,7 @@ class PlanWriteCritique:
                 regenerate_inner,
                 max_passes=self.config.max_dbt_correction_per_critique,
                 serial=self.config.serial_llm_calls,
+                all_table_names=list(current_mappings),
                 progress_callback=lambda pass_num, total: log_progress(
                     f"    dbt correction pass {pass_num}/{total}"
                 ),

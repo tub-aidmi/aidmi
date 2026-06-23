@@ -6,6 +6,11 @@ from pydantic import BaseModel
 from aidmi_pipeline.config import MigrationRun
 from aidmi_pipeline.sources_yaml import ensure_sources_yaml_raw_schema
 
+try:
+    from dlt.helpers.dbt.exceptions import DBTProcessingError
+except ImportError:  # pragma: no cover
+    DBTProcessingError = None  # type: ignore[misc, assignment]
+
 
 class ExtractResult(BaseModel):
     rows_extracted: int
@@ -65,13 +70,18 @@ def extract_source(run: MigrationRun) -> ExtractResult:
     )
 
 
+def dbt_model_table_name(model_name: str) -> str:
+    """dbt/dlt may return ``schema.model``; our model files use the bare name."""
+    return model_name.rsplit(".", 1)[-1]
+
+
 def _outcome_to_model(outcome) -> DbtModelOutcome:
     raw_status = getattr(outcome, "status", "error")
     status: Literal["success", "error", "skipped"] = (
         raw_status if raw_status in {"success", "error", "skipped"} else "error"
     )
     return DbtModelOutcome(
-        model_name=getattr(outcome, "model_name", "<unknown>"),
+        model_name=dbt_model_table_name(getattr(outcome, "model_name", "<unknown>")),
         status=status,
         error_message=getattr(outcome, "message", None) if status != "success" else None,
         rows_affected=None,
@@ -80,6 +90,8 @@ def _outcome_to_model(outcome) -> DbtModelOutcome:
 
 
 def _overall_status(models: list[DbtModelOutcome]) -> Literal["success", "partial", "error"]:
+    if not models:
+        return "error"
     statuses = {m.status for m in models}
     if statuses == {"success"} or not statuses:
         return "success"
@@ -98,7 +110,13 @@ def transform(run: MigrationRun) -> TransformResult:
     )
     venv = dlt.dbt.get_venv(pipeline, venv_path="")
     runner = dlt.dbt.package(pipeline, str(run.dbt_project_path), venv=venv)
-    outcomes = runner.run_all()
+    try:
+        outcomes = runner.run_all()
+    except Exception as err:
+        if DBTProcessingError is not None and isinstance(err, DBTProcessingError):
+            outcomes = err.run_results
+        else:
+            raise
     models = [_outcome_to_model(o) for o in outcomes]
     return TransformResult(models=models, overall_status=_overall_status(models))
 

@@ -71,14 +71,18 @@ class StructuredPerTable:
                 run = await agent.run(prompt)
                 fixed = run.output.model_copy(update={"target_table": table_name})
                 mappings_by_table[table_name] = fixed
-                (api.dbt_project_path / "models" / f"{table_name}.sql").write_text(
-                    fixed.dbt_sql, encoding="utf-8"
+                write_proposal(
+                    api.dbt_project_path,
+                    {name: m.dbt_sql for name, m in mappings_by_table.items()},
+                    source_tables,
+                    api.source_schema,
                 )
 
             dbt_ok = await retry_failing_tables(
                 api.run_dbt, regenerate,
                 max_passes=self.config.max_self_correction_passes,
                 serial=self.config.serial_llm_calls,
+                all_table_names=list(mappings_by_table),
             )
 
         manifest = manifest_from_mappings(

@@ -1,54 +1,31 @@
 """Loop orchestration for plan_write_critique: dbt self-correction and critique rounds."""
 from __future__ import annotations
 
-from typing import Any, Awaitable, Callable
+from typing import Awaitable, Callable
 
 from aidmi_orchestrator.strategy.base import run_coroutines
+from aidmi_orchestrator.strategy.dbt_retry import retry_failing_tables
 from aidmi_orchestrator.strategy.structured_common import TableMapping
 from aidmi_orchestrator.strategy.write_then_critique.critique import CritiqueReport
 
 
 async def retry_failing_tables_with_progress(
-    run_dbt: Callable[[], Awaitable[Any]],
-    regenerate: Callable[[str, str], Awaitable[None]],
+    run_dbt,
+    regenerate,
     *,
     max_passes: int,
     serial: bool = False,
-    progress_callback: Callable[[int, int], None] | None = None,
+    all_table_names: list[str] | None = None,
+    progress_callback=None,
 ) -> bool:
-    for attempt in range(max_passes):
-        if progress_callback:
-            progress_callback(attempt + 1, max_passes)
-
-        try:
-            result = await run_dbt()
-        except Exception:
-            return False
-
-        if getattr(result, "overall_status", None) == "success":
-            return True
-
-        if attempt >= max_passes - 1:
-            return False
-
-        failing = [
-            (m.model_name, m.error_message or m.status)
-            for m in getattr(result, "models", []) or []
-            if getattr(m, "status", None) != "success"
-        ]
-
-        if not failing:
-            return False
-
-        try:
-            await run_coroutines(
-                [regenerate(name, err) for name, err in failing],
-                serial=serial,
-            )
-        except Exception:
-            return False
-
-    return False
+    return await retry_failing_tables(
+        run_dbt,
+        regenerate,
+        max_passes=max_passes,
+        serial=serial,
+        all_table_names=all_table_names,
+        progress_callback=progress_callback,
+    )
 
 
 async def run_critique_with_dbt_loop(
