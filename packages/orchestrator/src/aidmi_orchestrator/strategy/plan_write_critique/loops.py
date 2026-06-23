@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from typing import Awaitable, Callable
 
-from aidmi_orchestrator.strategy.base import run_coroutines
+from aidmi_orchestrator.strategy.base import run_coroutines, run_named_coroutines
 from aidmi_orchestrator.strategy.dbt_retry import retry_failing_tables
 from aidmi_orchestrator.strategy.structured_common import TableMapping
 from aidmi_orchestrator.strategy.write_then_critique.critique import CritiqueReport
@@ -46,7 +46,11 @@ async def run_critique_with_dbt_loop(
     for round_num in range(max_critique_rounds):
         log(f"--- Critique round {round_num + 1}/{max_critique_rounds} ---")
         log("  Calling critic model (with query_postgres tool)...")
-        report = await critique(current)
+        try:
+            report = await critique(current)
+        except Exception as e:
+            log(f"  Critique failed: {e}")
+            return current, False
 
         rejected = {
             v.target_table: v.comments
@@ -66,21 +70,27 @@ async def run_critique_with_dbt_loop(
 
         log(f"  Revising {len(rejected)} tables...")
         try:
-            revised = await run_coroutines(
-                [revise(name, current[name], comments) for name, comments in rejected.items()],
+            revised_map = await run_named_coroutines(
+                [
+                    (name, revise(name, current[name], comments))
+                    for name, comments in rejected.items()
+                ],
                 serial=serial,
             )
         except Exception as e:
             log(f"  Revision failed: {e}")
             return current, False
 
-        for name, m in zip(rejected, revised):
+        for name, m in revised_map.items():
             current[name] = m
         log("  Revision complete")
 
         log("  Running dbt self-correction on revised tables...")
         dbt_ok = await run_dbt_correction(current)
         log(f"  dbt correction {'PASSED' if dbt_ok else 'FAILED or incomplete'}")
+        if not dbt_ok:
+            log("  Stopping critique loop — dbt self-correction did not succeed")
+            return current, False
 
     log(f"Critique loop exhausted ({max_critique_rounds} rounds)")
     return current, False

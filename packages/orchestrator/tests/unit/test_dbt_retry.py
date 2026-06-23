@@ -55,3 +55,26 @@ def test_retry_uses_all_tables_when_failure_details_missing() -> None:
     assert regenerate.await_count == 2
     regenerate.assert_any_await("Account", "overall_status: error")
     regenerate.assert_any_await("Contact", "overall_status: error")
+
+
+def test_retry_all_tables_fallback_runs_serial_even_when_parallel() -> None:
+    run_dbt = AsyncMock(side_effect=[
+        SimpleNamespace(overall_status="error", models=[]),
+        SimpleNamespace(overall_status="success", models=[]),
+    ])
+    regenerate = AsyncMock()
+    call_order: list[str] = []
+
+    async def track(name: str, err: str) -> None:
+        call_order.append(name)
+
+    regenerate.side_effect = track
+    ok = asyncio.run(retry_failing_tables(
+        run_dbt,
+        regenerate,
+        max_passes=3,
+        serial=False,
+        all_table_names=["Account", "Contact"],
+    ))
+    assert ok is True
+    assert call_order == ["Account", "Contact"]

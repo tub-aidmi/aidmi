@@ -81,12 +81,21 @@ ollama-smoke:
 #        just sweep 08-06-2026 main_grid results/main
 #        just archive-dbt 2026-06-17-1   # backfill dbt from workspace into results/dbt/
 
+# Pass flags only after naming out=, e.g. just sweep 2026-06-23 x out=results -v
+# Or use sweep-verbose (bare -v is parsed as the out path).
 sweep campaign grid out="results" *FLAGS:
   @test -f .env || cp -n .env.example .env
   {{orch}} sweep \
     --grid benchmarks/{{campaign}}/grids/{{grid}}.yaml \
     --out benchmarks/{{campaign}}/{{out}} \
     {{FLAGS}}
+
+sweep-verbose campaign grid out="results":
+  @test -f .env || cp -n .env.example .env
+  {{orch}} sweep \
+    --grid benchmarks/{{campaign}}/grids/{{grid}}.yaml \
+    --out benchmarks/{{campaign}}/{{out}} \
+    -v
 
 archive-dbt campaign out="results":
   {{orch}} archive-dbt --out benchmarks/{{campaign}}/{{out}}

@@ -4,7 +4,8 @@ from unittest.mock import AsyncMock, patch
 import pytest
 from pydantic import BaseModel
 
-from aidmi_orchestrator.benchmark import Benchmark, expand_grid, parse_strategy_spec
+from aidmi_orchestrator.benchmark import Benchmark, expand_grid, parse_strategy_spec, sweep_job_status
+from aidmi_orchestrator.domain import BenchmarkResult, StrategyResult
 from aidmi_orchestrator.fixtures.base import Fixture
 
 
@@ -199,3 +200,37 @@ def test_expand_grid_passes_cell_fixtures_through():
     spec = {"cells": [{"strategy": "mock", "fixtures": ["master"], "config": {}}]}
     (_, _, _, fixtures), = expand_grid(spec)
     assert fixtures == ["master"]
+
+
+def _bench_result(**kwargs) -> BenchmarkResult:
+    from datetime import datetime
+    defaults = dict(
+        run_id="r1",
+        fixture_name="master",
+        strategy_name="plan_write_critique",
+        strategy_spec_name="spec",
+        strategy_config={},
+        rep_index=0,
+        started_at=datetime.utcnow(),
+        completed_at=datetime.utcnow(),
+        wall_clock_seconds=1.0,
+        strategy_result=StrategyResult(target_tables_written=[], self_reported_status="complete"),
+        metrics={},
+        error=None,
+        source_schema="",
+        out_schema="",
+    )
+    defaults.update(kwargs)
+    return BenchmarkResult(**defaults)
+
+
+def test_sweep_job_status():
+    assert sweep_job_status(_bench_result(error="boom")) == "ERROR"
+    assert sweep_job_status(_bench_result(
+        strategy_result=StrategyResult(target_tables_written=[], self_reported_status="gave_up"),
+    )) == "GAVE_UP"
+    assert sweep_job_status(_bench_result(
+        strategy_result=StrategyResult(target_tables_written=["a"], self_reported_status="partial"),
+    )) == "PARTIAL"
+    assert sweep_job_status(_bench_result(metrics={"dbt_success": False})) == "FAIL"
+    assert sweep_job_status(_bench_result(metrics={"dbt_success": True})) == "ok"

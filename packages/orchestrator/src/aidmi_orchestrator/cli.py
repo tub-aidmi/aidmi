@@ -18,7 +18,7 @@ import aidmi_orchestrator.strategy  # noqa: F401
 import aidmi_orchestrator.evaluator  # noqa: F401
 import aidmi_orchestrator.fixtures  # noqa: F401
 
-from aidmi_orchestrator.benchmark import Benchmark, expand_grid, parse_strategy_spec
+from aidmi_orchestrator.benchmark import Benchmark, expand_grid, parse_strategy_spec, sweep_job_status
 from aidmi_orchestrator.persistence import archive_run_dbt
 from aidmi_orchestrator.fixtures.base import get_fixture
 from aidmi_orchestrator.strategy.base import make_strategy
@@ -162,7 +162,7 @@ def sweep(
             ):
                 counter["archived"] += 1
             counter["done"] += 1
-            status = "ERROR" if result.error else "ok"
+            status = sweep_job_status(result)
             typer.echo(
                 f"[{counter['done']}/{total}] {job.spec_name} @ {job.fixture_name} "
                 f"rep{job.rep_index}: {status} ({result.wall_clock_seconds:.0f}s)"

@@ -8,7 +8,7 @@ from pydantic import BaseModel, Field
 from pydantic_ai import Agent, Tool
 
 from aidmi_orchestrator.domain import ModelSpec, StrategyResult
-from aidmi_orchestrator.strategy.base import build_context_prompt, run_coroutines, write_proposal
+from aidmi_orchestrator.strategy.base import build_context_prompt, run_coroutines, run_named_coroutines, write_proposal
 from aidmi_orchestrator.strategy.plan_then_execute.prompts import executor_user_prompt
 from aidmi_orchestrator.strategy.plan_then_execute.strategy import MappingPlan, plan_slice_text
 from aidmi_orchestrator.strategy.plan_write_critique.loops import (
@@ -28,10 +28,7 @@ from aidmi_orchestrator.strategy.structured_common import (
     TableMapping,
 )
 from aidmi_orchestrator.strategy.write_then_critique.critique import CritiqueReport
-from aidmi_orchestrator.strategy.write_then_critique.prompts import (
-    render_proposal,
-    revision_user_prompt,
-)
+from aidmi_orchestrator.strategy.write_then_critique.prompts import render_proposal
 from aidmi_orchestrator.strategy.write_tools_freeform.tools import make_query_postgres
 from aidmi_orchestrator.trace import StrategyEvent
 
@@ -82,6 +79,21 @@ class PlanWriteCritique:
         log_progress("Calling planner model to create mapping plan...")
         planner_agent = Agent(planner, output_type=MappingPlan, system_prompt=PLANNER_SYSTEM_PROMPT)
         plan = (await planner_agent.run(planner_user_prompt(context))).output
+        target_table_names = [t.name for t in api.target_schema.tables]
+        planned = {t.target_table for t in plan.tables}
+        missing = sorted(set(target_table_names) - planned)
+        if missing:
+            log_progress(f"Plan missing {len(missing)} tables ({', '.join(missing)}), re-prompting planner...")
+            plan = (await planner_agent.run(
+                planner_user_prompt(context)
+                + f"\n\nYour MappingPlan MUST include every target table: {target_table_names}. "
+                f"Still missing: {missing}."
+            )).output
+            missing = sorted(set(target_table_names) - {t.target_table for t in plan.tables})
+            if missing:
+                log_progress(f"Warning: plan still missing tables: {', '.join(missing)}")
+        if not plan.tables:
+            raise ValueError("planner returned empty MappingPlan")
         log_progress(f"Plan complete: {len(plan.tables)} tables planned")
         api.trace.record(StrategyEvent(
             timestamp=datetime.utcnow(),
@@ -111,11 +123,10 @@ class PlanWriteCritique:
         target_table_names = [t.name for t in api.target_schema.tables]
         mode = "serial" if self.config.serial_llm_calls else "parallel"
         log_progress(f"Writing {len(target_table_names)} tables in {mode}...")
-        initial = await run_coroutines(
-            [one_table(n) for n in target_table_names],
+        mappings = await run_named_coroutines(
+            [(n, one_table(n)) for n in target_table_names],
             serial=self.config.serial_llm_calls,
         )
-        mappings = {m.target_table: m for m in initial}
         log_progress(f"Initial write complete: {len(mappings)} tables generated")
 
         source_tables = sorted({(t.db_schema, t.name) for t in api.source_summary.tables})
@@ -159,7 +170,15 @@ class PlanWriteCritique:
                 f"Initial dbt correction {'PASSED' if initial_dbt_ok else 'FAILED or incomplete'}"
             )
         else:
-            log_progress("Skipping initial dbt correction (max_dbt_correction_initial=0)")
+            log_progress("Running single dbt check (max_dbt_correction_initial=0)...")
+            try:
+                result = await api.run_dbt()
+                initial_dbt_ok = getattr(result, "overall_status", None) == "success"
+            except Exception:
+                initial_dbt_ok = False
+            log_progress(
+                f"Initial dbt check {'PASSED' if initial_dbt_ok else 'FAILED'}"
+            )
 
         if initial_dbt_ok is False:
             log_progress("Stopping — initial dbt self-correction did not succeed")
@@ -198,7 +217,12 @@ class PlanWriteCritique:
 
         async def critique(current: dict[str, TableMapping]) -> CritiqueReport:
             result = await critic_agent.run(
-                critique_user_prompt(context, render_proposal(current), api.out_schema)
+                critique_user_prompt(
+                    context,
+                    render_proposal(current),
+                    api.out_schema,
+                    target_table_names,
+                )
             )
             api.trace.record(StrategyEvent(
                 timestamp=datetime.utcnow(),
@@ -208,9 +232,15 @@ class PlanWriteCritique:
             return result.output
 
         async def revise(name: str, previous: TableMapping, comments: str) -> TableMapping:
-            result = await writer_agent.run(
-                revision_user_prompt(name, context, previous.dbt_sql, comments)
+            prompt = (
+                f"A reviewer rejected your dbt model for `{name}`.\n\n"
+                f"Previous SQL:\n```sql\n{previous.dbt_sql}\n```\n\n"
+                f"Reviewer comments:\n{comments}\n\n"
+                f"{plan_slice_text(plan, name)}\n\n"
+                f"{context}\n\n"
+                f"Produce a corrected dbt model for `{name}`."
             )
+            result = await writer_agent.run(prompt)
             return result.output.model_copy(update={"target_table": name})
 
         async def run_dbt_correction(current_mappings: dict[str, TableMapping]) -> bool:
@@ -234,7 +264,11 @@ class PlanWriteCritique:
                 )
 
             if self.config.max_dbt_correction_per_critique <= 0:
-                return True
+                try:
+                    result = await api.run_dbt()
+                    return getattr(result, "overall_status", None) == "success"
+                except Exception:
+                    return False
 
             return await retry_failing_tables_with_progress(
                 api.run_dbt,

@@ -44,6 +44,35 @@ async def run_coroutines(coros: list[Awaitable[T]], *, serial: bool) -> list[T]:
     return list(await asyncio.gather(*coros))
 
 
+async def run_named_coroutines(
+    items: list[tuple[str, Awaitable[T]]],
+    *,
+    serial: bool,
+) -> dict[str, T]:
+    """Run coroutines keyed by name; raise RuntimeError listing all failures."""
+    if not items:
+        return {}
+    names = [name for name, _ in items]
+    coros = [coro for _, coro in items]
+    if serial:
+        results: list[T | BaseException] = []
+        for coro in coros:
+            try:
+                results.append(await coro)
+            except BaseException as exc:
+                results.append(exc)
+    else:
+        results = list(await asyncio.gather(*coros, return_exceptions=True))
+    failures = [
+        f"{name}: {result!r}"
+        for name, result in zip(names, results)
+        if isinstance(result, BaseException)
+    ]
+    if failures:
+        raise RuntimeError("parallel task(s) failed: " + "; ".join(failures))
+    return {name: result for name, result in zip(names, results) if not isinstance(result, BaseException)}
+
+
 def make_strategy(name: str, config_dict: dict[str, Any] | None = None) -> Strategy:
     if name not in _STRATEGIES:
         raise ValueError(f"unknown strategy {name!r}. Registered: {list_strategies()}")
@@ -196,6 +225,7 @@ __all__ = [
     "list_strategies",
     "make_strategy",
     "run_coroutines",
+    "run_named_coroutines",
     "build_context_prompt",
     "normalize_source_refs",
     "write_proposal",

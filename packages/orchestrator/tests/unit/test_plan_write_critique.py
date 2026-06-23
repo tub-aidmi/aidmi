@@ -114,13 +114,40 @@ def test_critique_loop_exhausted_rounds() -> None:
     mappings = {"users": _mapping("users")}
     critique = AsyncMock(return_value=_report(users="needs_revision"))
     revise = AsyncMock(return_value=_mapping("users"))
-    dbt = AsyncMock(return_value=False)
+    dbt = AsyncMock(return_value=True)
     final, approved = asyncio.run(run_critique_with_dbt_loop(
         mappings, critique, revise, dbt, max_critique_rounds=2,
     ))
     assert approved is False
     assert critique.await_count == 2
     assert dbt.await_count == 2
+
+
+def test_critique_loop_stops_when_dbt_fails() -> None:
+    mappings = {"users": _mapping("users")}
+    critique = AsyncMock(return_value=_report(users="needs_revision"))
+    revise = AsyncMock(return_value=_mapping("users", "fixed"))
+    dbt = AsyncMock(return_value=False)
+    final, approved = asyncio.run(run_critique_with_dbt_loop(
+        mappings, critique, revise, dbt, max_critique_rounds=5,
+    ))
+    assert approved is False
+    assert critique.await_count == 1
+    assert dbt.await_count == 1
+    assert final["users"].dbt_sql == "fixed"
+
+
+def test_critique_loop_critique_crash() -> None:
+    mappings = {"users": _mapping("users")}
+    critique = AsyncMock(side_effect=RuntimeError("critic down"))
+    revise = AsyncMock()
+    dbt = AsyncMock(return_value=True)
+    final, approved = asyncio.run(run_critique_with_dbt_loop(
+        mappings, critique, revise, dbt, max_critique_rounds=3,
+    ))
+    assert approved is False
+    revise.assert_not_awaited()
+    dbt.assert_not_awaited()
 
 
 def test_critique_loop_revise_crash() -> None:

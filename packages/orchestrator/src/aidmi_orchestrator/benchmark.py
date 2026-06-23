@@ -117,6 +117,19 @@ class Benchmark:
         return result
 
 
+def sweep_job_status(result: BenchmarkResult) -> str:
+    if result.error:
+        return "ERROR"
+    status = result.strategy_result.self_reported_status
+    if status == "gave_up":
+        return "GAVE_UP"
+    if status == "partial":
+        return "PARTIAL"
+    if result.metrics.get("dbt_success") is False:
+        return "FAIL"
+    return "ok"
+
+
 def resolve_model_refs(config: dict[str, Any], models: dict[str, dict[str, Any]]) -> dict[str, Any]:
     out = dict(config)
     for key, value in config.items():

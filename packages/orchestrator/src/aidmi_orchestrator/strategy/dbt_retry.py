@@ -51,7 +51,7 @@ async def retry_failing_tables(
             try:
                 await run_coroutines(
                     [regenerate(name, repr(exc)) for name in all_table_names],
-                    serial=serial,
+                    serial=True,
                 )
             except Exception:
                 return False
@@ -68,11 +68,14 @@ async def retry_failing_tables(
             if not all_table_names:
                 return False
             failing = [(name, summarize_dbt_failure(result)) for name in all_table_names]
+            regen_serial = True
+        else:
+            regen_serial = serial
 
         try:
             await run_coroutines(
                 [regenerate(name, err) for name, err in failing],
-                serial=serial,
+                serial=regen_serial,
             )
         except Exception:
             return False
