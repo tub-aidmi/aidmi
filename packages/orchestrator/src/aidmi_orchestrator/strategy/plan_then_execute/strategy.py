@@ -13,6 +13,7 @@ from aidmi_orchestrator.strategy.structured_common import (
 from aidmi_orchestrator.strategy.plan_then_execute.prompts import (
     PLANNER_SYSTEM_PROMPT, executor_user_prompt, planner_user_prompt,
 )
+from aidmi_orchestrator.strategy.self_correction import run_dbt_self_correction
 from aidmi_orchestrator.trace import StrategyEvent
 
 
@@ -59,6 +60,8 @@ class PlanThenExecuteConfig(BaseModel):
     samples_per_table: int = 3
     max_query_tool_rows: int = 100
     serial_llm_calls: bool = False
+    enable_self_correction: bool = False
+    max_self_correction_passes: int = 3
 
 
 class PlanThenExecute:
@@ -112,8 +115,24 @@ class PlanThenExecute:
         source_tables = sorted({(t.db_schema, t.name) for t in api.source_summary.tables})
         write_proposal(api.dbt_project_path, sql_by_table, source_tables, api.source_schema)
 
+        mappings_by_table = {m.target_table: m for m in mappings}
+
+        dbt_ok = True
+        if self.config.enable_self_correction:
+            dbt_ok = await run_dbt_self_correction(
+                api,
+                writer_agent,
+                mappings_by_table,
+                context,
+                dbt_project_path=api.dbt_project_path,
+                source_tables=source_tables,
+                source_schema=api.source_schema,
+                max_passes=self.config.max_self_correction_passes,
+                serial=self.config.serial_llm_calls,
+            )
+
         manifest = manifest_from_mappings(
-            list(mappings),
+            list(mappings_by_table.values()),
             source_table_names=[t.name for t in api.source_summary.tables],
             strategy_name=self.name,
             strategy_config=self.config.model_dump(),
@@ -122,5 +141,5 @@ class PlanThenExecute:
             target_tables_written=list(sql_by_table),
             target_schema=api.target_schema,
             manifest=manifest,
-            self_reported_status="complete",
+            self_reported_status="complete" if dbt_ok else "partial",
         )

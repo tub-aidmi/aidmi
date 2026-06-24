@@ -1,16 +1,14 @@
 """Prompt templates for the plan_then_execute strategy."""
 
-PLANNER_SYSTEM_PROMPT = """\
+from aidmi_orchestrator.strategy.guidelines.compose import planner_system_prompt
+
+_PLANNER_ROLE = """\
 You are a senior data architect planning a schema mapping before any SQL is written.
 
-You receive a full description of a source database and a target schema. Produce a global MappingPlan covering EVERY target table:
-- which source tables feed it and on which join keys
-- for every target column: the source column(s) and a short transform hint
-- per-table notes on pitfalls (casts, enums, normalisation)
-- an overview describing cross-table decisions (shared keys, consistent casing)
-
-Plan only — no SQL. Be precise about column names; downstream writers follow the plan literally.
+You receive a full description of a source database and a target schema. Produce a global MappingPlan covering EVERY target table.
 """
+
+PLANNER_SYSTEM_PROMPT = planner_system_prompt(_PLANNER_ROLE)
 
 
 def planner_user_prompt(context_prompt: str) -> str:

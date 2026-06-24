@@ -8,9 +8,7 @@ from unittest.mock import AsyncMock
 from pydantic_ai.models.test import TestModel
 
 from aidmi_orchestrator.domain import ModelSpec
-from aidmi_orchestrator.strategy.structured_per_table.self_correction import (
-    retry_failing_tables,
-)
+from aidmi_orchestrator.strategy.dbt_retry import retry_failing_tables
 from aidmi_orchestrator.strategy.structured_per_table.strategy import (
     StructuredPerTable, StructuredPerTableConfig,
 )

@@ -6,23 +6,15 @@ from pydantic import BaseModel, Field
 from pydantic_ai import Agent, Tool
 
 from aidmi_orchestrator.domain import ColumnNote, MappingManifest, TableMappingNote
+from aidmi_orchestrator.strategy.guidelines.compose import (
+    retry_correction_reminder,
+    writer_system_prompt,
+)
 
-
-WRITER_SYSTEM_PROMPT = """\
+_WRITER_ROLE = """\
 You are a senior data engineer producing dbt SQL.
 
 You receive a description of a source database (schemas, columns, optionally sample rows) and a target table specification. Your job is to write ONE dbt model — a SELECT statement that transforms the source data into the target schema.
-
-Rules:
-- Use `{{ source('<source_slug>', '<table>') }}` where `<source_slug>` is the dbt source slug from context (the schema name before the dot), e.g. `fixture_master_src.master_kunden` → first argument `'fixture_master_src'`.
-- `query_postgres(sql)` runs plain PostgreSQL against staging — NOT dbt. Use quoted schema/table names, e.g. `SELECT * FROM "fixture_master_src"."master_kunden" LIMIT 10`. Never pass `{{ source(...) }}` or other Jinja to `query_postgres`.
-- Map each target table from source tables only. Do NOT use `{{ ref('OtherModel') }}` or join to other target models — sibling dbt models may not exist yet. Resolve relationships via source keys (e.g. join `master_kontakte.kd_nummer` to `master_kunden.kundennummer`).
-- Declare sources in `sources.yml` with `schema: "<source_schema>"` as a YAML string — the physical Postgres schema where fixture source tables live (shown in context, e.g. `fixture_master_src`). Do not point sources at `{{ target.schema }}`; that is the per-run output schema where dbt models materialize.
-- Use `{{ config(materialized='table') }}` at the top.
-- The output column names and types must match the target spec exactly.
-- For enum-typed target columns, map source values to the declared enum domain.
-- Use INITCAP / LOWER / TRIM for normalisation where the target spec hints at it.
-- Use only PostgreSQL syntax. Do NOT use TRY_CAST, SAFE_CAST, ISNULL, NVL, or invented functions.
 
 Return a structured TableMapping with:
 - target_table: name of the model
@@ -30,6 +22,8 @@ Return a structured TableMapping with:
 - column_notes: per-target-column source + brief explanation
 - reasoning: 1-3 sentences justifying your choices
 """
+
+WRITER_SYSTEM_PROMPT = writer_system_prompt(_WRITER_ROLE)
 
 
 def per_table_user_prompt(target_table_name: str, context_prompt: str) -> str:
@@ -47,6 +41,7 @@ def retry_user_prompt(
         f"Your previous dbt model for `{target_table_name}` failed.\n\n"
         f"Previous SQL:\n```sql\n{previous_sql}\n```\n\n"
         f"dbt error:\n{error_message}\n\n"
+        f"{retry_correction_reminder()}\n\n"
         f"{context_prompt}\n\n"
         f"Produce a corrected dbt model for `{target_table_name}` "
         f"using valid PostgreSQL only."

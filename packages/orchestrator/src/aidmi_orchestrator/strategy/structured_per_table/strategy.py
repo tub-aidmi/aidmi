@@ -7,11 +7,8 @@ from aidmi_orchestrator.domain import ModelSpec, StrategyResult
 from aidmi_orchestrator.strategy.base import build_context_prompt, run_coroutines, write_proposal
 from aidmi_orchestrator.strategy.structured_common import (
     generate_table_mapping, make_table_agent, manifest_from_mappings,
-    retry_user_prompt,
 )
-from aidmi_orchestrator.strategy.structured_per_table.self_correction import (
-    retry_failing_tables,
-)
+from aidmi_orchestrator.strategy.self_correction import run_dbt_self_correction
 
 
 class StructuredPerTableConfig(BaseModel):
@@ -62,27 +59,16 @@ class StructuredPerTable:
 
         dbt_ok = True
         if self.config.enable_self_correction:
-            async def regenerate(table_name: str, error_message: str) -> None:
-                previous = mappings_by_table.get(table_name)
-                prompt = retry_user_prompt(
-                    table_name, context,
-                    previous.dbt_sql if previous else "", error_message,
-                )
-                run = await agent.run(prompt)
-                fixed = run.output.model_copy(update={"target_table": table_name})
-                mappings_by_table[table_name] = fixed
-                write_proposal(
-                    api.dbt_project_path,
-                    {name: m.dbt_sql for name, m in mappings_by_table.items()},
-                    source_tables,
-                    api.source_schema,
-                )
-
-            dbt_ok = await retry_failing_tables(
-                api.run_dbt, regenerate,
+            dbt_ok = await run_dbt_self_correction(
+                api,
+                agent,
+                mappings_by_table,
+                context,
+                dbt_project_path=api.dbt_project_path,
+                source_tables=source_tables,
+                source_schema=api.source_schema,
                 max_passes=self.config.max_self_correction_passes,
                 serial=self.config.serial_llm_calls,
-                all_table_names=list(mappings_by_table),
             )
 
         manifest = manifest_from_mappings(

@@ -73,6 +73,7 @@ def test_per_table_user_prompt_mentions_table_and_context() -> None:
 def test_writer_system_prompt_keeps_dbt_rules() -> None:
     assert "{{ config(materialized='table') }}" in WRITER_SYSTEM_PROMPT
     assert "source(" in WRITER_SYSTEM_PROMPT
+    assert 'AS "ColumnName"' in WRITER_SYSTEM_PROMPT or 'double quotes' in WRITER_SYSTEM_PROMPT.lower()
 
 
 def test_manifest_from_mappings_builds_notes() -> None:

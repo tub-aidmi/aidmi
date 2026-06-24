@@ -6,9 +6,7 @@ from types import SimpleNamespace
 from unittest.mock import AsyncMock
 
 from aidmi_orchestrator.strategy.base import run_coroutines
-from aidmi_orchestrator.strategy.structured_per_table.self_correction import (
-    retry_failing_tables,
-)
+from aidmi_orchestrator.strategy.dbt_retry import retry_failing_tables
 
 
 def test_run_coroutines_serial_executes_in_order() -> None:

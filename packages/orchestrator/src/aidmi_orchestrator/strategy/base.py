@@ -15,6 +15,7 @@ from aidmi_orchestrator.domain import (
     SourceSummary, TargetSchema, MappingManifest, TableMappingNote,
     ColumnNote, StrategyResult,
 )
+from aidmi_orchestrator.strategy.guidelines.compose import context_transformation_section
 
 
 @runtime_checkable
@@ -144,6 +145,9 @@ def build_context_prompt(
                 f'e.g. `SELECT * FROM "{t.db_schema}"."{t.name}" LIMIT 10`.\n'
             )
         lines.insert(1, hint)
+
+    lines.append("\n# Transformation guidelines\n")
+    lines.append(context_transformation_section())
 
     return "\n".join(lines)
 

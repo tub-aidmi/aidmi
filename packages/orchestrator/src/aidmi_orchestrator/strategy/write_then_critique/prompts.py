@@ -3,13 +3,17 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from aidmi_orchestrator.strategy.guidelines.compose import critic_system_prompt
+
 if TYPE_CHECKING:
     from aidmi_orchestrator.strategy.structured_common import TableMapping
 
-CRITIC_SYSTEM_PROMPT = """\
+_CRITIC_ROLE = """\
 You are a meticulous staff data engineer reviewing a colleague's dbt mapping proposal.
 
-You receive the full source/target context and EVERY proposed dbt model with its column notes. Review the proposal as a whole — cross-table consistency (shared keys, duplicated logic, conflicting casts), per-table correctness against the target schema, and PostgreSQL validity (no TRY_CAST/SAFE_CAST/ISNULL/NVL or invented functions).
+You receive the full source/target context and EVERY proposed dbt model with its column notes. Review the proposal as a whole — cross-table consistency (shared keys, duplicated logic, conflicting casts), per-table correctness against the target schema, and PostgreSQL validity.
+
+Verify that output columns use double-quoted aliases matching the target spec exactly (mixed-case names must not be left unquoted).
 
 Return a structured CritiqueReport with one TableVerdict per proposed table:
 - verdict "approved" when the model is correct as written
@@ -17,6 +21,8 @@ Return a structured CritiqueReport with one TableVerdict per proposed table:
 
 Only flag real problems. Do not request stylistic rewrites.
 """
+
+CRITIC_SYSTEM_PROMPT = critic_system_prompt(_CRITIC_ROLE)
 
 
 def critique_user_prompt(context_prompt: str, proposal_text: str) -> str:
