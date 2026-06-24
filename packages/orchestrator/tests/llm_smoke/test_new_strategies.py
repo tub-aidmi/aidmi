@@ -1,4 +1,4 @@
-"""Real-LLM smoke: one run per new strategy against master via the ISE proxy.
+"""Real-LLM smoke: one run per new strategy against mock via the ISE proxy.
 
 Requires LITELLM_API_KEY and the SSH tunnel (localhost:4000). Skipped otherwise.
 """
@@ -42,9 +42,9 @@ CASES = [
 @pytest.mark.skipif(not os.environ.get("LITELLM_API_KEY"), reason="LITELLM_API_KEY not set")
 @pytest.mark.parametrize("registry,config", CASES, ids=[c[0] for c in CASES])
 def test_strategy_smoke(registry, config, staging_db_url, tmp_path):
-    init_fixture("master", staging_db_url)
+    init_fixture("mock", staging_db_url)
     strategy = make_strategy(registry, config)
-    bench = Benchmark(get_fixture("master"), workspace=tmp_path, staging_db_url=staging_db_url)
+    bench = Benchmark(get_fixture("mock"), workspace=tmp_path, staging_db_url=staging_db_url)
     result = asyncio.run(bench.run(strategy, strategy_spec_name=f"smoke_{registry}"))
     assert result.error is None
     assert result.strategy_result.target_tables_written

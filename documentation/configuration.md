@@ -135,11 +135,11 @@ Used by every LLM-driven strategy as the `writer_model` (or other role-named) fi
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `provider` | string | yes | Name of a registered provider. Built-ins: `openai`, `openai_compatible`, `ollama`, `anthropic`, `litellm`. |
-| `model_name` | string | yes | Model identifier the provider accepts (e.g., `gpt-4o-mini`, `claude-3-5-sonnet-latest`, `llama3:70b`). |
+| `provider` | string | yes | Name of a registered provider. Built-ins: `openai`, `openai_compatible`, `ollama`, `anthropic`, `litellm`, `google_cloud`. |
+| `model_name` | string | yes | Model identifier the provider accepts (e.g., `gpt-4o-mini`, `claude-3-5-sonnet-latest`, `llama3:70b`, `gemini-2.5-flash`). |
 | `base_url` | string | no | Override the provider's default base URL. Useful for OpenAI-compatible proxies and Ollama. |
 | `api_key_env` | string | no | Name of the environment variable holding the API key. The key itself is never serialized. Omit or leave unset for providers that require no key (see Ollama). |
-| `extra` | object | no | Provider-specific options. Passed through opaquely. |
+| `extra` | object | no | Provider-specific options. For `google_cloud` ADC auth: `project`, `location`. |
 
 ### Examples
 
@@ -184,6 +184,26 @@ writer_model:
   base_url: https://llm.internal/v1
   api_key_env: OPENAI_COMPATIBLE_API_KEY
 ```
+
+Google Agent Platform / Vertex AI (API key from Cloud Console — no project or location required):
+```yaml
+writer_model:
+  provider: google_cloud
+  model_name: gemini-2.5-flash
+  api_key_env: GOOGLE_API_KEY
+```
+
+Google Cloud with Application Default Credentials (service account or `gcloud auth application-default login`):
+```yaml
+writer_model:
+  provider: google_cloud
+  model_name: gemini-2.5-flash
+  extra:
+    project: my-gcp-project
+    location: us-central1
+```
+
+Set `GOOGLE_CLOUD_PROJECT` and `GOOGLE_CLOUD_LOCATION` in [`.env.example`](../.env.example) instead of `extra` when the same project/region applies to every model in a run.
 
 ## Grid YAML
 

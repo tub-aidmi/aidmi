@@ -1,4 +1,4 @@
-"""Smoke test against a real LLM. Skipped unless OPENAI_API_KEY is set."""
+"""Smoke test against Google Cloud (Agent Platform). Skipped unless GOOGLE_API_KEY is set."""
 import os
 import asyncio
 import pytest
@@ -17,16 +17,16 @@ pytestmark = pytest.mark.requires_llm
 
 
 @pytest.mark.skipif(
-    "OPENAI_API_KEY" not in os.environ,
-    reason="OPENAI_API_KEY not set",
+    "GOOGLE_API_KEY" not in os.environ,
+    reason="GOOGLE_API_KEY not set",
 )
-def test_write_tools_freeform_openai_smoke(staging_db_url, tmp_path):
+def test_write_tools_freeform_google_cloud_smoke(staging_db_url, tmp_path):
     init_fixture("mock", staging_db_url)
     strategy = make_strategy("write_tools_freeform", {
         "writer_model": {
-            "provider": "openai",
-            "model_name": "gpt-4o-mini",
-            "api_key_env": "OPENAI_API_KEY",
+            "provider": "google_cloud",
+            "model_name": "gemini-2.5-flash",
+            "api_key_env": "GOOGLE_API_KEY",
         },
         "context_mode": "metadata_plus_samples",
         "samples_per_table": 3,
@@ -35,7 +35,7 @@ def test_write_tools_freeform_openai_smoke(staging_db_url, tmp_path):
     })
     bench = Benchmark(get_fixture("mock"), workspace=tmp_path, staging_db_url=staging_db_url)
     result = asyncio.run(
-        bench.run(strategy, strategy_spec_name="write_tools_freeform_openai_smoke")
+        bench.run(strategy, strategy_spec_name="write_tools_freeform_google_cloud_smoke")
     )
 
     assert result.error is None, f"orchestrator errored: {result.error}"

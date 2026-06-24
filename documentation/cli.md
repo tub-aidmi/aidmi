@@ -17,6 +17,8 @@ Staging Postgres resolves in this order:
 
 Strategy specs and grid YAML choose `provider`, model, optional `base_url`, and optional `api_key_env`. Only the referenced API keys typically belong in `.env` ([`.env.example`](../.env.example)); host URLs belong in YAML (see [`configuration.md`](configuration.md)).
 
+For Google Agent Platform / Vertex AI (`provider: google_cloud`), set `GOOGLE_API_KEY` in `.env` when using an API key from Cloud Console. For ADC auth instead, set `GOOGLE_CLOUD_PROJECT` and optionally `GOOGLE_CLOUD_LOCATION` (or pass `project` / `location` in YAML `extra`).
+
 If a `.env` file exists in the current working directory when you invoke `aidmi-orchestrator`, it is loaded automatically via `python-dotenv` (file values override shell exports).
 
 ## `aidmi-orchestrator run`

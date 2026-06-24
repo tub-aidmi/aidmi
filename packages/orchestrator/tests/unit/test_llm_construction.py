@@ -7,7 +7,7 @@ from aidmi_orchestrator.llm import (
 
 def test_builtin_providers_are_registered():
     names = list_providers()
-    for name in ("openai", "openai_compatible", "ollama", "anthropic", "litellm"):
+    for name in ("openai", "openai_compatible", "ollama", "anthropic", "litellm", "google_cloud"):
         assert name in names
 
 
@@ -52,3 +52,31 @@ def test_ollama_base_url_appends_v1(base_url, expected):
 
     spec = ModelSpec(provider="ollama", model_name="llama3", base_url=base_url)
     assert _ollama_base_url(spec) == expected
+
+
+def test_google_cloud_factory_with_api_key(monkeypatch):
+    monkeypatch.setenv("GOOGLE_API_KEY", "test-key")
+    spec = ModelSpec(
+        provider="google_cloud",
+        model_name="gemini-2.5-flash",
+        api_key_env="GOOGLE_API_KEY",
+    )
+    model = make_llm(spec)
+    from pydantic_ai.models.google import GoogleModel
+
+    assert isinstance(model, GoogleModel)
+    assert model.model_name == "gemini-2.5-flash"
+    assert model._provider._client._api_client.vertexai is True  # pyright: ignore[reportPrivateUsage]
+
+
+def test_google_cloud_factory_adc_extra(monkeypatch):
+    monkeypatch.delenv("GOOGLE_API_KEY", raising=False)
+    spec = ModelSpec(
+        provider="google_cloud",
+        model_name="gemini-2.5-flash",
+        extra={"project": "my-project", "location": "us-east5"},
+    )
+    model = make_llm(spec)
+    from pydantic_ai.models.google import GoogleModel
+
+    assert isinstance(model, GoogleModel)

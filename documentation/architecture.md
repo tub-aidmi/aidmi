@@ -173,7 +173,7 @@ The four parent packages (`aidmi_orchestrator.strategy`, `aidmi_orchestrator.eva
 | `aidmi_orchestrator.strategy` | Imports `base`, `mock`, `structured_per_table`, `write_tools_freeform` sub-packages. Each sub-package's `__init__.py` calls `register_strategy`. |
 | `aidmi_orchestrator.evaluator` | Imports `base`, `execution`, `llm_usage`, `schema`, `row_equality` modules. Each module top-level calls `register_evaluator`. |
 | `aidmi_orchestrator.fixtures` | Imports `base` and each fixture sub-package. Each fixture's `__init__.py` calls `register_fixture`. |
-| `aidmi_orchestrator.llm` | Top-level of `llm.py` calls `register_provider` for the five built-ins (`openai`, `openai_compatible`, `ollama`, `anthropic`, `litellm`). |
+| `aidmi_orchestrator.llm` | Top-level of `llm.py` calls `register_provider` for the six built-ins (`openai`, `openai_compatible`, `ollama`, `anthropic`, `litellm`, `google_cloud`). |
 
 `cli.py` imports the four parent packages at module top-level, which is sufficient to populate all built-in registrations. User code wishing to register additional entries imports the relevant user modules before invoking the CLI or benchmark.
 
@@ -244,7 +244,7 @@ packages/orchestrator/tests/
     └── test_real_llm.py             # @pytest.mark.requires_llm; skipped without API key
 ```
 
-Unit tests cover one module each. The integration test runs `Benchmark.run` end-to-end with `MockStrategy` against the `sp1_users` fixture and asserts the metrics the spec calls out as success criteria. The LLM smoke test exercises `structured_per_table` against a real OpenAI endpoint when `OPENAI_API_KEY` is set; CI skips it.
+Unit tests cover one module each. The integration test runs `Benchmark.run` end-to-end with `MockStrategy` against the `sp1_users` fixture and asserts the metrics the spec calls out as success criteria. LLM smoke tests exercise `write_tools_freeform` on the `mock` fixture against real endpoints when the relevant API key is set; CI skips them.
 
 Run the deterministic suite:
 

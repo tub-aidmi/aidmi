@@ -68,12 +68,16 @@ demo:
   just run mock mock
 
 litellm-smoke:
-  just init-db master
-  just run master write_tools_freeform_litellm_qwen
+  just init-db mock
+  just run mock write_tools_freeform_litellm_qwen
 
 ollama-smoke:
-  just init-db master
-  just run master write_tools_freeform_ollama_qwen
+  just init-db mock
+  just run mock write_tools_freeform_ollama_qwen
+
+google-cloud-smoke:
+  just init-db mock
+  just run mock write_tools_freeform_google_cloud
 
 # --- Benchmarks ---
 # Historic campaign results: benchmarks/historic/<campaign>/

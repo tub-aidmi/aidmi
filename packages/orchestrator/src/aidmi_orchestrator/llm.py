@@ -38,6 +38,27 @@ def _resolve_api_key(spec: ModelSpec) -> str | None:
     return os.environ[spec.api_key_env] if spec.api_key_env else None
 
 
+def _google_cloud_factory(spec: ModelSpec):
+    from pydantic_ai.models.google import GoogleModel
+    from pydantic_ai.providers.google_cloud import GoogleCloudProvider
+
+    api_key = _resolve_api_key(spec)
+    extra = spec.extra or {}
+    kwargs: dict[str, Any] = {}
+    if api_key is not None:
+        kwargs["api_key"] = api_key
+    if "project" in extra:
+        kwargs["project"] = extra["project"]
+    if "location" in extra:
+        kwargs["location"] = extra["location"]
+    if spec.base_url is not None:
+        kwargs["base_url"] = spec.base_url
+    return GoogleModel(
+        spec.model_name,
+        provider=GoogleCloudProvider(**kwargs),
+    )
+
+
 def _openai_factory(spec: ModelSpec):
     from pydantic_ai.models.openai import OpenAIChatModel
     from pydantic_ai.providers.openai import OpenAIProvider
@@ -81,6 +102,7 @@ def _ollama_factory(spec: ModelSpec):
 register_provider("ollama", _ollama_factory)
 register_provider("anthropic", _anthropic_factory)
 register_provider("litellm", _openai_factory)
+register_provider("google_cloud", _google_cloud_factory)
 
 
 # ---------- TracedModel ----------
