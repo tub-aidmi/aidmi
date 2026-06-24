@@ -160,3 +160,21 @@ def test_fixture_and_metadata_carry_ground_truth_path():
         ground_truth_mapping_path=Path("/tmp/gt.json"),
     )
     assert fx.ground_truth_mapping_path == Path("/tmp/gt.json")
+
+
+def test_crm_fixtures_registered():
+    import aidmi_orchestrator.fixtures  # noqa: F401 — triggers registration
+    from aidmi_orchestrator.fixtures.base import get_fixture, list_fixtures
+    for name in ["crm_master", "crm_wrong_field_names", "crm_messy_data", "crm_missing_relations"]:
+        assert name in list_fixtures()
+        fx = get_fixture(name)
+        assert fx.target_schema_path is not None and fx.target_schema_path.exists()
+        assert fx.ground_truth_mapping_path is not None and fx.ground_truth_mapping_path.exists()
+        assert fx.reference_dbt_path is None
+        assert fx.applicable_evaluators == [
+            "execution", "llm_usage", "schema", "manifest_quality",
+            "mapping_accuracy", "data_preservation",
+        ]
+    paths = {get_fixture(n).target_schema_path for n in
+             ["crm_master", "crm_wrong_field_names", "crm_messy_data", "crm_missing_relations"]}
+    assert len(paths) == 1
