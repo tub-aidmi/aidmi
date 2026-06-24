@@ -9,10 +9,8 @@ from aidmi_orchestrator.campaign import (
     Campaign,
     bundle_dir_for_run,
     make_campaign_id,
-    read_active_campaign_id,
     resolve_run_bundle,
     results_jsonl_for_campaign,
-    write_active_campaign,
 )
 from aidmi_orchestrator.domain import BenchmarkResult, RunProvenance, StrategyResult
 from aidmi_orchestrator.persistence import record_run, scaffold_dbt_project
@@ -44,7 +42,7 @@ def test_make_campaign_id_format():
     assert len(date_part) == 10
 
 
-def test_campaign_create_and_active(tmp_path):
+def test_campaign_create(tmp_path):
     root = tmp_path / "benchmarks"
     camp = Campaign.create(label="test run", root=root)
     assert camp.path.is_dir()
@@ -52,9 +50,6 @@ def test_campaign_create_and_active(tmp_path):
     meta = yaml.safe_load(camp.campaign_yaml.read_text())
     assert meta["label"] == "test run"
     assert meta["id"] == camp.id
-
-    write_active_campaign(camp.id, root)
-    assert read_active_campaign_id(root) == camp.id
 
 
 def test_record_run_writes_bundle_and_jsonl(tmp_path):

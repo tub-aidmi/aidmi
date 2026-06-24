@@ -11,7 +11,6 @@ from aidmi_orchestrator.domain import CampaignProvenance
 from aidmi_orchestrator.provenance import make_campaign_provenance
 
 DEFAULT_BENCHMARKS_ROOT = Path("benchmarks")
-ACTIVE_FILE = DEFAULT_BENCHMARKS_ROOT / ".active"
 
 
 def make_campaign_id() -> str:
@@ -75,48 +74,10 @@ class Campaign:
         return cls(path)
 
 
-def read_active_campaign_id(root: Path = DEFAULT_BENCHMARKS_ROOT) -> str | None:
-    active = root / ".active"
-    if not active.is_file():
-        return None
-    cid = active.read_text(encoding="utf-8").strip()
-    return cid or None
-
-
-def write_active_campaign(campaign_id: str, root: Path = DEFAULT_BENCHMARKS_ROOT) -> None:
-    root.mkdir(parents=True, exist_ok=True)
-    (root / ".active").write_text(campaign_id + "\n", encoding="utf-8")
-
-
-def resolve_active_campaign(
-    root: Path = DEFAULT_BENCHMARKS_ROOT,
-    *,
-    auto_create: bool = False,
-    label: str | None = None,
-) -> Campaign:
-    cid = read_active_campaign_id(root)
-    if cid is not None:
-        try:
-            return Campaign.load(cid, root)
-        except FileNotFoundError:
-            pass
-    if not auto_create:
-        raise RuntimeError(
-            "no active campaign; run `aidmi-orchestrator campaign new` or `campaign use <id>`"
-        )
-    camp = Campaign.create(label=label, root=root)
-    write_active_campaign(camp.id, root)
-    return camp
-
-
 def resolve_campaign(
-    campaign: str | Path | None = None,
+    campaign: str | Path,
     root: Path = DEFAULT_BENCHMARKS_ROOT,
-    *,
-    auto_create: bool = False,
 ) -> Campaign:
-    if campaign is None:
-        return resolve_active_campaign(root, auto_create=auto_create)
     path = Path(campaign)
     if path.is_dir():
         return Campaign.load_path(path)

@@ -1,13 +1,11 @@
 """PlanWriteCritique: plan, write, dbt self-correction, then critique with data validation."""
 from __future__ import annotations
 
-import sys
-from datetime import datetime
-
 from pydantic import BaseModel, Field
 from pydantic_ai import Agent, Tool
 
 from aidmi_orchestrator.domain import ModelSpec, StrategyResult
+from aidmi_orchestrator.progress import log_message
 from aidmi_orchestrator.strategy.base import build_context_prompt, run_coroutines, run_named_coroutines, write_proposal
 from aidmi_orchestrator.strategy.plan_then_execute.prompts import executor_user_prompt
 from aidmi_orchestrator.strategy.plan_then_execute.strategy import MappingPlan, plan_slice_text
@@ -34,8 +32,7 @@ from aidmi_orchestrator.trace import StrategyEvent
 
 
 def log_progress(message: str) -> None:
-    ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    print(f"[plan_write_critique] {ts} {message}", file=sys.stderr, flush=True)
+    log_message(message, scope="plan_write_critique")
 
 
 class PlanWriteCritiqueConfig(BaseModel):

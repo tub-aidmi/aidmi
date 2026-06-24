@@ -8,6 +8,7 @@ from pydantic_ai import Agent, Tool, UsageLimits
 from aidmi_pipeline.sources_yaml import ensure_sources_yaml_raw_schema
 
 from aidmi_orchestrator.domain import ModelSpec, StrategyResult
+from aidmi_orchestrator.progress import log_message
 from aidmi_orchestrator.strategy.base import (
     build_context_prompt,
 )
@@ -67,6 +68,11 @@ class WriteToolsFreeform:
             api.source_summary, api.target_schema, self.config.context_mode,
             samples_per_table=self.config.samples_per_table,
         )
+        log_message(
+            f"running writer agent ({self.config.writer_model.model_name}, "
+            f"context={self.config.context_mode}, max_turns={self.config.max_tool_turns})",
+            scope=self.name,
+        )
         await agent.run(
             build_initial_user_prompt(
                 context,
@@ -81,9 +87,14 @@ class WriteToolsFreeform:
         produced = [
             p.stem for p in models_dir.glob("*.sql")
         ] if models_dir.exists() else []
+        log_message(f"agent finished: {len(produced)} model(s) written", scope=self.name)
 
         dbt_ok = True
         if self.config.enable_self_correction and produced:
+            log_message(
+                f"starting post-agent dbt self-correction (max {self.config.max_self_correction_passes} passes)",
+                scope=self.name,
+            )
             dbt_ok = await run_post_agent_dbt_loop(
                 api,
                 agent,

@@ -27,7 +27,6 @@ Every run is recorded into a **campaign** directory under `benchmarks/`. Campaig
 
 ```
 benchmarks/
-├── .active                 # gitignored: current campaign id
 └── 2026-06-24-k7m2/
     ├── campaign.yaml       # metadata + git provenance at creation
     ├── grid.yaml           # sweep grid (optional until sweep)
@@ -38,27 +37,19 @@ benchmarks/
 
 ### `aidmi-orchestrator campaign new [label]`
 
-Create a campaign directory and set it as active.
+Create a campaign directory. Pass the returned id to `--campaign` on `run`, `sweep`, `apply-dbt`, and `evaluate`.
 
-### `aidmi-orchestrator campaign use <id>`
-
-Set the active campaign (id or path).
-
-### `aidmi-orchestrator campaign show`
-
-Print the active campaign id and path.
-
-Justfile shortcuts: `just campaign-new`, `just campaign-use`, `just campaign`.
+Justfile shortcut: `just campaign-new`.
 
 ## `aidmi-orchestrator run`
 
-Execute one orchestrator pass and **record** the result into the active campaign (auto-creates a campaign if none is active).
+Execute one orchestrator pass and **record** the result into a campaign.
 
 ```
 aidmi-orchestrator run \
   --fixture NAME \
   --strategy-spec PATH \
-  [--campaign ID-OR-PATH] \
+  --campaign ID-OR-PATH \
   [--run-id ID] \
   [--workspace DIR] \
   [--no-archive-dbt] \
@@ -71,7 +62,7 @@ aidmi-orchestrator run \
 |--------|---------|-------------|
 | `--fixture` | required | Name of a registered fixture (e.g., `master`). |
 | `--strategy-spec` | required | Path to YAML with required `name`, `strategy`, and `config`. See [Configuration](configuration.md). |
-| `--campaign` | active (auto-create) | Campaign id or path. Default: read `benchmarks/.active`, or create a new campaign. |
+| `--campaign` | required | Campaign id or path under `benchmarks/`. |
 | `--run-id` | auto (slug) | Optional run identifier. Auto-generated as `r{hash8}_{strategy}_{fixture}`. |
 | `--workspace` | `./aidmi_workspace` | Transient scratch directory during execution. |
 | `--archive-dbt` / `--no-archive-dbt` | `--archive-dbt` | Copy dbt source into the run bundle under the campaign. |
@@ -95,7 +86,7 @@ Run multiple `(strategy, config)` cells from the campaign's `grid.yaml`.
 
 ```
 aidmi-orchestrator sweep \
-  [--campaign ID-OR-PATH] \
+  --campaign ID-OR-PATH \
   [--fixture NAME] \
   [--runs-per-cell N] \
   [--concurrency N] \
@@ -108,7 +99,7 @@ aidmi-orchestrator sweep \
 
 | Option | Default | Description |
 |--------|---------|-------------|
-| `--campaign` | active | Campaign id or path. Reads `grid.yaml` from the campaign directory. |
+| `--campaign` | required | Campaign id or path. Reads `grid.yaml` from the campaign directory. |
 | `--fixture` | from grid | Single fixture override. |
 | `--runs-per-cell` | from grid, then 1 | Repetitions per cell. |
 | `--concurrency` | from grid, then 3 | Maximum parallel runs. |
@@ -129,13 +120,9 @@ When the grid sets `per_model_exclusive: true`, each distinct `model_name` is li
 
 ### Progress output
 
-Each completed run prints a one-line summary:
+Sweep and run commands log timestamped progress to stderr. At sweep start you see the campaign, cell count, job count, fixtures, and concurrency. Each job logs when it starts and finishes with grid position `[n/total]`, spec name, fixture, rep, status, and duration.
 
-```
-[done/total] spec_name @ fixture repN: ok (42s)
-```
-
-`resume` also prints the number of skipped runs before the first new one.
+During each run, the orchestrator and strategy log key phases (discover, LLM calls, tool calls, dbt runs) with timestamps and a scope tag such as `[sweep]`, `[write_tools_freeform]`, or `[plan_write_critique]`.
 
 ### Live trace (tail + `--verbose`)
 
@@ -189,7 +176,7 @@ Re-apply archived dbt SQL from a recorded run (transform only — no LLM). Reads
 ```
 aidmi-orchestrator apply-dbt \
   --run-id RUN_ID \
-  [--campaign ID-OR-PATH] \
+  --campaign ID-OR-PATH \
   [--rep-index N]
 ```
 
@@ -202,7 +189,7 @@ Re-run evaluators against a recorded run's Postgres output schema (no LLM).
 ```
 aidmi-orchestrator evaluate \
   --run-id RUN_ID \
-  [--campaign ID-OR-PATH] \
+  --campaign ID-OR-PATH \
   [--rep-index N]
 ```
 
@@ -261,19 +248,19 @@ aidmi-orchestrator report \
 Create a campaign and run a strategy:
 
 ```bash
-just campaign-new "mistral baseline"
+camp=$(just campaign-new "mistral baseline" | awk '{print $3}')
 just up
 just init-db master
-just run master plan_write_critique_litellm
+just run "$camp" master plan_write_critique_litellm
 ```
 
 Sweep the campaign's `grid.yaml`:
 
 ```bash
-just campaign-new "strategy matrix"
-cp my_grid.yaml benchmarks/$(just campaign | cut -f1)/grid.yaml
-just sweep
-just report
+camp=$(just campaign-new "strategy matrix" | awk '{print $3}')
+cp my_grid.yaml "benchmarks/$camp/grid.yaml"
+just sweep "$camp"
+just report "$camp"
 ```
 
 Re-apply archived dbt without re-running the LLM:
@@ -286,10 +273,11 @@ just repro r05fb2np7_plan_write_critique_master
 Run the mock strategy (typically `just up` plus a `.env` matching [`.env.example`](../.env.example)):
 
 ```bash
-just campaign-new demo
+camp=$(just campaign-new demo | awk '{print $3}')
 aidmi-orchestrator run \
   --fixture mock \
-  --strategy-spec packages/orchestrator/examples/strategy_specs/mock.yaml
+  --strategy-spec packages/orchestrator/examples/strategy_specs/mock.yaml \
+  --campaign "benchmarks/$camp"
 ```
 
 Run a custom strategy from your own code:

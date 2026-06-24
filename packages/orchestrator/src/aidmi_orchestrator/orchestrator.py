@@ -13,6 +13,7 @@ from aidmi_orchestrator.evaluator.base import RunArtifacts, FixtureMetadata
 from aidmi_orchestrator.persistence import (
     scaffold_dbt_project, write_strategy_result, write_mapping_manifest,
 )
+from aidmi_orchestrator.progress import log_message
 from aidmi_orchestrator.trace import TraceSink, StrategyEvent
 
 
@@ -45,8 +46,14 @@ async def run_orchestrator(
     dbt_project_path = run_dir / "dbt_project"
     scaffold_dbt_project(dbt_project_path)
 
-    trace = TraceSink(run_dir / "trace.jsonl", mirror_to=trace_mirror)
+    trace = TraceSink(
+        run_dir / "trace.jsonl",
+        mirror_to=trace_mirror,
+        progress_scope=strategy.name,
+    )
     target_schema = _load_target_schema(fixture.target_schema_path)
+
+    log_message(f"discovering source schema {fixture.source_schema}", scope=strategy.name)
 
     staging = StagingConfig.for_run(staging_db_url, fixture.source_schema, run_id)
     pipeline_run = MigrationRun(
@@ -64,6 +71,10 @@ async def run_orchestrator(
         label="discover_complete",
         data={"table_count": len(source_summary.tables)},
     ))
+    log_message(
+        f"discovered {len(source_summary.tables)} source tables",
+        scope=strategy.name,
+    )
 
     api = OrchestratorAPI(
         source_summary=source_summary,
@@ -77,7 +88,12 @@ async def run_orchestrator(
     )
 
     try:
+        log_message("starting strategy.generate", scope=strategy.name)
         strategy_result = await strategy.generate(api)
+        log_message(
+            f"strategy.generate finished ({len(strategy_result.target_tables_written)} tables)",
+            scope=strategy.name,
+        )
     except Exception as e:
         trace.record(StrategyEvent(
             timestamp=datetime.utcnow(),
@@ -89,6 +105,7 @@ async def run_orchestrator(
 
     final_transform = None
     try:
+        log_message("running final dbt transform", scope=strategy.name)
         final_transform = await api.run_dbt()
     except Exception as e:
         trace.record(StrategyEvent(

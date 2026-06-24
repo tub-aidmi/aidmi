@@ -64,98 +64,72 @@ test: test-pipeline test-orchestrator
 campaign-new label="":
   {{orch}} campaign new {{label}}
 
-campaign-use id:
-  {{orch}} campaign use {{id}}
+# --- Orchestrator runs ---
 
-campaign:
-  {{orch}} campaign show
-
-# --- Orchestrator runs (always recorded to active campaign) ---
-
-run fixture spec:
+run campaign fixture spec:
   @test -f .env || cp -n .env.example .env
-  {{orch}} run --fixture {{fixture}} --strategy-spec {{specs}}/{{spec}}.yaml
+  {{orch}} run --campaign "{{benchmarks}}/{{campaign}}" --fixture {{fixture}} --strategy-spec {{specs}}/{{spec}}.yaml
 
 demo:
-  just campaign-new demo
+  #!/usr/bin/env bash
+  set -euo pipefail
+  test -f .env || cp -n .env.example .env
+  camp_id=$({{orch}} campaign new demo | awk '{print $3}')
   just init-db mock
-  just run mock mock
+  {{orch}} run --campaign "{{benchmarks}}/$camp_id" --fixture mock --strategy-spec {{specs}}/mock.yaml
 
 litellm-smoke:
-  just campaign-new litellm-smoke
+  #!/usr/bin/env bash
+  set -euo pipefail
+  test -f .env || cp -n .env.example .env
+  camp_id=$({{orch}} campaign new litellm-smoke | awk '{print $3}')
   just init-db master
-  just run master write_tools_freeform_litellm_qwen
+  {{orch}} run --campaign "{{benchmarks}}/$camp_id" --fixture master --strategy-spec {{specs}}/write_tools_freeform_litellm_qwen.yaml
 
 ollama-smoke:
-  just campaign-new ollama-smoke
+  #!/usr/bin/env bash
+  set -euo pipefail
+  test -f .env || cp -n .env.example .env
+  camp_id=$({{orch}} campaign new ollama-smoke | awk '{print $3}')
   just init-db master
-  just run master write_tools_freeform_ollama_qwen
+  {{orch}} run --campaign "{{benchmarks}}/$camp_id" --fixture master --strategy-spec {{specs}}/write_tools_freeform_ollama_qwen.yaml
 
-# --- Sweeps (uses campaign's grid.yaml) ---
+# --- Sweeps ---
 
-sweep campaign="":
+sweep campaign:
   #!/usr/bin/env bash
   set -euo pipefail
   test -f .env || cp -n .env.example .env
-  if [ -n "{{campaign}}" ]; then
-    {{orch}} sweep --campaign "{{benchmarks}}/{{campaign}}"
-  else
-    {{orch}} sweep
-  fi
+  {{orch}} sweep --campaign "{{benchmarks}}/{{campaign}}"
 
-sweep-verbose campaign="":
+sweep-verbose campaign:
   #!/usr/bin/env bash
   set -euo pipefail
   test -f .env || cp -n .env.example .env
-  if [ -n "{{campaign}}" ]; then
-    {{orch}} sweep --campaign "{{benchmarks}}/{{campaign}}" -v
-  else
-    {{orch}} sweep -v
-  fi
+  {{orch}} sweep --campaign "{{benchmarks}}/{{campaign}}" -v
 
-report campaign="":
-  #!/usr/bin/env bash
-  set -euo pipefail
-  if [ -n "{{campaign}}" ]; then
-    target="{{benchmarks}}/{{campaign}}"
-  else
-    target="$({{orch}} campaign show | cut -f1)"
-    target="{{benchmarks}}/$target"
-  fi
-  {{orch}} report "$target" --out "$target/report"
+report campaign:
+  {{orch}} report "{{benchmarks}}/{{campaign}}" --out "{{benchmarks}}/{{campaign}}/report"
 
 sweep-demo:
   #!/usr/bin/env bash
   set -euo pipefail
   test -f .env || cp -n .env.example .env
-  just campaign-new sweep-demo
-  camp="$({{orch}} campaign show | cut -f2)"
-  cp packages/orchestrator/examples/day1_grid.yaml "$camp/grid.yaml"
-  {{orch}} sweep
+  camp_id=$({{orch}} campaign new sweep-demo | awk '{print $3}')
+  cp packages/orchestrator/examples/day1_grid.yaml "{{benchmarks}}/$camp_id/grid.yaml"
+  {{orch}} sweep --campaign "{{benchmarks}}/$camp_id"
 
 # --- dbt repro ---
 
-apply-dbt run_id campaign="":
-  #!/usr/bin/env bash
-  set -euo pipefail
-  test -f .env || cp -n .env.example .env
-  if [ -n "{{campaign}}" ]; then
-    {{orch}} apply-dbt --run-id {{run_id}} --campaign "{{benchmarks}}/{{campaign}}"
-  else
-    {{orch}} apply-dbt --run-id {{run_id}}
-  fi
+apply-dbt run_id campaign:
+  @test -f .env || cp -n .env.example .env
+  {{orch}} apply-dbt --run-id {{run_id}} --campaign "{{benchmarks}}/{{campaign}}"
 
-repro run_id campaign="":
+repro run_id campaign:
   #!/usr/bin/env bash
   set -euo pipefail
   test -f .env || cp -n .env.example .env
-  if [ -n "{{campaign}}" ]; then
-    camp="{{benchmarks}}/{{campaign}}"
-    extra=(--campaign "$camp")
-  else
-    camp="$({{orch}} campaign show | cut -f2)"
-    extra=()
-  fi
+  camp="{{benchmarks}}/{{campaign}}"
   result_json="$camp/runs/{{run_id}}/result.json"
   if [ -f "$result_json" ]; then
     fixture=$(jq -r .fixture_name "$result_json")
@@ -172,8 +146,8 @@ repro run_id campaign="":
     exit 1
   fi
   just init-db "$fixture"
-  {{orch}} apply-dbt --run-id {{run_id}} "${extra[@]}"
-  {{orch}} evaluate --run-id {{run_id}} "${extra[@]}"
+  {{orch}} apply-dbt --run-id {{run_id}} --campaign "$camp"
+  {{orch}} evaluate --run-id {{run_id}} --campaign "$camp"
 
 clean-workspace:
   rm -rf aidmi_workspace

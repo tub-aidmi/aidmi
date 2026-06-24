@@ -22,12 +22,12 @@ from aidmi_orchestrator.benchmark import Benchmark, expand_grid, parse_strategy_
 from aidmi_orchestrator.campaign import (
     Campaign,
     DEFAULT_BENCHMARKS_ROOT,
-    resolve_active_campaign,
     resolve_campaign,
     results_jsonl_for_campaign,
 )
 from aidmi_orchestrator.fixtures.base import get_fixture
 from aidmi_orchestrator.persistence import record_run
+from aidmi_orchestrator.progress import log_message
 from aidmi_orchestrator.provenance import file_sha256, make_run_provenance
 from aidmi_orchestrator.repro import apply_recorded_run, evaluate_recorded_run
 from aidmi_orchestrator.strategy.base import make_strategy
@@ -103,47 +103,18 @@ def campaign_new(
     label: Annotated[str | None, typer.Argument(help="optional human label")] = None,
     benchmarks_root: Annotated[Path, typer.Option(help="benchmarks root directory")] = DEFAULT_BENCHMARKS_ROOT,
 ):
-    """Create a new campaign and set it as active."""
-    from aidmi_orchestrator.campaign import write_active_campaign
-
+    """Create a new campaign directory."""
     camp = Campaign.create(label=label, root=benchmarks_root)
-    write_active_campaign(camp.id, benchmarks_root)
     typer.echo(f"created campaign {camp.id} -> {camp.path}")
     if label:
         typer.echo(f"label: {label}")
-
-
-@campaign_app.command("use")
-def campaign_use(
-    campaign_id: Annotated[str, typer.Argument(help="campaign id or path")],
-    benchmarks_root: Annotated[Path, typer.Option(help="benchmarks root directory")] = DEFAULT_BENCHMARKS_ROOT,
-):
-    """Set the active campaign."""
-    from aidmi_orchestrator.campaign import write_active_campaign
-
-    camp = resolve_campaign(campaign_id, benchmarks_root, auto_create=False)
-    write_active_campaign(camp.id, benchmarks_root)
-    typer.echo(f"active campaign: {camp.id} ({camp.path})")
-
-
-@campaign_app.command("show")
-def campaign_show(
-    benchmarks_root: Annotated[Path, typer.Option(help="benchmarks root directory")] = DEFAULT_BENCHMARKS_ROOT,
-):
-    """Show the active campaign."""
-    camp = resolve_active_campaign(benchmarks_root, auto_create=False)
-    typer.echo(f"{camp.id}\t{camp.path}")
-    if camp.campaign_yaml.is_file():
-        meta = yaml.safe_load(camp.campaign_yaml.read_text(encoding="utf-8"))
-        if meta.get("label"):
-            typer.echo(f"label: {meta['label']}")
 
 
 @app.command()
 def run(
     fixture: Annotated[str, typer.Option(help="registered fixture name")],
     strategy_spec: Annotated[Path, typer.Option(help="path to a strategy YAML")],
-    campaign: Annotated[str | None, typer.Option(help="campaign id or path (default: active, auto-create)")] = None,
+    campaign: Annotated[str, typer.Option(help="campaign id or path")],
     run_id: Annotated[str | None, typer.Option(help="optional run id (auto-generated slug otherwise)")] = None,
     workspace: Annotated[Path, typer.Option(help="transient workspace directory")] = Path("./aidmi_workspace"),
     benchmarks_root: Annotated[Path, typer.Option(help="benchmarks root directory")] = DEFAULT_BENCHMARKS_ROOT,
@@ -157,11 +128,13 @@ def run(
     except ValueError as e:
         raise typer.BadParameter(str(e)) from None
 
-    if campaign is not None:
-        camp = resolve_campaign(campaign, benchmarks_root, auto_create=False)
-    else:
-        camp = resolve_active_campaign(benchmarks_root, auto_create=True)
+    camp = resolve_campaign(campaign, benchmarks_root)
     camp.ensure_layout()
+
+    log_message(
+        f"run {spec_name} ({registry}) on {fixture} -> campaign {camp.id}",
+        scope="run",
+    )
 
     strategy = make_strategy(registry, config)
     fx = get_fixture(fixture)
@@ -194,7 +167,7 @@ def run(
 
 @app.command()
 def sweep(
-    campaign: Annotated[str | None, typer.Option(help="campaign id or path (default: active)")] = None,
+    campaign: Annotated[str, typer.Option(help="campaign id or path")],
     fixture: Annotated[str | None, typer.Option(help="single fixture override")] = None,
     runs_per_cell: Annotated[int, typer.Option(help="repetitions per cell (overrides grid YAML)")] = 1,
     workspace: Annotated[Path, typer.Option(help="transient workspace directory")] = Path("./aidmi_workspace"),
@@ -214,10 +187,7 @@ def sweep(
         run_jobs,
     )
 
-    if campaign is not None:
-        camp = resolve_campaign(campaign, benchmarks_root, auto_create=False)
-    else:
-        camp = resolve_active_campaign(benchmarks_root, auto_create=False)
+    camp = resolve_campaign(campaign, benchmarks_root)
     camp.ensure_layout()
 
     if not camp.grid_yaml.is_file():
@@ -235,6 +205,14 @@ def sweep(
 
     cells = expand_grid(grid_data)
     jobs = expand_jobs(cells, fixtures, resolved_runs)
+    cell_names = sorted({job.spec_name for job in jobs})
+
+    log_message(
+        f"sweep campaign {camp.id}: {len(cells)} cells, {len(jobs)} jobs, "
+        f"fixtures={fixtures}, runs_per_cell={resolved_runs}, concurrency={resolved_concurrency}",
+        scope="sweep",
+    )
+    log_message(f"cells: {', '.join(cell_names)}", scope="sweep")
 
     staging_url = _require_staging_url()
     benches = {fx: Benchmark(get_fixture(fx), workspace, staging_url) for fx in fixtures}
@@ -246,20 +224,34 @@ def sweep(
     if resume:
         before = len(jobs)
         jobs = filter_resumed(jobs, completed_keys(results_path))
-        if before - len(jobs):
-            typer.echo(f"resume: skipping {before - len(jobs)} completed runs")
+        skipped = before - len(jobs)
+        if skipped:
+            log_message(f"resume: skipping {skipped} completed runs", scope="sweep")
     elif results_path.exists():
         results_path.unlink()
+        log_message("fresh sweep: cleared existing results.jsonl", scope="sweep")
+
+    if not jobs:
+        log_message("nothing to run (all jobs already completed)", scope="sweep")
+        return
 
     mirror = sys.stderr if (verbose and resolved_concurrency == 1) else None
     if verbose and resolved_concurrency > 1:
-        typer.echo("verbose trace mirroring disabled for concurrency > 1", err=True)
+        log_message("verbose trace JSONL mirroring disabled for concurrency > 1", scope="sweep")
 
     total = len(jobs)
-    counter = {"done": 0}
+    counter = {"done": 0, "next": 0}
     lock = asyncio.Lock()
 
     async def run_job(job: SweepJob):
+        async with lock:
+            counter["next"] += 1
+            position = counter["next"]
+            log_message(
+                f"[{position}/{total}] starting {job.spec_name} ({job.registry_strategy}) "
+                f"@ {job.fixture_name} rep{job.rep_index}",
+                scope="sweep",
+            )
         strategy = make_strategy(job.registry_strategy, job.config)
         result = await benches[job.fixture_name].run(
             strategy,
@@ -289,12 +281,14 @@ def sweep(
             )
             counter["done"] += 1
             status = sweep_job_status(result)
-            typer.echo(
-                f"[{counter['done']}/{total}] {job.spec_name} @ {job.fixture_name} "
-                f"rep{job.rep_index}: {status} ({result.wall_clock_seconds:.0f}s)"
+            log_message(
+                f"[{counter['done']}/{total}] finished {job.spec_name} @ {job.fixture_name} "
+                f"rep{job.rep_index}: {status} ({result.wall_clock_seconds:.0f}s, run_id={result.run_id})",
+                scope="sweep",
             )
         return result
 
+    log_message(f"running {total} jobs", scope="sweep")
     results = asyncio.run(
         run_jobs(
             jobs,
@@ -305,21 +299,21 @@ def sweep(
         )
     )
     failed = sum(1 for r in results if r.error)
-    typer.echo(f"wrote {len(results)} runs to {camp.path} ({failed} with errors)")
+    log_message(
+        f"wrote {len(results)} runs to {camp.path} ({failed} with errors)",
+        scope="sweep",
+    )
 
 
 @app.command("apply-dbt")
 def apply_dbt_cmd(
     run_id: Annotated[str, typer.Option("--run-id", help="run id to apply")],
-    campaign: Annotated[str | None, typer.Option(help="campaign id or path (default: active)")] = None,
+    campaign: Annotated[str, typer.Option(help="campaign id or path")],
     rep_index: Annotated[int, typer.Option(help="rep index for repeated cells")] = 0,
     benchmarks_root: Annotated[Path, typer.Option(help="benchmarks root directory")] = DEFAULT_BENCHMARKS_ROOT,
 ):
     """Re-apply archived dbt SQL from a recorded run (transform only, no LLM)."""
-    if campaign is not None:
-        camp = resolve_campaign(campaign, benchmarks_root, auto_create=False)
-    else:
-        camp = resolve_active_campaign(benchmarks_root, auto_create=False)
+    camp = resolve_campaign(campaign, benchmarks_root)
 
     result, transform_result = apply_recorded_run(
         camp,
@@ -337,15 +331,12 @@ def apply_dbt_cmd(
 @app.command()
 def evaluate(
     run_id: Annotated[str, typer.Option("--run-id", help="run id to evaluate")],
-    campaign: Annotated[str | None, typer.Option(help="campaign id or path (default: active)")] = None,
+    campaign: Annotated[str, typer.Option(help="campaign id or path")],
     rep_index: Annotated[int, typer.Option(help="rep index for repeated cells")] = 0,
     benchmarks_root: Annotated[Path, typer.Option(help="benchmarks root directory")] = DEFAULT_BENCHMARKS_ROOT,
 ):
     """Re-run evaluators against a recorded run's out_schema (no LLM)."""
-    if campaign is not None:
-        camp = resolve_campaign(campaign, benchmarks_root, auto_create=False)
-    else:
-        camp = resolve_active_campaign(benchmarks_root, auto_create=False)
+    camp = resolve_campaign(campaign, benchmarks_root)
 
     metrics = asyncio.run(
         evaluate_recorded_run(
