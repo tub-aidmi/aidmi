@@ -7,12 +7,20 @@ from aidmi_orchestrator.strategy.guidelines.postgres import POSTGRES_SQL_GUIDELI
 from aidmi_orchestrator.strategy.guidelines.query_tool import QUERY_TOOL_GUIDELINES
 from aidmi_orchestrator.strategy.guidelines.transformation import TRANSFORMATION_GUIDELINES
 
-FREEFORM_SELF_CORRECTION_ADDENDUM = """\
+FREEFORM_INLINE_SELF_CORRECTION_ADDENDUM = """\
 ## Self-correction
 
 - You MUST call run_dbt() after writing or editing models and before declaring the project complete.
 - If run_dbt() reports errors, read the failing model files, fix the SQL, and call run_dbt() again until it succeeds or you cannot fix the errors.
 - Do NOT skip run_dbt() to save time — the orchestrator will run dbt again and fail if SQL is invalid.
+- When you change one model (e.g. casting or date logic), apply the same fix to every model that uses the same pattern.
+"""
+
+FREEFORM_POST_AGENT_SELF_CORRECTION_ADDENDUM = """\
+## Self-correction
+
+- Write complete, valid PostgreSQL dbt models before finishing — do not rely on mid-run dbt checks.
+- The orchestrator runs dbt after you stop; if models fail, it will ask you to fix SQL in a follow-up pass.
 - When you change one model (e.g. casting or date logic), apply the same fix to every model that uses the same pattern.
 """
 
@@ -52,14 +60,23 @@ def planner_system_prompt(role_preamble: str) -> str:
     )
 
 
-def freeform_system_prompt(*, enable_self_correction: bool = False) -> str:
+def freeform_system_prompt(
+    *,
+    enable_self_correction: bool = False,
+    inline_run_dbt_tool: bool = False,
+) -> str:
+    tool_lines = [
+        "- write_file(path, content) — write a file under the dbt project dir",
+        "- read_file(path) — read a file you've written",
+        "- (optionally) query_postgres(sql) — run a read-only SELECT against staging",
+    ]
+    if enable_self_correction and inline_run_dbt_tool:
+        tool_lines.append("- (optionally) run_dbt() — execute the dbt project and see the result")
     role = (
         "You are a senior data engineer producing a dbt project on disk.\n\n"
         "You have these tools:\n"
-        "- write_file(path, content) — write a file under the dbt project dir\n"
-        "- read_file(path) — read a file you've written\n"
-        "- (optionally) query_postgres(sql) — run a read-only SELECT against staging\n"
-        "- (optionally) run_dbt() — execute the dbt project and see the result\n\n"
+        + "\n".join(tool_lines)
+        + "\n\n"
         "Layout you must produce:\n"
         "- models/<target_table>.sql — one per target table\n"
         "- models/sources.yml — declare every source used by your models\n\n"
@@ -75,7 +92,10 @@ def freeform_system_prompt(*, enable_self_correction: bool = False) -> str:
         "Stop when the dbt project is complete.",
     ]
     if enable_self_correction:
-        parts.append(FREEFORM_SELF_CORRECTION_ADDENDUM)
+        if inline_run_dbt_tool:
+            parts.append(FREEFORM_INLINE_SELF_CORRECTION_ADDENDUM)
+        else:
+            parts.append(FREEFORM_POST_AGENT_SELF_CORRECTION_ADDENDUM)
     return join_sections(*parts)
 
 

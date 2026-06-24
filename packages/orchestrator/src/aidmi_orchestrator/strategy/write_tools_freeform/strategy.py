@@ -30,6 +30,7 @@ class WriteToolsFreeformConfig(BaseModel):
     max_query_tool_rows: int = 100
     max_tool_turns: int = 20
     enable_self_correction: bool = False
+    inline_run_dbt_tool: bool = False
     max_self_correction_passes: int = 3
 
 
@@ -50,7 +51,7 @@ class WriteToolsFreeform:
                 make_query_postgres(api, self.config.max_query_tool_rows),
                 name="query_postgres",
             ))
-        if self.config.enable_self_correction:
+        if self.config.enable_self_correction and self.config.inline_run_dbt_tool:
             tools.append(Tool(make_run_dbt(api, self.config.max_self_correction_passes), name="run_dbt"))
 
         usage_limits = UsageLimits(request_limit=self.config.max_tool_turns)
@@ -59,6 +60,7 @@ class WriteToolsFreeform:
             tools=tools,
             system_prompt=build_system_prompt(
                 enable_self_correction=self.config.enable_self_correction,
+                inline_run_dbt_tool=self.config.inline_run_dbt_tool,
             ),
         )
         context = build_context_prompt(
@@ -69,6 +71,7 @@ class WriteToolsFreeform:
             build_initial_user_prompt(
                 context,
                 enable_self_correction=self.config.enable_self_correction,
+                inline_run_dbt_tool=self.config.inline_run_dbt_tool,
             ),
             usage_limits=usage_limits,
         )

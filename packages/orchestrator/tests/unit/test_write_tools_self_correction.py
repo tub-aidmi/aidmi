@@ -24,15 +24,24 @@ def test_build_system_prompt_includes_postgres_rules_by_default() -> None:
 
 
 def test_build_system_prompt_adds_self_correction_requirements() -> None:
-    prompt = build_system_prompt(enable_self_correction=True)
+    prompt = build_system_prompt(enable_self_correction=True, inline_run_dbt_tool=True)
     assert "You MUST call run_dbt()" in prompt
     assert "Do NOT skip run_dbt()" in prompt
 
 
+def test_build_system_prompt_post_agent_self_correction() -> None:
+    prompt = build_system_prompt(enable_self_correction=True, inline_run_dbt_tool=False)
+    assert "You MUST call run_dbt()" not in prompt
+    assert "orchestrator runs dbt after you stop" in prompt
+
+
 def test_build_initial_user_prompt_adds_self_correction_reminder() -> None:
     base = build_initial_user_prompt("ctx", enable_self_correction=False)
-    with_sc = build_initial_user_prompt("ctx", enable_self_correction=True)
-    assert "Self-correction is ON" in with_sc
+    inline = build_initial_user_prompt("ctx", enable_self_correction=True, inline_run_dbt_tool=True)
+    post = build_initial_user_prompt("ctx", enable_self_correction=True, inline_run_dbt_tool=False)
+    assert "call run_dbt()" in inline
+    assert "call run_dbt()" not in post
+    assert "orchestrator" in post
     assert "Self-correction is ON" not in base
 
 

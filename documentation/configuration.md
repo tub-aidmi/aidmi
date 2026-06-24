@@ -67,6 +67,7 @@ config:
   max_query_tool_rows: 100
   max_tool_turns: 20                   # int, default 20; cap on agent reasoning turns
   enable_self_correction: false        # bool, default false
+  inline_run_dbt_tool: false           # bool, default false; expose run_dbt during agent turns
   max_self_correction_passes: 3        # int, default 3; ignored unless enable_self_correction
 ```
 
