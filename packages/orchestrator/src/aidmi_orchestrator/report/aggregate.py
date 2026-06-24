@@ -30,9 +30,17 @@ class RepSeries:
 
 
 def load_results(paths: list[Path]) -> list[dict[str, Any]]:
+    from aidmi_orchestrator.campaign import results_jsonl_for_campaign
+
     rows: list[dict[str, Any]] = []
     for p in paths:
-        target = p / "results.jsonl" if p.is_dir() else p
+        if p.is_dir():
+            campaign_jsonl = results_jsonl_for_campaign(p)
+            target = campaign_jsonl if campaign_jsonl is not None else p / "results.jsonl"
+        else:
+            target = p
+        if not target.is_file():
+            continue
         for line in target.read_text(encoding="utf-8").splitlines():
             if line.strip():
                 rows.append(json.loads(line))

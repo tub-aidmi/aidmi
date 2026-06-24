@@ -3,7 +3,9 @@ set dotenv-load
 compose := "docker compose"
 orch := "uv run --package aidmi-orchestrator aidmi-orchestrator"
 orch-py := "uv run --package aidmi-orchestrator"
+orch-test := "uv run --extra plots --package aidmi-orchestrator"
 specs := "packages/orchestrator/examples/strategy_specs"
+benchmarks := "benchmarks"
 
 default:
   @just --list
@@ -53,86 +55,125 @@ test-pipeline:
   uv run --package aidmi-pipeline pytest packages/pipeline/tests/
 
 test-orchestrator:
-  uv run --package aidmi-orchestrator pytest packages/orchestrator/tests/ -m "not requires_llm"
+  {{orch-test}} pytest packages/orchestrator/tests/ -m "not requires_llm"
 
 test: test-pipeline test-orchestrator
 
-# --- Orchestrator single runs ---
+# --- Campaigns ---
+
+campaign-new label="":
+  {{orch}} campaign new {{label}}
+
+campaign-use id:
+  {{orch}} campaign use {{id}}
+
+campaign:
+  {{orch}} campaign show
+
+# --- Orchestrator runs (always recorded to active campaign) ---
 
 run fixture spec:
   @test -f .env || cp -n .env.example .env
   {{orch}} run --fixture {{fixture}} --strategy-spec {{specs}}/{{spec}}.yaml
 
 demo:
+  just campaign-new demo
   just init-db mock
   just run mock mock
 
 litellm-smoke:
-  just init-db mock
-  just run mock write_tools_freeform_litellm_qwen
+  just campaign-new litellm-smoke
+  just init-db master
+  just run master write_tools_freeform_litellm_qwen
 
 ollama-smoke:
-  just init-db mock
-  just run mock write_tools_freeform_ollama_qwen
+  just campaign-new ollama-smoke
+  just init-db master
+  just run master write_tools_freeform_ollama_qwen
 
-google-cloud-smoke:
-  just init-db mock
-  just run mock write_tools_freeform_google_cloud
+# --- Sweeps (uses campaign's grid.yaml) ---
 
-# --- Benchmarks ---
-# Historic campaign results: benchmarks/historic/<campaign>/
-# Usage: just sweep historic/2026-06-17-1 ollama_snapshot
-#        just sweep 08-06-2026 main_grid results/main
-#        just archive-dbt 2026-06-17-1   # backfill dbt from workspace into results/dbt/
-
-# Pass flags only after naming out=, e.g. just sweep 2026-06-23 x out=results -v
-# Or use sweep-verbose (bare -v is parsed as the out path).
-sweep campaign grid out="results" *FLAGS:
-  @test -f .env || cp -n .env.example .env
-  {{orch}} sweep \
-    --grid benchmarks/{{campaign}}/grids/{{grid}}.yaml \
-    --out benchmarks/{{campaign}}/{{out}} \
-    {{FLAGS}}
-
-sweep-verbose campaign grid out="results":
-  @test -f .env || cp -n .env.example .env
-  {{orch}} sweep \
-    --grid benchmarks/{{campaign}}/grids/{{grid}}.yaml \
-    --out benchmarks/{{campaign}}/{{out}} \
-    -v
-
-archive-dbt campaign out="results":
-  {{orch}} archive-dbt --out benchmarks/{{campaign}}/{{out}}
-
-report campaign *inputs:
+sweep campaign="":
   #!/usr/bin/env bash
   set -euo pipefail
-  campaign="{{campaign}}"
-  if [ -n "{{inputs}}" ]; then
-    # shellcheck disable=SC2206
-    dirs=({{inputs}})
+  test -f .env || cp -n .env.example .env
+  if [ -n "{{campaign}}" ]; then
+    {{orch}} sweep --campaign "{{benchmarks}}/{{campaign}}"
   else
-    dirs=()
-    while IFS= read -r f; do
-      d=$(dirname "$f")
-      case " ${dirs[*]:-} " in
-        *" $d "*) ;;
-        *) dirs+=("$d") ;;
-      esac
-    done < <(find "benchmarks/$campaign" -name results.jsonl 2>/dev/null)
-    if [ "${#dirs[@]}" -eq 0 ]; then
-      echo "no results.jsonl found under benchmarks/$campaign" >&2
-      exit 1
-    fi
+    {{orch}} sweep
   fi
-  uv run --extra plots --package aidmi-orchestrator aidmi-orchestrator report \
-    "${dirs[@]}" --out "benchmarks/$campaign/report"
+
+sweep-verbose campaign="":
+  #!/usr/bin/env bash
+  set -euo pipefail
+  test -f .env || cp -n .env.example .env
+  if [ -n "{{campaign}}" ]; then
+    {{orch}} sweep --campaign "{{benchmarks}}/{{campaign}}" -v
+  else
+    {{orch}} sweep -v
+  fi
+
+report campaign="":
+  #!/usr/bin/env bash
+  set -euo pipefail
+  if [ -n "{{campaign}}" ]; then
+    target="{{benchmarks}}/{{campaign}}"
+  else
+    target="$({{orch}} campaign show | cut -f1)"
+    target="{{benchmarks}}/$target"
+  fi
+  {{orch}} report "$target" --out "$target/report"
 
 sweep-demo:
-  @test -f .env || cp -n .env.example .env
-  {{orch}} sweep \
-    --grid packages/orchestrator/examples/day1_grid.yaml \
-    --out aidmi_workspace/results/demo
+  #!/usr/bin/env bash
+  set -euo pipefail
+  test -f .env || cp -n .env.example .env
+  just campaign-new sweep-demo
+  camp="$({{orch}} campaign show | cut -f2)"
+  cp packages/orchestrator/examples/day1_grid.yaml "$camp/grid.yaml"
+  {{orch}} sweep
+
+# --- dbt repro ---
+
+apply-dbt run_id campaign="":
+  #!/usr/bin/env bash
+  set -euo pipefail
+  test -f .env || cp -n .env.example .env
+  if [ -n "{{campaign}}" ]; then
+    {{orch}} apply-dbt --run-id {{run_id}} --campaign "{{benchmarks}}/{{campaign}}"
+  else
+    {{orch}} apply-dbt --run-id {{run_id}}
+  fi
+
+repro run_id campaign="":
+  #!/usr/bin/env bash
+  set -euo pipefail
+  test -f .env || cp -n .env.example .env
+  if [ -n "{{campaign}}" ]; then
+    camp="{{benchmarks}}/{{campaign}}"
+    extra=(--campaign "$camp")
+  else
+    camp="$({{orch}} campaign show | cut -f2)"
+    extra=()
+  fi
+  result_json="$camp/runs/{{run_id}}/result.json"
+  if [ -f "$result_json" ]; then
+    fixture=$(jq -r .fixture_name "$result_json")
+  elif [ -f "$camp/results.jsonl" ]; then
+    fixture=$(jq -r --arg id "{{run_id}}" 'select(.run_id==$id) | .fixture_name' "$camp/results.jsonl" | head -1)
+  elif [ -f "$camp/results/results.jsonl" ]; then
+    fixture=$(jq -r --arg id "{{run_id}}" 'select(.run_id==$id) | .fixture_name' "$camp/results/results.jsonl" | head -1)
+  else
+    echo "no result found for run {{run_id}} under $camp" >&2
+    exit 1
+  fi
+  if [ -z "$fixture" ] || [ "$fixture" = "null" ]; then
+    echo "could not resolve fixture for run {{run_id}}" >&2
+    exit 1
+  fi
+  just init-db "$fixture"
+  {{orch}} apply-dbt --run-id {{run_id}} "${extra[@]}"
+  {{orch}} evaluate --run-id {{run_id}} "${extra[@]}"
 
 clean-workspace:
   rm -rf aidmi_workspace

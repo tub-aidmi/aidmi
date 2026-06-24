@@ -88,6 +88,29 @@ class StrategyResult(BaseModel):
     self_reported_status: Literal["complete", "partial", "gave_up"]
 
 
+# ---------- Provenance ----------
+
+class CampaignProvenance(BaseModel):
+    id: str
+    label: str | None = None
+    created_at: datetime
+    git_sha: str
+    git_branch: str
+    git_dirty: bool
+
+
+class RunProvenance(BaseModel):
+    campaign_id: str
+    git_sha: str
+    git_branch: str
+    git_dirty: bool
+    orchestrator_version: str
+    strategy_spec_path: str | None = None
+    strategy_spec_sha256: str | None = None
+    dbt_project_sha256: str | None = None
+    recorded_at: datetime
+
+
 # ---------- Benchmark output ----------
 
 class BenchmarkResult(BaseModel):
@@ -105,3 +128,4 @@ class BenchmarkResult(BaseModel):
     error: str | None = None
     source_schema: str = ""
     out_schema: str = ""
+    provenance: RunProvenance | None = None

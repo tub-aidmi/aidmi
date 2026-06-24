@@ -1,6 +1,7 @@
-"""Typer CLI: `aidmi-orchestrator run` and `... sweep`."""
+"""Typer CLI: run, sweep, campaign, apply-dbt, evaluate, report."""
 from __future__ import annotations
 import asyncio
+import json
 import os
 import sys
 from pathlib import Path
@@ -13,14 +14,22 @@ from dotenv import load_dotenv
 
 load_dotenv(override=True)
 
-# Trigger all built-in registrations.
 import aidmi_orchestrator.strategy  # noqa: F401
 import aidmi_orchestrator.evaluator  # noqa: F401
 import aidmi_orchestrator.fixtures  # noqa: F401
 
 from aidmi_orchestrator.benchmark import Benchmark, expand_grid, parse_strategy_spec, sweep_job_status
-from aidmi_orchestrator.persistence import archive_run_dbt
+from aidmi_orchestrator.campaign import (
+    Campaign,
+    DEFAULT_BENCHMARKS_ROOT,
+    resolve_active_campaign,
+    resolve_campaign,
+    results_jsonl_for_campaign,
+)
 from aidmi_orchestrator.fixtures.base import get_fixture
+from aidmi_orchestrator.persistence import record_run
+from aidmi_orchestrator.provenance import file_sha256, make_run_provenance
+from aidmi_orchestrator.repro import apply_recorded_run, evaluate_recorded_run
 from aidmi_orchestrator.strategy.base import make_strategy
 
 app = typer.Typer(add_completion=False, help="aidmi orchestrator runner")
@@ -35,7 +44,6 @@ def _as_list(value) -> list[str]:
 
 
 def staging_db_url_from_env() -> str | None:
-    """Resolve staging DB URL: explicit `AIDMI_STAGING_DB_URL`, else build from POSTGRES_*."""
     direct = os.environ.get("AIDMI_STAGING_DB_URL")
     if direct:
         return direct
@@ -61,20 +69,100 @@ def _require_staging_url() -> str:
     return url
 
 
+def _spec_repo_relative(path: Path) -> str:
+    try:
+        return str(path.resolve().relative_to(Path.cwd().resolve()))
+    except ValueError:
+        return str(path.resolve())
+
+
+def _attach_provenance(
+    result,
+    *,
+    campaign_id: str,
+    strategy_spec_path: Path | None,
+    workspace_run_dir: Path,
+):
+    spec_rel = _spec_repo_relative(strategy_spec_path) if strategy_spec_path else None
+    spec_hash = file_sha256(strategy_spec_path) if strategy_spec_path and strategy_spec_path.is_file() else None
+    prov = make_run_provenance(
+        campaign_id=campaign_id,
+        strategy_spec_path=spec_rel,
+        strategy_spec_sha256=spec_hash,
+        workspace_run_dir=workspace_run_dir,
+    )
+    return result.model_copy(update={"provenance": prov})
+
+
+campaign_app = typer.Typer(help="Campaign management")
+app.add_typer(campaign_app, name="campaign")
+
+
+@campaign_app.command("new")
+def campaign_new(
+    label: Annotated[str | None, typer.Argument(help="optional human label")] = None,
+    benchmarks_root: Annotated[Path, typer.Option(help="benchmarks root directory")] = DEFAULT_BENCHMARKS_ROOT,
+):
+    """Create a new campaign and set it as active."""
+    from aidmi_orchestrator.campaign import write_active_campaign
+
+    camp = Campaign.create(label=label, root=benchmarks_root)
+    write_active_campaign(camp.id, benchmarks_root)
+    typer.echo(f"created campaign {camp.id} -> {camp.path}")
+    if label:
+        typer.echo(f"label: {label}")
+
+
+@campaign_app.command("use")
+def campaign_use(
+    campaign_id: Annotated[str, typer.Argument(help="campaign id or path")],
+    benchmarks_root: Annotated[Path, typer.Option(help="benchmarks root directory")] = DEFAULT_BENCHMARKS_ROOT,
+):
+    """Set the active campaign."""
+    from aidmi_orchestrator.campaign import write_active_campaign
+
+    camp = resolve_campaign(campaign_id, benchmarks_root, auto_create=False)
+    write_active_campaign(camp.id, benchmarks_root)
+    typer.echo(f"active campaign: {camp.id} ({camp.path})")
+
+
+@campaign_app.command("show")
+def campaign_show(
+    benchmarks_root: Annotated[Path, typer.Option(help="benchmarks root directory")] = DEFAULT_BENCHMARKS_ROOT,
+):
+    """Show the active campaign."""
+    camp = resolve_active_campaign(benchmarks_root, auto_create=False)
+    typer.echo(f"{camp.id}\t{camp.path}")
+    if camp.campaign_yaml.is_file():
+        meta = yaml.safe_load(camp.campaign_yaml.read_text(encoding="utf-8"))
+        if meta.get("label"):
+            typer.echo(f"label: {meta['label']}")
+
+
 @app.command()
 def run(
     fixture: Annotated[str, typer.Option(help="registered fixture name")],
     strategy_spec: Annotated[Path, typer.Option(help="path to a strategy YAML")],
+    campaign: Annotated[str | None, typer.Option(help="campaign id or path (default: active, auto-create)")] = None,
     run_id: Annotated[str | None, typer.Option(help="optional run id (auto-generated slug otherwise)")] = None,
-    workspace: Annotated[Path, typer.Option(help="workspace directory")] = Path("./aidmi_workspace"),
-    verbose: Annotated[bool, typer.Option("-v", "--verbose", help="stream trace JSONL lines to stderr as they are recorded")] = False,
+    workspace: Annotated[Path, typer.Option(help="transient workspace directory")] = Path("./aidmi_workspace"),
+    benchmarks_root: Annotated[Path, typer.Option(help="benchmarks root directory")] = DEFAULT_BENCHMARKS_ROOT,
+    archive_dbt: Annotated[bool, typer.Option("--archive-dbt/--no-archive-dbt", help="copy dbt into run bundle")] = True,
+    verbose: Annotated[bool, typer.Option("-v", "--verbose", help="stream trace JSONL lines to stderr")] = False,
 ):
-    """Run one orchestrator pass against a fixture."""
+    """Run one orchestrator pass and record into a campaign."""
     spec = yaml.safe_load(strategy_spec.read_text(encoding="utf-8"))
     try:
         registry, spec_name, config = parse_strategy_spec(spec)
     except ValueError as e:
         raise typer.BadParameter(str(e)) from None
+
+    if campaign is not None:
+        camp = resolve_campaign(campaign, benchmarks_root, auto_create=False)
+    else:
+        camp = resolve_active_campaign(benchmarks_root, auto_create=True)
+    camp.ensure_layout()
+
     strategy = make_strategy(registry, config)
     fx = get_fixture(fixture)
     bench = Benchmark(fx, workspace, _require_staging_url())
@@ -86,34 +174,61 @@ def run(
             trace_mirror=sys.stderr if verbose else None,
         ),
     )
+    workspace_run = workspace / "runs" / result.run_id
+    result = _attach_provenance(
+        result,
+        campaign_id=camp.id,
+        strategy_spec_path=strategy_spec.resolve(),
+        workspace_run_dir=workspace_run,
+    )
+    bundle = record_run(
+        camp.path,
+        result,
+        workspace_run,
+        strategy_spec_path=strategy_spec.resolve(),
+        archive_dbt=archive_dbt,
+    )
     typer.echo(result.model_dump_json(indent=2))
+    typer.echo(f"recorded -> {bundle}", err=True)
 
 
 @app.command()
 def sweep(
-    grid: Annotated[Path, typer.Option(help="path to a grid YAML")],
-    out: Annotated[Path, typer.Option(help="results directory")],
-    fixture: Annotated[str | None, typer.Option(help="single fixture override (grid YAML 'fixture' may be a list)")] = None,
+    campaign: Annotated[str | None, typer.Option(help="campaign id or path (default: active)")] = None,
+    fixture: Annotated[str | None, typer.Option(help="single fixture override")] = None,
     runs_per_cell: Annotated[int, typer.Option(help="repetitions per cell (overrides grid YAML)")] = 1,
-    workspace: Annotated[Path, typer.Option(help="workspace directory")] = Path("./aidmi_workspace"),
-    concurrency: Annotated[int | None, typer.Option(help="parallel runs (overrides grid YAML 'concurrency', default 3)")] = None,
-    resume: Annotated[bool, typer.Option("--resume/--no-resume", help="skip (spec, fixture, rep) tuples already in results.jsonl")] = True,
-    archive_dbt: Annotated[bool, typer.Option("--archive-dbt/--no-archive-dbt", help="copy each run's dbt source into out/dbt/<run_id>/")] = True,
-    verbose: Annotated[bool, typer.Option("-v", "--verbose", help="stream trace JSONL to stderr (concurrency 1 only)")] = False,
+    workspace: Annotated[Path, typer.Option(help="transient workspace directory")] = Path("./aidmi_workspace"),
+    benchmarks_root: Annotated[Path, typer.Option(help="benchmarks root directory")] = DEFAULT_BENCHMARKS_ROOT,
+    concurrency: Annotated[int | None, typer.Option(help="parallel runs (overrides grid YAML)")] = None,
+    resume: Annotated[bool, typer.Option("--resume/--no-resume", help="skip completed (spec, fixture, rep) tuples")] = True,
+    archive_dbt: Annotated[bool, typer.Option("--archive-dbt/--no-archive-dbt", help="copy dbt into run bundles")] = True,
+    verbose: Annotated[bool, typer.Option("-v", "--verbose", help="stream trace (concurrency 1 only)")] = False,
 ):
-    """Sweep (strategy, config) cells across fixtures with model-major scheduling."""
+    """Sweep cells from the campaign's grid.yaml."""
     from aidmi_orchestrator.scheduler import (
-        DEFAULT_EXCLUSIVE_PREFIXES, SweepJob, completed_keys, expand_jobs,
-        filter_resumed, run_jobs,
+        DEFAULT_EXCLUSIVE_PREFIXES,
+        SweepJob,
+        completed_keys,
+        expand_jobs,
+        filter_resumed,
+        run_jobs,
     )
 
-    grid_data = yaml.safe_load(grid.read_text(encoding="utf-8"))
+    if campaign is not None:
+        camp = resolve_campaign(campaign, benchmarks_root, auto_create=False)
+    else:
+        camp = resolve_active_campaign(benchmarks_root, auto_create=False)
+    camp.ensure_layout()
+
+    if not camp.grid_yaml.is_file():
+        raise typer.BadParameter(f"no grid.yaml at {camp.grid_yaml}")
+
+    grid_data = yaml.safe_load(camp.grid_yaml.read_text(encoding="utf-8"))
     fixtures = [fixture] if fixture else _as_list(grid_data.get("fixture"))
     if not fixtures:
-        raise typer.BadParameter("provide --fixture or a 'fixture' key (string or list) in the grid YAML.")
-    resolved_runs = (
-        runs_per_cell if runs_per_cell != 1 else int(grid_data.get("runs_per_cell", 1))
-    )
+        raise typer.BadParameter("provide --fixture or a 'fixture' key in grid.yaml.")
+
+    resolved_runs = runs_per_cell if runs_per_cell != 1 else int(grid_data.get("runs_per_cell", 1))
     resolved_concurrency = concurrency or int(grid_data.get("concurrency", 3))
     prefixes = tuple(grid_data.get("exclusive_model_prefixes", list(DEFAULT_EXCLUSIVE_PREFIXES)))
     per_model_exclusive = bool(grid_data.get("per_model_exclusive", False))
@@ -127,8 +242,7 @@ def sweep(
         if job.fixture_name not in benches:
             benches[job.fixture_name] = Benchmark(get_fixture(job.fixture_name), workspace, staging_url)
 
-    out.mkdir(parents=True, exist_ok=True)
-    results_path = out / "results.jsonl"
+    results_path = camp.results_jsonl
     if resume:
         before = len(jobs)
         jobs = filter_resumed(jobs, completed_keys(results_path))
@@ -136,31 +250,43 @@ def sweep(
             typer.echo(f"resume: skipping {before - len(jobs)} completed runs")
     elif results_path.exists():
         results_path.unlink()
-    (out / "sweep_config.yaml").write_text(grid.read_text(), encoding="utf-8")
 
     mirror = sys.stderr if (verbose and resolved_concurrency == 1) else None
     if verbose and resolved_concurrency > 1:
         typer.echo("verbose trace mirroring disabled for concurrency > 1", err=True)
 
     total = len(jobs)
-    counter = {"done": 0, "archived": 0}
+    counter = {"done": 0}
     lock = asyncio.Lock()
-    fh = open(results_path, "a", encoding="utf-8")
 
     async def run_job(job: SweepJob):
         strategy = make_strategy(job.registry_strategy, job.config)
         result = await benches[job.fixture_name].run(
-            strategy, strategy_spec_name=job.spec_name,
-            rep_index=job.rep_index, trace_mirror=mirror,
+            strategy,
+            strategy_spec_name=job.spec_name,
+            rep_index=job.rep_index,
+            trace_mirror=mirror,
+        )
+        workspace_run = workspace / "runs" / result.run_id
+        cell_spec = {
+            "name": job.spec_name,
+            "strategy": job.registry_strategy,
+            "config": job.config,
+        }
+        result = _attach_provenance(
+            result,
+            campaign_id=camp.id,
+            strategy_spec_path=None,
+            workspace_run_dir=workspace_run,
         )
         async with lock:
-            fh.write(result.model_dump_json() + "\n")
-            fh.flush()
-            if archive_dbt and archive_run_dbt(
-                workspace / "runs" / result.run_id,
-                out / "dbt" / result.run_id,
-            ):
-                counter["archived"] += 1
+            record_run(
+                camp.path,
+                result,
+                workspace_run,
+                cell_spec=cell_spec,
+                archive_dbt=archive_dbt,
+            )
             counter["done"] += 1
             status = sweep_job_status(result)
             typer.echo(
@@ -169,70 +295,79 @@ def sweep(
             )
         return result
 
-    try:
-        results = asyncio.run(
-            run_jobs(
-                jobs,
-                run_job,
-                concurrency=resolved_concurrency,
-                prefixes=prefixes,
-                per_model_exclusive=per_model_exclusive,
-            )
+    results = asyncio.run(
+        run_jobs(
+            jobs,
+            run_job,
+            concurrency=resolved_concurrency,
+            prefixes=prefixes,
+            per_model_exclusive=per_model_exclusive,
         )
-    finally:
-        fh.close()
+    )
     failed = sum(1 for r in results if r.error)
-    msg = f"wrote {len(results)} result rows to {results_path} ({failed} with errors)"
-    if archive_dbt:
-        msg += f"; archived dbt for {counter['archived']} runs under {out / 'dbt'}"
-    typer.echo(msg)
+    typer.echo(f"wrote {len(results)} runs to {camp.path} ({failed} with errors)")
 
 
-@app.command("archive-dbt")
-def archive_dbt_cmd(
-    out: Annotated[Path, typer.Option(help="sweep output directory containing results.jsonl")],
-    workspace: Annotated[Path, typer.Option(help="workspace directory")] = Path("./aidmi_workspace"),
+@app.command("apply-dbt")
+def apply_dbt_cmd(
+    run_id: Annotated[str, typer.Option("--run-id", help="run id to apply")],
+    campaign: Annotated[str | None, typer.Option(help="campaign id or path (default: active)")] = None,
+    rep_index: Annotated[int, typer.Option(help="rep index for repeated cells")] = 0,
+    benchmarks_root: Annotated[Path, typer.Option(help="benchmarks root directory")] = DEFAULT_BENCHMARKS_ROOT,
 ):
-    """Backfill dbt source projects from workspace runs into out/dbt/<run_id>/."""
-    import json
+    """Re-apply archived dbt SQL from a recorded run (transform only, no LLM)."""
+    if campaign is not None:
+        camp = resolve_campaign(campaign, benchmarks_root, auto_create=False)
+    else:
+        camp = resolve_active_campaign(benchmarks_root, auto_create=False)
 
-    results_path = out / "results.jsonl"
-    if not results_path.is_file():
-        raise typer.BadParameter(f"no results.jsonl at {results_path}")
-
-    archived = 0
-    skipped = 0
-    missing = 0
-    for line in results_path.read_text(encoding="utf-8").splitlines():
-        if not line.strip():
-            continue
-        run_id = json.loads(line)["run_id"]
-        dest = out / "dbt" / run_id
-        if (dest / "dbt_project").exists():
-            skipped += 1
-            continue
-        if archive_run_dbt(workspace / "runs" / run_id, dest):
-            archived += 1
-        else:
-            missing += 1
-            typer.echo(f"missing dbt source for {run_id}", err=True)
-
+    result, transform_result = apply_recorded_run(
+        camp,
+        run_id,
+        _require_staging_url(),
+        rep_index=rep_index,
+    )
+    typer.echo(transform_result.model_dump_json(indent=2))
     typer.echo(
-        f"archive-dbt: {archived} copied, {skipped} already present, {missing} missing "
-        f"-> {out / 'dbt'}"
+        f"applied dbt for {run_id} -> schema {result.out_schema}",
+        err=True,
     )
 
 
 @app.command()
+def evaluate(
+    run_id: Annotated[str, typer.Option("--run-id", help="run id to evaluate")],
+    campaign: Annotated[str | None, typer.Option(help="campaign id or path (default: active)")] = None,
+    rep_index: Annotated[int, typer.Option(help="rep index for repeated cells")] = 0,
+    benchmarks_root: Annotated[Path, typer.Option(help="benchmarks root directory")] = DEFAULT_BENCHMARKS_ROOT,
+):
+    """Re-run evaluators against a recorded run's out_schema (no LLM)."""
+    if campaign is not None:
+        camp = resolve_campaign(campaign, benchmarks_root, auto_create=False)
+    else:
+        camp = resolve_active_campaign(benchmarks_root, auto_create=False)
+
+    metrics = asyncio.run(
+        evaluate_recorded_run(
+            camp,
+            run_id,
+            _require_staging_url(),
+            rep_index=rep_index,
+        )
+    )
+    typer.echo(json.dumps(metrics, indent=2))
+
+
+@app.command()
 def report(
-    results: Annotated[list[Path], typer.Argument(help="results.jsonl files or sweep output dirs")],
+    results: Annotated[list[Path], typer.Argument(help="campaign dirs or results.jsonl files")],
     out: Annotated[Path, typer.Option(help="report output directory")] = Path("./report"),
     matrix_metric: Annotated[str, typer.Option(help="metric for the strategy × model matrix")] = "target_columns_covered",
     metrics: Annotated[str | None, typer.Option(help="comma-separated headline metric override")] = None,
     no_plots: Annotated[bool, typer.Option("--no-plots", help="skip SVG heatmaps")] = False,
 ):
-    """Aggregate sweep results into markdown/CSV tables and SVG heatmaps."""
-    import aidmi_orchestrator.report  # noqa: F401 — register contributors
+    """Aggregate campaign results into markdown/CSV tables and SVG heatmaps."""
+    import aidmi_orchestrator.report  # noqa: F401
     from aidmi_orchestrator.report.aggregate import aggregate, build_rep_series, load_results
     from aidmi_orchestrator.report.catalog import build_report_plan
     from aidmi_orchestrator.report.render.markdown import render_markdown, render_matrix

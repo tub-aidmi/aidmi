@@ -1,31 +1,36 @@
 # Data formats
 
-A run produces several files on disk. This page is the reference for each.
+Runs are recorded into **campaign** directories. Each run has a bundle under `runs/<run-id>/`; an append-only index lives at `results.jsonl`.
 
 ```
-<workspace>/runs/<run-id>/
+benchmarks/<campaign-id>/
+├── campaign.yaml
+├── grid.yaml              # optional until sweep
+├── results.jsonl
+└── runs/<run-id>/
+    ├── result.json
+    ├── strategy_spec.yaml
+    ├── trace.jsonl
+    └── dbt_project/
+
+<workspace>/runs/<run-id>/   # transient scratch during execution
 ├── trace.jsonl
 ├── dbt_project/
 ├── strategy_result.json
 ├── mapping_manifest.json
 └── result.json
-
-<sweep-out>/
-├── results.jsonl
-├── sweep_config.yaml
-└── dbt/
-    └── <run-id>/
-        └── dbt_project/
 ```
 
-`<run-id>` is a slug `{hash8}_{strategy}_{fixture}` (hash first; max 63 characters for Postgres). Used as the directory name and as the dbt output Postgres schema. Example: `bj5d9w9w_write_tools_freeform_master`.
+Legacy campaigns may use `results/results.jsonl` and `results/dbt/<run-id>/dbt_project/` instead of `runs/<run-id>/`.
+
+`<run-id>` is a slug `r{hash8}_{strategy}_{fixture}` (max 63 characters for Postgres). Used as the directory name; the Postgres output schema is `run_id.lower()`.
 
 Each run uses two Postgres schemas:
 
 - `fixture_<name>_src` — shared fixture source tables (not per-run).
-- `<run-id>` — dbt models (transformed output); same string as `run_id`.
+- `<run-id>` lowercased — dbt models (transformed output).
 
-`source_schema` and `out_schema` in `result.json` record these names verbatim.
+`source_schema` and `out_schema` in `result.json` record these names verbatim. When re-applying dbt, always use `out_schema` from `result.json`.
 
 ## trace.jsonl
 
@@ -238,7 +243,31 @@ The `BenchmarkResult` for a single run.
 | `metrics` | object | All evaluator outputs merged. Schema is free-form; each evaluator contributes its own keys. |
 | `error` | string or null | Populated when the orchestrator caught a strategy crash. The run still produces a `result.json`; evaluators that can run on partial state still execute. |
 | `source_schema` | string | Postgres schema for fixture source tables (e.g. `fixture_master_src`). Empty when the run failed before artifacts were built. |
-| `out_schema` | string | Postgres schema for dbt output (same as `run_id`, lowercased). Empty when the run failed before artifacts were built. |
+| `out_schema` | string | Postgres schema for dbt output (typically `run_id.lower()`). Empty when the run failed before artifacts were built. |
+| `provenance` | object or null | Git state, orchestrator version, spec hash, and dbt hash at record time. See below. |
+
+### `provenance` (run bundle)
+
+| Field | Description |
+|-------|-------------|
+| `campaign_id` | Campaign this run belongs to. |
+| `git_sha`, `git_branch`, `git_dirty` | Repository state at record time. |
+| `orchestrator_version` | Installed `aidmi-orchestrator` version. |
+| `strategy_spec_path` | Repo-relative path to the strategy spec (single runs). |
+| `strategy_spec_sha256` | SHA-256 of the strategy spec file. |
+| `dbt_project_sha256` | SHA-256 of archived `dbt_project/models/` content. |
+| `recorded_at` | UTC timestamp when the bundle was written. |
+
+### `campaign.yaml`
+
+Written when a campaign is created:
+
+| Field | Description |
+|-------|-------------|
+| `id` | Campaign id (`{YYYY-MM-DD}-{id4}`). |
+| `label` | Optional human label. |
+| `created_at` | UTC creation time. |
+| `git_sha`, `git_branch`, `git_dirty` | Git state at campaign creation. |
 
 ### Default metric keys
 
@@ -268,20 +297,20 @@ User-supplied evaluators contribute additional keys. Keys are free-form; consume
 
 ## results.jsonl
 
-Sweep output. One `BenchmarkResult` per line, in the order cells completed. Streaming append: a crashed sweep leaves a parseable partial file.
+Campaign index. One `BenchmarkResult` per line, appended as runs complete.
 
 Pandas:
 
 ```python
 import pandas as pd
-df = pd.read_json("sweep-out/results.jsonl", lines=True)
+df = pd.read_json("benchmarks/2026-06-24-k7m2/results.jsonl", lines=True)
 df_metrics = pd.json_normalize(df["metrics"])
 df = pd.concat([df.drop("metrics", axis=1), df_metrics], axis=1)
 ```
 
-## sweep_config.yaml
+## grid.yaml
 
-A verbatim copy of the grid YAML that produced the sweep. Written once at sweep start. Preserves reproducibility.
+The sweep grid for a campaign. Lives at `benchmarks/<campaign>/grid.yaml`. Schema documented in [Configuration](configuration.md#grid-yaml).
 
 ## mock_mapping.json
 
