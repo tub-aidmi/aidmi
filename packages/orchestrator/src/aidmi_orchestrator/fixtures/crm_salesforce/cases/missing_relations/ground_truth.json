@@ -1,0 +1,93 @@
+{
+  "case": "missing_relations",
+  "edges": [
+    {
+      "source_table": "Account",
+      "source_column": "id",
+      "target_table": "Account",
+      "target_column": "Legacy_Customer_ID__c",
+      "transform": null,
+      "notes": "Source PK becomes external ID"
+    },
+    {
+      "source_table": "Contact",
+      "source_column": "account_ref",
+      "target_table": "Contact",
+      "target_column": "AccountId",
+      "transform": "lookup:Account.id",
+      "notes": "Direct ID match when present"
+    },
+    {
+      "source_table": "Contact",
+      "source_column": "company_name",
+      "target_table": "Contact",
+      "target_column": "AccountId",
+      "transform": "lookup:Account.name",
+      "notes": "Fallback: match by name"
+    },
+    {
+      "source_table": "Opportunity",
+      "source_column": "customer_number",
+      "target_table": "Opportunity",
+      "target_column": "AccountId",
+      "transform": "transform:KD->{ACC-}->lookup",
+      "notes": "Key format mismatch"
+    },
+    {
+      "source_table": "Opportunity",
+      "source_column": "account_name",
+      "target_table": "Opportunity",
+      "target_column": "AccountId",
+      "transform": "lookup:Account.name",
+      "notes": "Denormalized fallback"
+    },
+    {
+      "source_table": "Project",
+      "source_column": "id",
+      "target_table": "Project__c",
+      "target_column": "Legacy_Project_ID__c",
+      "transform": null,
+      "notes": "Rename object"
+    },
+    {
+      "source_table": "Project",
+      "source_column": "client_id",
+      "target_table": "Project__c",
+      "target_column": "Account__c",
+      "transform": "lookup:Account.id",
+      "notes": null
+    },
+    {
+      "source_table": "Project",
+      "source_column": "opportunity_ref",
+      "target_table": "Project__c",
+      "target_column": "Opportunity__c",
+      "transform": "lookup:Opportunity.id",
+      "notes": "Validate - may be orphan"
+    },
+    {
+      "source_table": "Asset",
+      "source_column": "id",
+      "target_table": "Installed_Asset__c",
+      "target_column": "Legacy_Asset_ID__c",
+      "transform": null,
+      "notes": "Rename object"
+    },
+    {
+      "source_table": "Asset",
+      "source_column": "client",
+      "target_table": "Installed_Asset__c",
+      "target_column": "Account__c",
+      "transform": "lookup:Account.id OR Account.name",
+      "notes": "Ambiguous join key"
+    },
+    {
+      "source_table": "Asset",
+      "source_column": "project",
+      "target_table": "Installed_Asset__c",
+      "target_column": "Project__c",
+      "transform": "lookup:Project__c.Legacy_Project_ID__c",
+      "notes": "Validate - may be orphan"
+    }
+  ]
+}

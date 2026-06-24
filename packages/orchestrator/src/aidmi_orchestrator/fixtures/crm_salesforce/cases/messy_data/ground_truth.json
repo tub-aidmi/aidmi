@@ -1,0 +1,109 @@
+{
+  "case": "messy_data",
+  "edges": [
+    {
+      "source_table": "Account",
+      "source_column": "Customer_Tier__c",
+      "target_table": "Account",
+      "target_column": "Customer_Tier__c",
+      "transform": "normalize_case",
+      "notes": "TIER_VARIANTS -> Gold/Silver/Bronze/Platinum"
+    },
+    {
+      "source_table": "Account",
+      "source_column": "Industry",
+      "target_table": "Account",
+      "target_column": "Industry",
+      "transform": "normalize_industry",
+      "notes": "DE/EN industry names"
+    },
+    {
+      "source_table": "Contact",
+      "source_column": "Role__c",
+      "target_table": "Contact",
+      "target_column": "Role__c",
+      "transform": "map_role",
+      "notes": "DE names, empty, N/A"
+    },
+    {
+      "source_table": "Contact",
+      "source_column": "Preferred_Language__c",
+      "target_table": "Contact",
+      "target_column": "Preferred_Language__c",
+      "transform": "UPPER([:2])",
+      "notes": "de->DE, Deutsch->DE"
+    },
+    {
+      "source_table": "Contact",
+      "source_column": "Email",
+      "target_table": "Contact",
+      "target_column": "Email",
+      "transform": "validate_email",
+      "notes": "Remove invalid emails"
+    },
+    {
+      "source_table": "Contact",
+      "source_column": "Phone",
+      "target_table": "Contact",
+      "target_column": "Phone",
+      "transform": "normalize_phone",
+      "notes": "Multiple formats"
+    },
+    {
+      "source_table": "Opportunity",
+      "source_column": "StageName",
+      "target_table": "Opportunity",
+      "target_column": "StageName",
+      "transform": "map_stage",
+      "notes": "DE/EN/mixed variants"
+    },
+    {
+      "source_table": "Opportunity",
+      "source_column": "CloseDate",
+      "target_table": "Opportunity",
+      "target_column": "CloseDate",
+      "transform": "parse_date",
+      "notes": "Multiple date formats"
+    },
+    {
+      "source_table": "Opportunity",
+      "source_column": "Amount",
+      "target_table": "Opportunity",
+      "target_column": "Amount",
+      "transform": "parse_amount",
+      "notes": "EUR prefix, comma-decimal, negatives"
+    },
+    {
+      "source_table": "Opportunity",
+      "source_column": "CurrencyIsoCode",
+      "target_table": "Opportunity",
+      "target_column": "CurrencyIsoCode",
+      "transform": "normalize_currency",
+      "notes": "EUR/Dollar/€ -> ISO code"
+    },
+    {
+      "source_table": "Project__c",
+      "source_column": "Project_Status__c",
+      "target_table": "Project__c",
+      "target_column": "Project_Status__c",
+      "transform": "map_status",
+      "notes": "DE/EN/mixed"
+    },
+    {
+      "source_table": "Project__c",
+      "source_column": "Go_Live_Date__c",
+      "target_table": "Project__c",
+      "target_column": "Go_Live_Date__c",
+      "transform": "parse_date",
+      "notes": null
+    },
+    {
+      "source_table": "Installed_Asset__c",
+      "source_column": "Warranty_End_Date__c",
+      "target_table": "Installed_Asset__c",
+      "target_column": "Warranty_End_Date__c",
+      "transform": "parse_date",
+      "notes": null
+    }
+  ]
+}

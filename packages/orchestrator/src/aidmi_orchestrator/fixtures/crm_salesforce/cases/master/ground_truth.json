@@ -1,0 +1,301 @@
+{
+  "case": "master",
+  "edges": [
+    {
+      "source_table": "master_kunden",
+      "source_column": "kundennummer",
+      "target_table": "Account",
+      "target_column": "Legacy_Customer_ID__c",
+      "transform": null,
+      "notes": "External ID"
+    },
+    {
+      "source_table": "master_kunden",
+      "source_column": "unternehmensname",
+      "target_table": "Account",
+      "target_column": "Name",
+      "transform": null,
+      "notes": null
+    },
+    {
+      "source_table": "master_kunden",
+      "source_column": "erp_nr",
+      "target_table": "Account",
+      "target_column": "ERP_Number__c",
+      "transform": null,
+      "notes": null
+    },
+    {
+      "source_table": "master_kunden",
+      "source_column": "kundenklasse",
+      "target_table": "Account",
+      "target_column": "Customer_Tier__c",
+      "transform": "normalize_tier",
+      "notes": "DE/EN + case variants"
+    },
+    {
+      "source_table": "master_kunden",
+      "source_column": "vertriebsgebiet",
+      "target_table": "Account",
+      "target_column": "Region__c",
+      "transform": null,
+      "notes": null
+    },
+    {
+      "source_table": "master_kunden",
+      "source_column": "industrie",
+      "target_table": "Account",
+      "target_column": "Industry",
+      "transform": "normalize_industry",
+      "notes": "DE/EN industry names"
+    },
+    {
+      "source_table": "master_kunden",
+      "source_column": "homepage",
+      "target_table": "Account",
+      "target_column": "Website",
+      "transform": null,
+      "notes": null
+    },
+    {
+      "source_table": "master_kunden",
+      "source_column": "stadt",
+      "target_table": "Account",
+      "target_column": "BillingCity",
+      "transform": null,
+      "notes": null
+    },
+    {
+      "source_table": "master_kunden",
+      "source_column": "land_region",
+      "target_table": "Account",
+      "target_column": "BillingCountry",
+      "transform": null,
+      "notes": null
+    },
+    {
+      "source_table": "master_kontakte",
+      "source_column": "kontakt_id",
+      "target_table": "Contact",
+      "target_column": "Legacy_Contact_ID__c",
+      "transform": null,
+      "notes": "External ID"
+    },
+    {
+      "source_table": "master_kontakte",
+      "source_column": "rufname",
+      "target_table": "Contact",
+      "target_column": "FirstName",
+      "transform": null,
+      "notes": null
+    },
+    {
+      "source_table": "master_kontakte",
+      "source_column": "familienname",
+      "target_table": "Contact",
+      "target_column": "LastName",
+      "transform": null,
+      "notes": null
+    },
+    {
+      "source_table": "master_kontakte",
+      "source_column": "kontakt_email",
+      "target_table": "Contact",
+      "target_column": "Email",
+      "transform": "validate_email",
+      "notes": null
+    },
+    {
+      "source_table": "master_kontakte",
+      "source_column": "tel",
+      "target_table": "Contact",
+      "target_column": "Phone",
+      "transform": "normalize_phone",
+      "notes": "Multiple formats"
+    },
+    {
+      "source_table": "master_kontakte",
+      "source_column": "berufsbezeichnung",
+      "target_table": "Contact",
+      "target_column": "Title",
+      "transform": null,
+      "notes": null
+    },
+    {
+      "source_table": "master_kontakte",
+      "source_column": "rolle",
+      "target_table": "Contact",
+      "target_column": "Role__c",
+      "transform": "map_role",
+      "notes": "DE names + empty + N/A"
+    },
+    {
+      "source_table": "master_kontakte",
+      "source_column": "korrespondenzsprache",
+      "target_table": "Contact",
+      "target_column": "Preferred_Language__c",
+      "transform": "normalize_lang",
+      "notes": "DE/de/Deutsch -> DE"
+    },
+    {
+      "source_table": "master_kontakte",
+      "source_column": "kd_nummer",
+      "target_table": "Contact",
+      "target_column": "AccountId",
+      "transform": "lookup:Account.Legacy_Customer_ID__c",
+      "notes": "May be orphaned"
+    },
+    {
+      "source_table": "master_opportunities",
+      "source_column": "opp_kennung",
+      "target_table": "Opportunity",
+      "target_column": "Legacy_Opportunity_ID__c",
+      "transform": null,
+      "notes": "External ID"
+    },
+    {
+      "source_table": "master_opportunities",
+      "source_column": "titel",
+      "target_table": "Opportunity",
+      "target_column": "Name",
+      "transform": null,
+      "notes": null
+    },
+    {
+      "source_table": "master_opportunities",
+      "source_column": "vertriebsphase",
+      "target_table": "Opportunity",
+      "target_column": "StageName",
+      "transform": "map_stage_full",
+      "notes": "All DE/EN variants"
+    },
+    {
+      "source_table": "master_opportunities",
+      "source_column": "zieldatum",
+      "target_table": "Opportunity",
+      "target_column": "CloseDate",
+      "transform": "parse_date_multi",
+      "notes": "5 date formats + NULL"
+    },
+    {
+      "source_table": "master_opportunities",
+      "source_column": "auftragswert",
+      "target_table": "Opportunity",
+      "target_column": "Amount",
+      "transform": "parse_amount_mixed",
+      "notes": "EUR prefix, commas, negatives"
+    },
+    {
+      "source_table": "master_opportunities",
+      "source_column": "waehrungscode",
+      "target_table": "Opportunity",
+      "target_column": "CurrencyIsoCode",
+      "transform": "normalize_currency",
+      "notes": "€/Dollar/eur -> ISO"
+    },
+    {
+      "source_table": "master_opportunities",
+      "source_column": "kunden_ref",
+      "target_table": "Opportunity",
+      "target_column": "AccountId",
+      "transform": "transform:KD->{CUST-}+lookup",
+      "notes": "Key prefix mismatch"
+    },
+    {
+      "source_table": "master_projekte",
+      "source_column": "projekt_kennung",
+      "target_table": "Project__c",
+      "target_column": "Legacy_Project_ID__c",
+      "transform": null,
+      "notes": "External ID"
+    },
+    {
+      "source_table": "master_projekte",
+      "source_column": "projektname",
+      "target_table": "Project__c",
+      "target_column": "Name",
+      "transform": null,
+      "notes": null
+    },
+    {
+      "source_table": "master_projekte",
+      "source_column": "projektstatus",
+      "target_table": "Project__c",
+      "target_column": "Project_Status__c",
+      "transform": "map_status_full",
+      "notes": "DE/EN/mixed + empty"
+    },
+    {
+      "source_table": "master_projekte",
+      "source_column": "go_live_datum",
+      "target_table": "Project__c",
+      "target_column": "Go_Live_Date__c",
+      "transform": "parse_date_multi",
+      "notes": null
+    },
+    {
+      "source_table": "master_projekte",
+      "source_column": "kunden_kennung",
+      "target_table": "Project__c",
+      "target_column": "Account__c",
+      "transform": "lookup:Account.Legacy_Customer_ID__c",
+      "notes": "May be orphaned"
+    },
+    {
+      "source_table": "master_projekte",
+      "source_column": "opp_kennung_ref",
+      "target_table": "Project__c",
+      "target_column": "Opportunity__c",
+      "transform": "lookup:Opportunity.Legacy_Opportunity_ID__c",
+      "notes": "May be orphaned"
+    },
+    {
+      "source_table": "master_assets",
+      "source_column": "asset_kennung",
+      "target_table": "Installed_Asset__c",
+      "target_column": "Legacy_Asset_ID__c",
+      "transform": null,
+      "notes": "External ID"
+    },
+    {
+      "source_table": "master_assets",
+      "source_column": "asset_name",
+      "target_table": "Installed_Asset__c",
+      "target_column": "Name",
+      "transform": null,
+      "notes": null
+    },
+    {
+      "source_table": "master_assets",
+      "source_column": "serien_nummer",
+      "target_table": "Installed_Asset__c",
+      "target_column": "Serial_Number__c",
+      "transform": null,
+      "notes": null
+    },
+    {
+      "source_table": "master_assets",
+      "source_column": "garantieende",
+      "target_table": "Installed_Asset__c",
+      "target_column": "Warranty_End_Date__c",
+      "transform": "parse_date_multi",
+      "notes": null
+    },
+    {
+      "source_table": "master_assets",
+      "source_column": "kunden_kennung",
+      "target_table": "Installed_Asset__c",
+      "target_column": "Account__c",
+      "transform": "lookup:Account.Legacy_Customer_ID__c",
+      "notes": "May be orphaned"
+    },
+    {
+      "source_table": "master_assets",
+      "source_column": "projekt_kennung",
+      "target_table": "Installed_Asset__c",
+      "target_column": "Project__c",
+      "transform": "lookup:Project__c.Legacy_Project_ID__c",
+      "notes": "May be orphaned"
+    }
+  ]
+}

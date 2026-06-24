@@ -1,0 +1,301 @@
+{
+  "case": "wrong_field_names",
+  "edges": [
+    {
+      "source_table": "kunden",
+      "source_column": "kunden_nr",
+      "target_table": "Account",
+      "target_column": "Legacy_Customer_ID__c",
+      "transform": null,
+      "notes": "External ID key"
+    },
+    {
+      "source_table": "kunden",
+      "source_column": "firmenname",
+      "target_table": "Account",
+      "target_column": "Name",
+      "transform": null,
+      "notes": null
+    },
+    {
+      "source_table": "kunden",
+      "source_column": "erp_nummer",
+      "target_table": "Account",
+      "target_column": "ERP_Number__c",
+      "transform": null,
+      "notes": null
+    },
+    {
+      "source_table": "kunden",
+      "source_column": "kategorie",
+      "target_table": "Account",
+      "target_column": "Customer_Tier__c",
+      "transform": "INITCAP",
+      "notes": "Normalize case"
+    },
+    {
+      "source_table": "kunden",
+      "source_column": "gebiet",
+      "target_table": "Account",
+      "target_column": "Region__c",
+      "transform": null,
+      "notes": null
+    },
+    {
+      "source_table": "kunden",
+      "source_column": "branche",
+      "target_table": "Account",
+      "target_column": "Industry",
+      "transform": null,
+      "notes": null
+    },
+    {
+      "source_table": "kunden",
+      "source_column": "webseite",
+      "target_table": "Account",
+      "target_column": "Website",
+      "transform": null,
+      "notes": null
+    },
+    {
+      "source_table": "kunden",
+      "source_column": "ort",
+      "target_table": "Account",
+      "target_column": "BillingCity",
+      "transform": null,
+      "notes": null
+    },
+    {
+      "source_table": "kunden",
+      "source_column": "land",
+      "target_table": "Account",
+      "target_column": "BillingCountry",
+      "transform": null,
+      "notes": null
+    },
+    {
+      "source_table": "ansprechpartner",
+      "source_column": "ap_id",
+      "target_table": "Contact",
+      "target_column": "Legacy_Contact_ID__c",
+      "transform": null,
+      "notes": "External ID key"
+    },
+    {
+      "source_table": "ansprechpartner",
+      "source_column": "vorname",
+      "target_table": "Contact",
+      "target_column": "FirstName",
+      "transform": null,
+      "notes": null
+    },
+    {
+      "source_table": "ansprechpartner",
+      "source_column": "nachname",
+      "target_table": "Contact",
+      "target_column": "LastName",
+      "transform": null,
+      "notes": null
+    },
+    {
+      "source_table": "ansprechpartner",
+      "source_column": "email_adresse",
+      "target_table": "Contact",
+      "target_column": "Email",
+      "transform": null,
+      "notes": null
+    },
+    {
+      "source_table": "ansprechpartner",
+      "source_column": "telefonnummer",
+      "target_table": "Contact",
+      "target_column": "Phone",
+      "transform": "normalize_phone",
+      "notes": null
+    },
+    {
+      "source_table": "ansprechpartner",
+      "source_column": "position",
+      "target_table": "Contact",
+      "target_column": "Title",
+      "transform": null,
+      "notes": null
+    },
+    {
+      "source_table": "ansprechpartner",
+      "source_column": "funktion",
+      "target_table": "Contact",
+      "target_column": "Role__c",
+      "transform": "map_role",
+      "notes": null
+    },
+    {
+      "source_table": "ansprechpartner",
+      "source_column": "sprache",
+      "target_table": "Contact",
+      "target_column": "Preferred_Language__c",
+      "transform": "UPPER([:2])",
+      "notes": null
+    },
+    {
+      "source_table": "ansprechpartner",
+      "source_column": "kunde",
+      "target_table": "Contact",
+      "target_column": "AccountId",
+      "transform": "lookup:Account.Legacy_Customer_ID__c",
+      "notes": null
+    },
+    {
+      "source_table": "chancen",
+      "source_column": "chance_id",
+      "target_table": "Opportunity",
+      "target_column": "Legacy_Opportunity_ID__c",
+      "transform": null,
+      "notes": "External ID key"
+    },
+    {
+      "source_table": "chancen",
+      "source_column": "bezeichnung",
+      "target_table": "Opportunity",
+      "target_column": "Name",
+      "transform": null,
+      "notes": null
+    },
+    {
+      "source_table": "chancen",
+      "source_column": "phase",
+      "target_table": "Opportunity",
+      "target_column": "StageName",
+      "transform": "map_stage",
+      "notes": "DE/EN stage variants"
+    },
+    {
+      "source_table": "chancen",
+      "source_column": "abschlussdatum",
+      "target_table": "Opportunity",
+      "target_column": "CloseDate",
+      "transform": "parse_date",
+      "notes": null
+    },
+    {
+      "source_table": "chancen",
+      "source_column": "volumen",
+      "target_table": "Opportunity",
+      "target_column": "Amount",
+      "transform": null,
+      "notes": null
+    },
+    {
+      "source_table": "chancen",
+      "source_column": "waehrung",
+      "target_table": "Opportunity",
+      "target_column": "CurrencyIsoCode",
+      "transform": "normalize_currency",
+      "notes": null
+    },
+    {
+      "source_table": "chancen",
+      "source_column": "kd_nr",
+      "target_table": "Opportunity",
+      "target_column": "AccountId",
+      "transform": "lookup:Account.Legacy_Customer_ID__c",
+      "notes": null
+    },
+    {
+      "source_table": "proj",
+      "source_column": "proj_id",
+      "target_table": "Project__c",
+      "target_column": "Legacy_Project_ID__c",
+      "transform": null,
+      "notes": "External ID key"
+    },
+    {
+      "source_table": "proj",
+      "source_column": "name",
+      "target_table": "Project__c",
+      "target_column": "Name",
+      "transform": null,
+      "notes": null
+    },
+    {
+      "source_table": "proj",
+      "source_column": "status",
+      "target_table": "Project__c",
+      "target_column": "Project_Status__c",
+      "transform": "map_status",
+      "notes": null
+    },
+    {
+      "source_table": "proj",
+      "source_column": "go_live",
+      "target_table": "Project__c",
+      "target_column": "Go_Live_Date__c",
+      "transform": "parse_date",
+      "notes": null
+    },
+    {
+      "source_table": "proj",
+      "source_column": "kd",
+      "target_table": "Project__c",
+      "target_column": "Account__c",
+      "transform": "lookup:Account.Legacy_Customer_ID__c",
+      "notes": null
+    },
+    {
+      "source_table": "proj",
+      "source_column": "opp",
+      "target_table": "Project__c",
+      "target_column": "Opportunity__c",
+      "transform": "lookup:Opportunity.Legacy_Opportunity_ID__c",
+      "notes": null
+    },
+    {
+      "source_table": "assets",
+      "source_column": "asset_id",
+      "target_table": "Installed_Asset__c",
+      "target_column": "Legacy_Asset_ID__c",
+      "transform": null,
+      "notes": "External ID key"
+    },
+    {
+      "source_table": "assets",
+      "source_column": "bezeichnung",
+      "target_table": "Installed_Asset__c",
+      "target_column": "Name",
+      "transform": null,
+      "notes": null
+    },
+    {
+      "source_table": "assets",
+      "source_column": "seriennr",
+      "target_table": "Installed_Asset__c",
+      "target_column": "Serial_Number__c",
+      "transform": null,
+      "notes": null
+    },
+    {
+      "source_table": "assets",
+      "source_column": "garantie_bis",
+      "target_table": "Installed_Asset__c",
+      "target_column": "Warranty_End_Date__c",
+      "transform": "parse_date",
+      "notes": null
+    },
+    {
+      "source_table": "assets",
+      "source_column": "kd_ref",
+      "target_table": "Installed_Asset__c",
+      "target_column": "Account__c",
+      "transform": "lookup:Account.Legacy_Customer_ID__c",
+      "notes": null
+    },
+    {
+      "source_table": "assets",
+      "source_column": "projekt_ref",
+      "target_table": "Installed_Asset__c",
+      "target_column": "Project__c",
+      "transform": "lookup:Project__c.Legacy_Project_ID__c",
+      "notes": null
+    }
+  ]
+}
