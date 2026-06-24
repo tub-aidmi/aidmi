@@ -1,6 +1,8 @@
 """PlanWriteCritique: plan, write, dbt self-correction, then critique with data validation."""
 from __future__ import annotations
 
+from datetime import datetime
+
 from pydantic import BaseModel, Field
 from pydantic_ai import Agent, Tool
 

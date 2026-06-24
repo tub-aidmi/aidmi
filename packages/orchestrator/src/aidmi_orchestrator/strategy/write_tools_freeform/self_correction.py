@@ -36,6 +36,7 @@ async def run_post_agent_dbt_loop(
     usage_limits: UsageLimits,
     *,
     max_passes: int,
+    run_kwargs: dict | None = None,
 ) -> bool:
     """Run dbt after the agent finishes; on failure, prompt the agent to fix SQL."""
     models_dir = api.dbt_project_path / "models"
@@ -64,6 +65,7 @@ async def run_post_agent_dbt_loop(
         await agent.run(
             f"{correction_intro}\n\nErrors:\n{error_text}",
             usage_limits=usage_limits,
+            **(run_kwargs or {}),
         )
 
     return False
