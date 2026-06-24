@@ -10,15 +10,20 @@ counts as a conflict.
 from __future__ import annotations
 
 import json
-import re
 from typing import Any
+
+from dlt.common.normalizers.naming.snake_case import NamingConvention
 
 from aidmi_orchestrator.evaluator.base import RunArtifacts, register_evaluator
 
+_NAMING = NamingConvention()
+
 
 def _norm(name: str) -> str:
-    """dlt-snake-case-style normalization: lowercase, non-alphanumeric -> '_', trimmed."""
-    return re.sub(r"[^a-z0-9]+", "_", (name or "").lower()).strip("_")
+    """Normalize via dlt's snake_case naming convention — the same transformation dlt
+    applies on load, so ground-truth original identifiers reconcile with the
+    dlt-normalized names a strategy sees via discover. Idempotent for already-snake names."""
+    return _NAMING.normalize_identifier(name) if name else ""
 
 
 def _split_source(entry: str) -> tuple[str | None, str]:

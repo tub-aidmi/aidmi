@@ -133,3 +133,28 @@ def test_no_manifest_reports_present_false(tmp_path):
     assert m["ground_truth_transform_edges"] is None
     assert m["edge_recall"] is None
     assert m["column_recall"] is None
+
+
+def test_camelcase_identifiers_reconcile_with_dlt_normalization(tmp_path):
+    gt = {
+        "case": "messy",
+        "edges": [
+            {"source_table": "Opportunity", "source_column": "StageName", "target_table": "Opportunity",
+             "target_column": "StageName", "transform": "map_stage", "notes": None},
+            {"source_table": "Opportunity", "source_column": "CloseDate", "target_table": "Opportunity",
+             "target_column": "CloseDate", "transform": None, "notes": None},
+        ],
+    }
+    p = tmp_path / "ground_truth.json"
+    p.write_text(json.dumps(gt), encoding="utf-8")
+    manifest = _manifest([
+        TableMappingNote(target_table="Opportunity", column_notes=[
+            ColumnNote(target_column="StageName", source_columns=["opportunity.stage_name"]),
+            ColumnNote(target_column="CloseDate", source_columns=["close_date"]),
+        ]),
+    ])
+    m = MappingAccuracyEvaluator().evaluate(_artifacts(manifest, p))
+    assert m["edge_recall"] == 1.0
+    assert m["column_recall"] == 1.0
+    assert m["conflicting_edges"] == 0
+    assert m["unmapped_ground_truth"] == []
