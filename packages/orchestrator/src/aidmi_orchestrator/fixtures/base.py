@@ -13,6 +13,7 @@ class Fixture:
     target_schema_path: Path | None
     reference_dbt_path: Path | None
     applicable_evaluators: list[str]
+    ground_truth_mapping_path: Path | None = None
 
 
 _FIXTURES: dict[str, Fixture] = {}

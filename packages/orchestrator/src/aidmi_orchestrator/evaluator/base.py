@@ -14,6 +14,7 @@ class FixtureMetadata:
     description: str
     reference_dbt_path: Path | None
     applicable_evaluators: list[str]
+    ground_truth_mapping_path: Path | None = None
 
 
 @dataclass

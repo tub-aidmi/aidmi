@@ -144,3 +144,19 @@ def test_sp1_users_gains_new_evaluators():
     assert "manifest_quality" in fx.applicable_evaluators
     assert "data_preservation" in fx.applicable_evaluators
     assert "row_equality" in fx.applicable_evaluators
+
+
+def test_fixture_and_metadata_carry_ground_truth_path():
+    from pathlib import Path
+    from aidmi_orchestrator.fixtures.base import Fixture
+    from aidmi_orchestrator.evaluator.base import FixtureMetadata
+
+    fm = FixtureMetadata(name="f", description="", reference_dbt_path=None, applicable_evaluators=[])
+    assert fm.ground_truth_mapping_path is None
+
+    fx = Fixture(
+        name="x", description="", source_factory=lambda: None,
+        target_schema_path=None, reference_dbt_path=None, applicable_evaluators=[],
+        ground_truth_mapping_path=Path("/tmp/gt.json"),
+    )
+    assert fx.ground_truth_mapping_path == Path("/tmp/gt.json")
