@@ -1,0 +1,16 @@
+
+{{ config(materialized='table') }}
+
+SELECT
+    asset.id AS "Id",
+    COALESCE(asset.name, 'Unknown Asset Name') AS "Name",
+    asset.serial AS "Serial_Number__c",
+    asset.warranty AS "Warranty_End_Date__c",
+    asset.client AS "Account__c",
+    asset.project AS "Project__c",
+    asset.id AS "Legacy_Asset_ID__c",
+    CAST(NULL AS TEXT) AS "CreatedDate",
+    CAST(NULL AS TEXT) AS "LastModifiedDate",
+    0 AS "IsDeleted"
+FROM
+    {{ source('fixture_missing_relations_src', 'Asset') }} AS asset

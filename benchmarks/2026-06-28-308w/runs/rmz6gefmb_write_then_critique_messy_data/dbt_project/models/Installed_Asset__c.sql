@@ -1,0 +1,1 @@
+normalize/Installed_Asset__c.sql
