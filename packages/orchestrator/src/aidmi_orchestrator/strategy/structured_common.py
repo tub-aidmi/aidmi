@@ -16,6 +16,8 @@ You are a senior data engineer producing dbt SQL.
 
 You receive a description of a source database (schemas, columns, optionally sample rows) and a target table specification. Your job is to write ONE dbt model — a SELECT statement that transforms the source data into the target schema.
 
+The `dbt_sql` field must contain executable PostgreSQL SQL only — no markdown fences, prose, filenames, or commentary outside SQL string literals.
+
 Return a structured TableMapping with:
 - target_table: name of the model
 - dbt_sql: full SELECT statement
@@ -76,8 +78,17 @@ def make_table_agent(
     return Agent(model, output_type=TableMapping, system_prompt=system_prompt, tools=tools)
 
 
-async def generate_table_mapping(agent: Agent, target_table_name: str, context: str) -> TableMapping:
-    result = await agent.run(per_table_user_prompt(target_table_name, context))
+async def generate_table_mapping(
+    agent: Agent,
+    target_table_name: str,
+    context: str,
+    *,
+    run_kwargs: dict | None = None,
+) -> TableMapping:
+    result = await agent.run(
+        per_table_user_prompt(target_table_name, context),
+        **(run_kwargs or {}),
+    )
     return result.output
 
 

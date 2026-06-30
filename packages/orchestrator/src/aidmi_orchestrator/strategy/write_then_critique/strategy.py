@@ -16,6 +16,7 @@ from aidmi_orchestrator.strategy.write_then_critique.critique import (
 from aidmi_orchestrator.strategy.write_then_critique.prompts import (
     CRITIC_SYSTEM_PROMPT, critique_user_prompt, render_proposal, revision_user_prompt,
 )
+from aidmi_orchestrator.strategy.llm_run import google_run_kwargs
 from aidmi_orchestrator.strategy.self_correction import run_dbt_self_correction
 from aidmi_orchestrator.trace import StrategyEvent
 
@@ -44,6 +45,10 @@ class WriteThenCritique:
 
         writer = api.make_llm(self.config.writer_model, role="writer")
         critic = api.make_llm(self.config.critic_model or self.config.writer_model, role="critic")
+        writer_run_kwargs = google_run_kwargs(self.config.writer_model)
+        critic_run_kwargs = google_run_kwargs(
+            self.config.critic_model or self.config.writer_model
+        )
         context = build_context_prompt(
             api.source_summary, api.target_schema, self.config.context_mode,
             samples_per_table=self.config.samples_per_table,
@@ -57,14 +62,20 @@ class WriteThenCritique:
 
         target_table_names = [t.name for t in api.target_schema.tables]
         initial = await run_coroutines(
-            [generate_table_mapping(writer_agent, n, context) for n in target_table_names],
+            [
+                generate_table_mapping(
+                    writer_agent, n, context, run_kwargs=writer_run_kwargs,
+                )
+                for n in target_table_names
+            ],
             serial=self.config.serial_llm_calls,
         )
         mappings = {m.target_table: m for m in initial}
 
         async def critique(current: dict[str, TableMapping]) -> CritiqueReport:
             result = await critic_agent.run(
-                critique_user_prompt(context, render_proposal(current))
+                critique_user_prompt(context, render_proposal(current)),
+                **critic_run_kwargs,
             )
             api.trace.record(StrategyEvent(
                 timestamp=datetime.utcnow(), label="critique_round_complete",
@@ -74,7 +85,8 @@ class WriteThenCritique:
 
         async def revise(name: str, previous: TableMapping, comments: str) -> TableMapping:
             result = await writer_agent.run(
-                revision_user_prompt(name, context, previous.dbt_sql, comments)
+                revision_user_prompt(name, context, previous.dbt_sql, comments),
+                **writer_run_kwargs,
             )
             return result.output
 
@@ -100,6 +112,7 @@ class WriteThenCritique:
                 source_schema=api.source_schema,
                 max_passes=self.config.max_self_correction_passes,
                 serial=self.config.serial_llm_calls,
+                run_kwargs=writer_run_kwargs,
             )
 
         manifest = manifest_from_mappings(

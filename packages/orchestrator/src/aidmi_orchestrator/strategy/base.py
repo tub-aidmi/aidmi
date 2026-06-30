@@ -129,6 +129,11 @@ def build_context_prompt(
                 if c.description:
                     bits.append(f"— {c.description}")
                 lines.append("- " + " ".join(bits))
+        table_names = [t.name for t in target_schema.tables]
+        lines.append(
+            f"\nYou MUST produce exactly one dbt model per target table "
+            f"({len(table_names)} total): {', '.join(table_names)}."
+        )
     else:
         lines.append("\n# Target schema\n(no constraint supplied — design one.)")
 

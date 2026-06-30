@@ -22,7 +22,8 @@ def build_initial_user_prompt(
 ) -> str:
     prompt = (
         f"{context}\n\n"
-        f"Produce the dbt project that transforms the source into the target."
+        f"Produce the dbt project that transforms the source into the target. "
+        f"Write one model file per target table listed above — all tables are required."
     )
     if enable_self_correction and inline_run_dbt_tool:
         prompt += (

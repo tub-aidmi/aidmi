@@ -22,6 +22,7 @@ async def run_dbt_self_correction(
     source_schema: str,
     max_passes: int,
     serial: bool,
+    run_kwargs: dict | None = None,
 ) -> bool:
     """Run dbt up to max_passes; regenerate failing tables between attempts."""
 
@@ -33,7 +34,7 @@ async def run_dbt_self_correction(
             previous.dbt_sql if previous else "",
             error_message,
         )
-        run = await agent.run(prompt)
+        run = await agent.run(prompt, **(run_kwargs or {}))
         fixed = run.output.model_copy(update={"target_table": table_name})
         mappings_by_table[table_name] = fixed
         write_proposal(

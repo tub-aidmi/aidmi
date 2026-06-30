@@ -13,6 +13,7 @@ from aidmi_orchestrator.progress import log_message
 from aidmi_orchestrator.strategy.base import (
     build_context_prompt,
 )
+from aidmi_orchestrator.strategy.llm_run import google_run_kwargs
 from aidmi_orchestrator.strategy.write_tools_freeform.prompts import (
     build_initial_user_prompt,
     build_system_prompt,
@@ -23,16 +24,6 @@ from aidmi_orchestrator.strategy.write_tools_freeform.self_correction import (
 from aidmi_orchestrator.strategy.write_tools_freeform.tools import (
     make_write_file, make_read_file, make_query_postgres, make_run_dbt,
 )
-
-
-def _writer_run_kwargs(spec: ModelSpec) -> dict:
-    kwargs: dict = {"output_retries": 3}
-    extra = spec.extra or {}
-    if "google_thinking_config" in extra:
-        kwargs["model_settings"] = {"google_thinking_config": extra["google_thinking_config"]}
-    elif spec.provider == "google_cloud":
-        kwargs["model_settings"] = {"google_thinking_config": {"thinking_budget": 2048}}
-    return kwargs
 
 
 class WriteToolsFreeformConfig(BaseModel):
@@ -84,7 +75,7 @@ class WriteToolsFreeform:
             f"context={self.config.context_mode}, max_turns={self.config.max_tool_turns})",
             scope=self.name,
         )
-        run_kwargs = _writer_run_kwargs(self.config.writer_model)
+        run_kwargs = google_run_kwargs(self.config.writer_model)
         try:
             await agent.run(
                 build_initial_user_prompt(

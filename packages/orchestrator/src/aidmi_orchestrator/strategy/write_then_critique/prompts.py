@@ -41,7 +41,8 @@ def revision_user_prompt(
         f"Previous SQL:\n```sql\n{previous_sql}\n```\n\n"
         f"Reviewer comments:\n{comments}\n\n"
         f"{context_prompt}\n\n"
-        f"Produce a corrected dbt model for `{target_table_name}`."
+        f"Produce a corrected dbt model for `{target_table_name}`. "
+        f"The dbt_sql field must contain executable PostgreSQL only — no markdown fences or prose."
     )
 
 

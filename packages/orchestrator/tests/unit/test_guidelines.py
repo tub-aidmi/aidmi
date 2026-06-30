@@ -60,6 +60,7 @@ def test_build_context_prompt_includes_transformation_guidelines() -> None:
     prompt = build_context_prompt(summary, target, "metadata_only")
     assert "# Transformation guidelines" in prompt
     assert "Cross-table keys" in prompt
+    assert "You MUST produce exactly one dbt model per target table" in prompt
 
 
 def test_retry_user_prompt_includes_correction_reminder() -> None:
