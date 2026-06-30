@@ -1,0 +1,16 @@
+name: structured_selfcorrect
+strategy: structured_per_table
+config:
+  writer_model:
+    provider: google_cloud
+    model_name: gemini-2.5-flash
+    api_key_env: GOOGLE_API_KEY
+    extra:
+      google_thinking_config:
+        thinking_budget: 2048
+  context_mode: live_query_tool
+  samples_per_table: 5
+  max_query_tool_rows: 150
+  enable_self_correction: true
+  max_self_correction_passes: 10
+  serial_llm_calls: true
