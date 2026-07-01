@@ -4,7 +4,7 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 from pydantic_ai import Agent, Tool
-from pydantic_ai.exceptions import UnexpectedModelBehavior
+from pydantic_ai.exceptions import ModelHTTPError, UnexpectedModelBehavior
 
 from aidmi_orchestrator.domain import ColumnNote, MappingManifest, TableMappingNote
 from aidmi_orchestrator.strategy.guidelines.compose import (
@@ -104,7 +104,7 @@ async def generate_table_mapping_safe(
         return await generate_table_mapping(
             agent, target_table_name, context, run_kwargs=run_kwargs,
         )
-    except UnexpectedModelBehavior as exc:
+    except (UnexpectedModelBehavior, ModelHTTPError) as exc:
         return TableMapping(
             target_table=target_table_name,
             dbt_sql=f"-- model failed to produce structured output: {exc}",

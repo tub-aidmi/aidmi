@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Any
 
 from pydantic_ai import Agent
-from pydantic_ai.exceptions import UnexpectedModelBehavior
+from pydantic_ai.exceptions import ModelHTTPError, UnexpectedModelBehavior
 
 from aidmi_orchestrator.strategy.base import write_proposal, run_coroutines
 from aidmi_orchestrator.strategy.dbt_retry import retry_failing_tables
@@ -48,7 +48,7 @@ async def run_dbt_self_correction(
         )
         try:
             run = await fixer.run(prompt, **(fixer_kwargs or {}))
-        except UnexpectedModelBehavior:
+        except (UnexpectedModelBehavior, ModelHTTPError):
             return
         fixed = run.output.model_copy(update={"target_table": table_name})
         mappings_by_table[table_name] = fixed
