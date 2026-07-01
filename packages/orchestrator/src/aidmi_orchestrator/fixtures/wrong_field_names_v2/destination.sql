@@ -14,7 +14,7 @@ CREATE TABLE "Project__c" ( "Id" text PRIMARY KEY, "Name" text NOT NULL, "Projec
 
 CREATE TABLE "Installed_Asset__c" ( "Id" text PRIMARY KEY, "Name" text NOT NULL, "Serial_Number__c" text UNIQUE, "Warranty_End_Date__c" text, "Account__c" text REFERENCES "Account"("Id"), "Project__c" text REFERENCES "Project__c"("Id"), "Legacy_Asset_ID__c" text UNIQUE, "CreatedDate" text DEFAULT CURRENT_TIMESTAMP, "LastModifiedDate" text DEFAULT CURRENT_TIMESTAMP, "IsDeleted" integer DEFAULT 0 );
 
-INSERT INTO "Account" (Id, Name, ERP_Number__c, Customer_Tier__c, Region__c, Industry, Website, BillingCity, BillingCountry, Legacy_Customer_ID__c) VALUES
+INSERT INTO "Account" ("Id", "Name", "ERP_Number__c", "Customer_Tier__c", "Region__c", "Industry", "Website", "BillingCity", "BillingCountry", "Legacy_Customer_ID__c") VALUES
   ('001000000000001', 'Hörle Stiftung & Co. KG', 'ERP-28865', 'Gold', 'UK', 'Healthcare', 'http://steckel.com/', 'Sankt Goarshausen', 'Martinique', 'CUST-1001'),
   ('001000000000002', 'Bähr', 'ERP-69400', 'Bronze', 'Southern Europe', 'Technology', 'https://rogge.de/', 'Eisenberg', 'Aruba', 'CUST-1002'),
   ('001000000000003', 'Ebert GmbH', 'ERP-77381', 'Platinum', 'UK', 'Technology', 'http://www.peukert.com/', 'Sankt Goar', 'Mauritius', 'CUST-1003'),
@@ -116,7 +116,7 @@ INSERT INTO "Account" (Id, Name, ERP_Number__c, Customer_Tier__c, Region__c, Ind
   ('001000000000099', 'Wähner', 'ERP-80598', 'Bronze', 'Benelux', 'Healthcare', 'https://herrmann.de/', 'Kemnath', 'Lettland', 'CUST-1099'),
   ('001000000000100', 'Tintzmann Eimer GmbH', 'ERP-69056', 'Gold', 'Benelux', 'Healthcare', 'http://www.zirme.de/', 'Schwabmünchen', 'Grenada', 'CUST-1100');
 
-INSERT INTO "Contact" (Id, FirstName, LastName, Email, Phone, Title, Role__c, Preferred_Language__c, AccountId, Legacy_Contact_ID__c) VALUES
+INSERT INTO "Contact" ("Id", "FirstName", "LastName", "Email", "Phone", "Title", "Role__c", "Preferred_Language__c", "AccountId", "Legacy_Contact_ID__c") VALUES
   ('003000000000001', 'Almut', 'Stoll', 'ejunk@example.com', '+494515038165', 'Krankenschwester', 'Executive Sponsor', 'EN', '001000000000001', 'CON-00001'),
   ('003000000000002', 'Maurizio', 'Dowerg', 'adlerandrej@example.com', '+497582176672', 'Elektroniker', 'Technical Contact', 'DE', '001000000000002', 'CON-00002'),
   ('003000000000003', 'Pia', 'Hofmann', 'reuterthoralf@example.org', '+497615541988', 'Medizininformatiker', 'Technical Contact', 'EN', '001000000000002', 'CON-00003'),
@@ -319,7 +319,7 @@ INSERT INTO "Contact" (Id, FirstName, LastName, Email, Phone, Title, Role__c, Pr
   ('003000000000200', 'Karl-Ludwig', 'Schottin', 'jasmin32@example.com', '+494905380235', 'Schornsteinfeger', 'Technical Contact', 'DE', '001000000000100', 'CON-00200'),
   ('003000000000201', 'Hannah', 'Wesack', 'xdrewes@example.com', '+496867750165', 'Pfleger', 'Technical Contact', 'DE', '001000000000100', 'CON-00201');
 
-INSERT INTO "Opportunity" (Id, Name, StageName, CloseDate, Amount, CurrencyIsoCode, AccountId, Legacy_Opportunity_ID__c) VALUES
+INSERT INTO "Opportunity" ("Id", "Name", "StageName", "CloseDate", "Amount", "CurrencyIsoCode", "AccountId", "Legacy_Opportunity_ID__c") VALUES
   ('006000000000001', 'Engage Cross-Media Vortals', 'Closed Won', '2024-10-19', 183380.69, 'EUR', '001000000000001', 'OPP-00001'),
   ('006000000000002', 'Harness Mission-Critical Channels', 'Closed Lost', '2026-04-15', 43712.24, 'GBP', '001000000000001', 'OPP-00002'),
   ('006000000000003', 'Empower Killer Action-Items', 'Qualification', '2025-01-25', 247593.53, 'GBP', '001000000000001', 'OPP-00003'),
@@ -556,7 +556,7 @@ INSERT INTO "Opportunity" (Id, Name, StageName, CloseDate, Amount, CurrencyIsoCo
   ('006000000000234', 'Incentivize Innovative Experiences', 'Qualification', '2027-03-31', 438188.03, 'CHF', '001000000000099', 'OPP-00234'),
   ('006000000000235', 'Implement Best-Of-Breed Solutions', 'Closed Won', '2026-09-17', 107950.24, 'USD', '001000000000100', 'OPP-00235');
 
-INSERT INTO "Project__c" (Id, Name, Project_Status__c, Go_Live_Date__c, Account__c, Opportunity__c, Legacy_Project_ID__c) VALUES
+INSERT INTO "Project__c" ("Id", "Name", "Project_Status__c", "Go_Live_Date__c", "Account__c", "Opportunity__c", "Legacy_Project_ID__c") VALUES
   ('a00000000000001', 'Kruschwitz Impl.', 'Completed', '2026-09-17', '001000000000001', '006000000000022', 'PROJ-00001'),
   ('a00000000000002', 'Liebelt GmbH & Co. KG Impl.', 'On Hold', '2028-05-21', '001000000000001', '006000000000211', 'PROJ-00002'),
   ('a00000000000003', 'Roskoth Impl.', 'On Hold', '2027-05-31', '001000000000002', '006000000000086', 'PROJ-00003'),
@@ -713,7 +713,7 @@ INSERT INTO "Project__c" (Id, Name, Project_Status__c, Go_Live_Date__c, Account_
   ('a00000000000154', 'Segebahn Impl.', 'Completed', '2026-04-05', '001000000000100', '006000000000089', 'PROJ-00154'),
   ('a00000000000155', 'Rust Impl.', 'In Planning', '2027-08-30', '001000000000100', '006000000000198', 'PROJ-00155');
 
-INSERT INTO "Installed_Asset__c" (Id, Name, Serial_Number__c, Warranty_End_Date__c, Account__c, Project__c, Legacy_Asset_ID__c) VALUES
+INSERT INTO "Installed_Asset__c" ("Id", "Name", "Serial_Number__c", "Warranty_End_Date__c", "Account__c", "Project__c", "Legacy_Asset_ID__c") VALUES
   ('a01000000000001', 'Data Connector', 'SN-13516449', '2030-10-14', '001000000000012', 'a00000000000082', 'AST-00001'),
   ('a01000000000002', 'Support Package', 'SN-37437619', '2030-07-09', '001000000000072', 'a00000000000007', 'AST-00002'),
   ('a01000000000003', 'Data Connector', 'SN-18012329', '2030-09-16', '001000000000012', 'a00000000000060', 'AST-00003'),
@@ -1124,7 +1124,7 @@ CREATE TABLE _ground_truth (
     notes text
 );
 
-INSERT INTO _ground_truth (target_table, target_id, source_table, source_id, notes) VALUES
+INSERT INTO _ground_truth ("target_table", "target_id", "source_table", "source_id", "notes") VALUES
   ('Account', '001000000000001', 'source_account', 'CUST-1001', NULL),
   ('Account', '001000000000002', 'source_account', 'CUST-1002', NULL),
   ('Account', '001000000000003', 'source_account', 'CUST-1003', NULL),

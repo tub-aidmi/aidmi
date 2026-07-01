@@ -12,7 +12,7 @@ CREATE TABLE proj (proj_id text PRIMARY KEY, name text, status text, go_live tex
 CREATE TABLE assets (asset_id text PRIMARY KEY, bezeichnung text, seriennr text,
     garantie_bis text, kd_ref text, projekt_ref text);
 
-INSERT INTO kunden (kunden_nr, firmenname, erp_nummer, kategorie, gebiet, branche, webseite, ort, land) VALUES
+INSERT INTO kunden ("kunden_nr", "firmenname", "erp_nummer", "kategorie", "gebiet", "branche", "webseite", "ort", "land") VALUES
   ('CUST-1001', 'Hörle Stiftung & Co. KG', 'ERP-28865', 'Gold', 'UK', 'Healthcare', 'http://steckel.com/', 'Sankt Goarshausen', 'Martinique'),
   ('CUST-1002', 'Bähr', 'ERP-69400', 'Bronze', 'Southern Europe', 'Technology', 'https://rogge.de/', 'Eisenberg', 'Aruba'),
   ('CUST-1003', 'Ebert GmbH', 'ERP-77381', 'Platinum', 'UK', 'Technology', 'http://www.peukert.com/', 'Sankt Goar', 'Mauritius'),
@@ -114,7 +114,7 @@ INSERT INTO kunden (kunden_nr, firmenname, erp_nummer, kategorie, gebiet, branch
   ('CUST-1099', 'Wähner', 'ERP-80598', 'Bronze', 'Benelux', 'Healthcare', 'https://herrmann.de/', 'Kemnath', 'Lettland'),
   ('CUST-1100', 'Tintzmann Eimer GmbH', 'ERP-69056', 'Gold', 'Benelux', 'Healthcare', 'http://www.zirme.de/', 'Schwabmünchen', 'Grenada');
 
-INSERT INTO ansprechpartner (ap_id, vorname, nachname, email_adresse, telefonnummer, position, funktion, sprache, kunde) VALUES
+INSERT INTO ansprechpartner ("ap_id", "vorname", "nachname", "email_adresse", "telefonnummer", "position", "funktion", "sprache", "kunde") VALUES
   ('CON-00001', 'Almut', 'Stoll', 'ejunk@example.com', '+494515038165', 'Krankenschwester', 'Executive Sponsor', 'EN', 'CUST-1001'),
   ('CON-00002', 'Maurizio', 'Dowerg', 'adlerandrej@example.com', '+497582176672', 'Elektroniker', 'Technical Contact', 'DE', 'CUST-1002'),
   ('CON-00003', 'Pia', 'Hofmann', 'reuterthoralf@example.org', '+497615541988', 'Medizininformatiker', 'Technical Contact', 'EN', 'CUST-1002'),
@@ -317,7 +317,7 @@ INSERT INTO ansprechpartner (ap_id, vorname, nachname, email_adresse, telefonnum
   ('CON-00200', 'Karl-Ludwig', 'Schottin', 'jasmin32@example.com', '+494905380235', 'Schornsteinfeger', 'Technical Contact', 'DE', 'CUST-1100'),
   ('CON-00201', 'Hannah', 'Wesack', 'xdrewes@example.com', '+496867750165', 'Pfleger', 'Technical Contact', 'DE', 'CUST-1100');
 
-INSERT INTO chancen (chance_id, bezeichnung, phase, abschlussdatum, volumen, waehrung, kd_nr) VALUES
+INSERT INTO chancen ("chance_id", "bezeichnung", "phase", "abschlussdatum", "volumen", "waehrung", "kd_nr") VALUES
   ('OPP-00001', 'Engage Cross-Media Vortals', 'Closed Won', '2024-10-19', 183380.69, 'EUR', 'CUST-1001'),
   ('OPP-00002', 'Harness Mission-Critical Channels', 'Closed Lost', '2026-04-15', 43712.24, 'GBP', 'CUST-1001'),
   ('OPP-00003', 'Empower Killer Action-Items', 'Qualification', '2025-01-25', 247593.53, 'GBP', 'CUST-1001'),
@@ -554,7 +554,7 @@ INSERT INTO chancen (chance_id, bezeichnung, phase, abschlussdatum, volumen, wae
   ('OPP-00234', 'Incentivize Innovative Experiences', 'Qualification', '2027-03-31', 438188.03, 'CHF', 'CUST-1099'),
   ('OPP-00235', 'Implement Best-Of-Breed Solutions', 'Closed Won', '2026-09-17', 107950.24, 'USD', 'CUST-1100');
 
-INSERT INTO proj (proj_id, name, status, go_live, kd, opp) VALUES
+INSERT INTO proj ("proj_id", "name", "status", "go_live", "kd", "opp") VALUES
   ('PROJ-00001', 'Kruschwitz Impl.', 'Completed', '2026-09-17', 'CUST-1001', 'OPP-00022'),
   ('PROJ-00002', 'Liebelt GmbH & Co. KG Impl.', 'On Hold', '2028-05-21', 'CUST-1001', 'OPP-00211'),
   ('PROJ-00003', 'Roskoth Impl.', 'On Hold', '2027-05-31', 'CUST-1002', 'OPP-00086'),
@@ -711,7 +711,7 @@ INSERT INTO proj (proj_id, name, status, go_live, kd, opp) VALUES
   ('PROJ-00154', 'Segebahn Impl.', 'Completed', '2026-04-05', 'CUST-1100', 'OPP-00089'),
   ('PROJ-00155', 'Rust Impl.', 'In Planning', '2027-08-30', 'CUST-1100', 'OPP-00198');
 
-INSERT INTO assets (asset_id, bezeichnung, seriennr, garantie_bis, kd_ref, projekt_ref) VALUES
+INSERT INTO assets ("asset_id", "bezeichnung", "seriennr", "garantie_bis", "kd_ref", "projekt_ref") VALUES
   ('AST-00001', 'Data Connector', 'SN-13516449', '2030-10-14', 'CUST-1012', 'PROJ-00082'),
   ('AST-00002', 'Support Package', 'SN-37437619', '2030-07-09', 'CUST-1072', 'PROJ-00007'),
   ('AST-00003', 'Data Connector', 'SN-18012329', '2030-09-16', 'CUST-1012', 'PROJ-00060'),

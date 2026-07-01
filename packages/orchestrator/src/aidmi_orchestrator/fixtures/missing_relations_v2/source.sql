@@ -12,7 +12,7 @@ CREATE TABLE Project (id text PRIMARY KEY, name text, status text, go_live text,
 CREATE TABLE Asset (id text PRIMARY KEY, name text, serial text, warranty text,
     client text, project text);
 
-INSERT INTO Account (id, name, tier, region, industry) VALUES
+INSERT INTO Account ("id", "name", "tier", "region", "industry") VALUES
   ('ACC-1001', 'Lindau Neuschäfer GbR', 'Bronze', 'Benelux', 'Manufacturing'),
   ('ACC-1002', 'Jockel Stiftung & Co. KGaA', 'Gold', 'DACH', 'Healthcare'),
   ('ACC-1003', 'Bruder Schmidtke GmbH & Co. KG', 'Gold', 'DACH', 'Manufacturing'),
@@ -94,7 +94,7 @@ INSERT INTO Account (id, name, tier, region, industry) VALUES
   ('ACC-1079', 'Noack AG & Co. KGaA', 'Bronze', 'UK', 'Finance'),
   ('ACC-1080', 'Holzapfel', 'Platinum', 'Southern Europe', 'Technology');
 
-INSERT INTO Contact (id, full_name, email, account_ref, company_name) VALUES
+INSERT INTO Contact ("id", "full_name", "email", "account_ref", "company_name") VALUES
   ('CON-00001', 'Gretchen Graf', 'uli07@example.net', 'ACC-1001', 'Lindau Neuschäfer GbR'),
   ('CON-00002', 'Cengiz Wiek', 'tspeer@example.org', 'ACC-1002', 'Jockel Stiftung & Co. KGaA'),
   ('CON-00003', 'Elma Reichmann', 'hagenkambs@example.org', NULL, 'Bruder Schmidtke GmbH & Co. KG'),
@@ -248,7 +248,7 @@ INSERT INTO Contact (id, full_name, email, account_ref, company_name) VALUES
   ('CON-00151', 'Hans-Peter Stadelmann', 'mbaum@example.com', NULL, 'Holzapfel'),
   ('CON-00152', 'Hiltrud Nerger', 'klaudiafinke@example.org', 'ACC-9360', 'Unknown');
 
-INSERT INTO Opportunity (id, name, stage, amount, customer_number, account_name) VALUES
+INSERT INTO Opportunity ("id", "name", "stage", "amount", "customer_number", "account_name") VALUES
   ('OPP-00001', 'Scale B2C E-Tailers', 'Prospecting', 402554.07, 'KD-1001', 'Lindau Neuschäfer GbR'),
   ('OPP-00002', 'Facilitate Strategic Functionalities', 'Closed Lost', 438779.98, 'KD-1001', 'Lindau Neuschäfer GbR'),
   ('OPP-00003', 'Integrate Magnetic Deliverables', 'Qualification', 78800.97, 'KD-1001', 'Lindau Neuschäfer GbR'),
@@ -471,7 +471,7 @@ INSERT INTO Opportunity (id, name, stage, amount, customer_number, account_name)
   ('OPP-00220', 'Productize Back-End Architectures', 'Closed Won', 343596.52, 'KD-1079', 'Noack AG & Co. KGaA'),
   ('OPP-00221', 'Reinvent Granular Communities', 'Prospecting', 368739.66, 'KD-1080', 'Holzapfel');
 
-INSERT INTO Project (id, name, status, go_live, client_id, opportunity_ref) VALUES
+INSERT INTO Project ("id", "name", "status", "go_live", "client_id", "opportunity_ref") VALUES
   ('PROJ-00001', 'Hande Stiftung & Co. KGaA Impl.', 'Completed', '2027-01-11', 'ACC-1001', 'OPP-00021'),
   ('PROJ-00002', 'Drubin GmbH Impl.', 'Completed', '2026-04-27', 'ACC-1002', 'OPP-00144'),
   ('PROJ-00003', 'Geisler Impl.', 'Completed', '2025-10-05', 'ACC-1002', 'OPP-00216'),
@@ -585,7 +585,7 @@ INSERT INTO Project (id, name, status, go_live, client_id, opportunity_ref) VALU
   ('PROJ-00111', 'Fechner Zimmer AG Impl.', 'Cancelled', '2026-01-09', 'ACC-1080', 'OPP-00007'),
   ('PROJ-00112', 'Mühle Impl.', 'On Hold', '2028-06-25', 'ACC-1080', 'OPP-00171');
 
-INSERT INTO Asset (id, name, serial, warranty, client, project) VALUES
+INSERT INTO Asset ("id", "name", "serial", "warranty", "client", "project") VALUES
   ('AST-00001', 'Support Package', 'SN-98214927', '2029-12-01', 'ACC-1078', 'PROJ-00100'),
   ('AST-00002', 'Data Connector', 'SN-31188612', '2028-06-05', 'Gnatz AG', 'PROJ-00064'),
   ('AST-00003', 'Data Connector', 'SN-76698492', '2029-03-09', 'ACC-1059', 'PROJ-9310'),

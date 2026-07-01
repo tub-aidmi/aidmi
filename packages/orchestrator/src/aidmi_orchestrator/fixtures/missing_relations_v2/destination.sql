@@ -14,7 +14,7 @@ CREATE TABLE "Project__c" ( "Id" text PRIMARY KEY, "Name" text NOT NULL, "Projec
 
 CREATE TABLE "Installed_Asset__c" ( "Id" text PRIMARY KEY, "Name" text NOT NULL, "Serial_Number__c" text UNIQUE, "Warranty_End_Date__c" text, "Account__c" text REFERENCES "Account"("Id"), "Project__c" text REFERENCES "Project__c"("Id"), "Legacy_Asset_ID__c" text UNIQUE, "CreatedDate" text DEFAULT CURRENT_TIMESTAMP, "LastModifiedDate" text DEFAULT CURRENT_TIMESTAMP, "IsDeleted" integer DEFAULT 0 );
 
-INSERT INTO "Account" (Id, Name, ERP_Number__c, Customer_Tier__c, Region__c, Industry, Website, BillingCity, BillingCountry, Legacy_Customer_ID__c) VALUES
+INSERT INTO "Account" ("Id", "Name", "ERP_Number__c", "Customer_Tier__c", "Region__c", "Industry", "Website", "BillingCity", "BillingCountry", "Legacy_Customer_ID__c") VALUES
   ('001000000000001', 'Lindau Neuschäfer GbR', 'ERP-73966', 'Bronze', 'Benelux', 'Manufacturing', 'http://barkholz.com/', 'Güstrow', 'Syrien', 'ACC-1001'),
   ('001000000000002', 'Jockel Stiftung & Co. KGaA', 'ERP-54398', 'Gold', 'DACH', 'Healthcare', 'http://www.heydrich.com/', 'Zeulenroda', 'Serbien und Montenegro', 'ACC-1002'),
   ('001000000000003', 'Bruder Schmidtke GmbH & Co. KG', 'ERP-11446', 'Gold', 'DACH', 'Manufacturing', 'http://www.gerlach.org/', 'Wertingen', 'Österreich', 'ACC-1003'),
@@ -96,7 +96,7 @@ INSERT INTO "Account" (Id, Name, ERP_Number__c, Customer_Tier__c, Region__c, Ind
   ('001000000000079', 'Noack AG & Co. KGaA', 'ERP-64930', 'Bronze', 'UK', 'Finance', 'https://ullmann.de/', 'Pegnitz', 'Bangladesch', 'ACC-1079'),
   ('001000000000080', 'Holzapfel', 'ERP-95518', 'Platinum', 'Southern Europe', 'Technology', 'https://ehlert.com/', 'Jüterbog', 'Vietnam', 'ACC-1080');
 
-INSERT INTO "Contact" (Id, FirstName, LastName, Email, Phone, Title, Role__c, Preferred_Language__c, AccountId, Legacy_Contact_ID__c) VALUES
+INSERT INTO "Contact" ("Id", "FirstName", "LastName", "Email", "Phone", "Title", "Role__c", "Preferred_Language__c", "AccountId", "Legacy_Contact_ID__c") VALUES
   ('003000000000001', 'Gretchen', 'Graf', 'uli07@example.net', '+495356343220', 'Forstwirt', 'Technical Contact', 'EN', '001000000000001', 'CON-00001'),
   ('003000000000002', 'Cengiz', 'Wiek', 'tspeer@example.org', '+498954118355', 'Bankkaufmann', 'Technical Contact', 'EN', '001000000000002', 'CON-00002'),
   ('003000000000003', 'Elma', 'Reichmann', 'hagenkambs@example.org', '+492693968324', 'Artist', 'Technical Contact', 'DE', '001000000000003', 'CON-00003'),
@@ -250,7 +250,7 @@ INSERT INTO "Contact" (Id, FirstName, LastName, Email, Phone, Title, Role__c, Pr
   ('003000000000151', 'Hans-Peter', 'Stadelmann', 'mbaum@example.com', '+493990418202', 'Fachinformatiker', 'End User', 'DE', '001000000000080', 'CON-00151'),
   ('003000000000152', 'Hiltrud', 'Nerger', 'klaudiafinke@example.org', '+495636719826', 'Binnenschiffer', 'Executive Sponsor', 'DE', NULL, 'CON-00152');
 
-INSERT INTO "Opportunity" (Id, Name, StageName, CloseDate, Amount, CurrencyIsoCode, AccountId, Legacy_Opportunity_ID__c) VALUES
+INSERT INTO "Opportunity" ("Id", "Name", "StageName", "CloseDate", "Amount", "CurrencyIsoCode", "AccountId", "Legacy_Opportunity_ID__c") VALUES
   ('006000000000001', 'Scale B2C E-Tailers', 'Prospecting', '2026-11-12', 402554.07, 'EUR', '001000000000001', 'OPP-00001'),
   ('006000000000002', 'Facilitate Strategic Functionalities', 'Closed Lost', '2025-09-06', 438779.98, 'USD', '001000000000001', 'OPP-00002'),
   ('006000000000003', 'Integrate Magnetic Deliverables', 'Qualification', '2027-05-03', 78800.97, 'GBP', '001000000000001', 'OPP-00003'),
@@ -473,7 +473,7 @@ INSERT INTO "Opportunity" (Id, Name, StageName, CloseDate, Amount, CurrencyIsoCo
   ('006000000000220', 'Productize Back-End Architectures', 'Closed Won', '2025-01-29', 343596.52, 'EUR', '001000000000079', 'OPP-00220'),
   ('006000000000221', 'Reinvent Granular Communities', 'Prospecting', '2026-12-04', 368739.66, 'EUR', '001000000000080', 'OPP-00221');
 
-INSERT INTO "Project__c" (Id, Name, Project_Status__c, Go_Live_Date__c, Account__c, Opportunity__c, Legacy_Project_ID__c) VALUES
+INSERT INTO "Project__c" ("Id", "Name", "Project_Status__c", "Go_Live_Date__c", "Account__c", "Opportunity__c", "Legacy_Project_ID__c") VALUES
   ('a00000000000001', 'Hande Stiftung & Co. KGaA Impl.', 'Completed', '2027-01-11', '001000000000001', '006000000000021', 'PROJ-00001'),
   ('a00000000000002', 'Drubin GmbH Impl.', 'Completed', '2026-04-27', '001000000000002', '006000000000144', 'PROJ-00002'),
   ('a00000000000003', 'Geisler Impl.', 'Completed', '2025-10-05', '001000000000002', '006000000000216', 'PROJ-00003'),
@@ -587,7 +587,7 @@ INSERT INTO "Project__c" (Id, Name, Project_Status__c, Go_Live_Date__c, Account_
   ('a00000000000111', 'Fechner Zimmer AG Impl.', 'Cancelled', '2026-01-09', '001000000000080', '006000000000007', 'PROJ-00111'),
   ('a00000000000112', 'Mühle Impl.', 'On Hold', '2028-06-25', '001000000000080', '006000000000171', 'PROJ-00112');
 
-INSERT INTO "Installed_Asset__c" (Id, Name, Serial_Number__c, Warranty_End_Date__c, Account__c, Project__c, Legacy_Asset_ID__c) VALUES
+INSERT INTO "Installed_Asset__c" ("Id", "Name", "Serial_Number__c", "Warranty_End_Date__c", "Account__c", "Project__c", "Legacy_Asset_ID__c") VALUES
   ('a01000000000001', 'Support Package', 'SN-98214927', '2029-12-01', '001000000000078', 'a00000000000100', 'AST-00001'),
   ('a01000000000002', 'Data Connector', 'SN-31188612', '2028-06-05', '001000000000007', 'a00000000000064', 'AST-00002'),
   ('a01000000000003', 'Data Connector', 'SN-76698492', '2029-03-09', '001000000000059', NULL, 'AST-00003'),
@@ -918,7 +918,7 @@ CREATE TABLE _ground_truth (
     notes text
 );
 
-INSERT INTO _ground_truth (target_table, target_id, source_table, source_id, notes) VALUES
+INSERT INTO _ground_truth ("target_table", "target_id", "source_table", "source_id", "notes") VALUES
   ('Account', '001000000000001', 'source_account', 'ACC-1001', NULL),
   ('Account', '001000000000002', 'source_account', 'ACC-1002', NULL),
   ('Account', '001000000000003', 'source_account', 'ACC-1003', NULL),

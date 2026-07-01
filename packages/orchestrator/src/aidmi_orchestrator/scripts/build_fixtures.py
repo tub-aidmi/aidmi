@@ -144,7 +144,7 @@ def sql_val(v: Any) -> str:
 def format_inserts(table: str, columns: list[str], rows: list[tuple[Any, ...]]) -> str:
     if not rows:
         return ""
-    col_list = ", ".join(columns)
+    col_list = ", ".join(f'"{c.strip(chr(34))}"' for c in columns)
     value_lines = []
     for row in rows:
         vals = ", ".join(sql_val(v) for v in row)
