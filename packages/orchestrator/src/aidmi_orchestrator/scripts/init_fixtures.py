@@ -49,6 +49,15 @@ def init_fixture(name: str, db_url: str) -> None:
 
     print(f"initialized {name} → schema {fixture.source_schema} ({table_count} tables)")
 
+    if fixture.golden_schema and fixture.destination_sql_path.exists():
+        golden_sql = fixture.destination_sql_path.read_text(encoding="utf-8")
+        with psycopg2.connect(db_url) as conn:
+            conn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
+            with conn.cursor() as cur:
+                cur.execute(f"DROP SCHEMA IF EXISTS {fixture.golden_schema} CASCADE")
+                cur.execute(golden_sql)
+        print(f"  loaded golden → schema {fixture.golden_schema}")
+
 
 def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(description=__doc__)
