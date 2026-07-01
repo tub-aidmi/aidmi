@@ -4,6 +4,7 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 from pydantic_ai import Agent, Tool
+from pydantic_ai.exceptions import UnexpectedModelBehavior
 
 from aidmi_orchestrator.domain import ColumnNote, MappingManifest, TableMappingNote
 from aidmi_orchestrator.strategy.guidelines.compose import (
@@ -90,6 +91,26 @@ async def generate_table_mapping(
         **(run_kwargs or {}),
     )
     return result.output
+
+
+async def generate_table_mapping_safe(
+    agent: Agent,
+    target_table_name: str,
+    context: str,
+    *,
+    run_kwargs: dict | None = None,
+) -> TableMapping:
+    try:
+        return await generate_table_mapping(
+            agent, target_table_name, context, run_kwargs=run_kwargs,
+        )
+    except UnexpectedModelBehavior as exc:
+        return TableMapping(
+            target_table=target_table_name,
+            dbt_sql=f"-- model failed to produce structured output: {exc}",
+            column_notes=[],
+            reasoning=f"structured output generation failed: {exc}",
+        )
 
 
 def manifest_from_mappings(

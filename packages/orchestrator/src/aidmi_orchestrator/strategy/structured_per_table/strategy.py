@@ -6,7 +6,7 @@ from pydantic import BaseModel
 from aidmi_orchestrator.domain import ModelSpec, StrategyResult
 from aidmi_orchestrator.strategy.base import build_context_prompt, run_coroutines, write_proposal
 from aidmi_orchestrator.strategy.structured_common import (
-    generate_table_mapping, make_table_agent, manifest_from_mappings,
+    generate_table_mapping_safe, make_table_agent, manifest_from_mappings,
 )
 from aidmi_orchestrator.strategy.llm_run import google_run_kwargs
 from aidmi_orchestrator.strategy.self_correction import run_dbt_self_correction
@@ -50,7 +50,7 @@ class StructuredPerTable:
         target_table_names = [t.name for t in api.target_schema.tables]
         mappings = await run_coroutines(
             [
-                generate_table_mapping(agent, n, context, run_kwargs=writer_run_kwargs)
+                generate_table_mapping_safe(agent, n, context, run_kwargs=writer_run_kwargs)
                 for n in target_table_names
             ],
             serial=self.config.serial_llm_calls,

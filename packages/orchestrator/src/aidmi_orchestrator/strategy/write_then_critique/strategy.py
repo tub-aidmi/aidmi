@@ -8,7 +8,7 @@ from pydantic_ai import Agent
 from aidmi_orchestrator.domain import ModelSpec, StrategyResult
 from aidmi_orchestrator.strategy.base import build_context_prompt, run_coroutines, write_proposal
 from aidmi_orchestrator.strategy.structured_common import (
-    generate_table_mapping, make_table_agent, manifest_from_mappings, TableMapping,
+    generate_table_mapping_safe, make_table_agent, manifest_from_mappings, TableMapping,
 )
 from aidmi_orchestrator.strategy.write_then_critique.critique import (
     CritiqueReport, run_critique_rounds,
@@ -65,7 +65,7 @@ class WriteThenCritique:
         target_table_names = [t.name for t in api.target_schema.tables]
         initial = await run_coroutines(
             [
-                generate_table_mapping(
+                generate_table_mapping_safe(
                     writer_agent, n, context, run_kwargs=writer_run_kwargs,
                 )
                 for n in target_table_names
