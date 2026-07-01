@@ -35,6 +35,8 @@ class WriteToolsFreeformConfig(BaseModel):
     enable_self_correction: bool = False
     inline_run_dbt_tool: bool = False
     max_self_correction_passes: int = 3
+    fixer_model: ModelSpec | None = None
+    validation_gate: Literal["none", "static", "static+explain"] = "none"
 
 
 class WriteToolsFreeform:
@@ -96,6 +98,20 @@ class WriteToolsFreeform:
         ] if models_dir.exists() else []
         log_message(f"agent finished: {len(produced)} model(s) written", scope=self.name)
 
+        fixer_agent = None
+        fixer_run_kwargs = None
+        if self.config.fixer_model is not None:
+            fixer_llm = api.make_llm(self.config.fixer_model, role="fixer")
+            fixer_agent = Agent(
+                fixer_llm,
+                tools=tools,
+                system_prompt=build_system_prompt(
+                    enable_self_correction=self.config.enable_self_correction,
+                    inline_run_dbt_tool=self.config.inline_run_dbt_tool,
+                ),
+            )
+            fixer_run_kwargs = google_run_kwargs(self.config.fixer_model)
+
         dbt_ok = True
         if self.config.enable_self_correction and produced:
             log_message(
@@ -108,6 +124,9 @@ class WriteToolsFreeform:
                 usage_limits,
                 max_passes=self.config.max_self_correction_passes,
                 run_kwargs=run_kwargs,
+                fixer_agent=fixer_agent,
+                fixer_run_kwargs=fixer_run_kwargs,
+                validation_gate=self.config.validation_gate,
             )
 
         if not produced:

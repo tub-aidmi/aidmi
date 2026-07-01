@@ -37,17 +37,45 @@ async def run_post_agent_dbt_loop(
     *,
     max_passes: int,
     run_kwargs: dict | None = None,
+    fixer_agent: Agent | None = None,
+    fixer_run_kwargs: dict | None = None,
+    validation_gate: str = "none",
 ) -> bool:
-    """Run dbt after the agent finishes; on failure, prompt the agent to fix SQL."""
+    """Run dbt after the agent finishes; on failure, prompt an agent to fix SQL.
+
+    Repairs route to ``fixer_agent`` when set. When ``validation_gate`` is static,
+    a sqlglot pass fixes malformed model files before the first dbt run.
+    """
+    from aidmi_orchestrator.strategy.validation import validate_models
+
     models_dir = api.dbt_project_path / "models"
     if not models_dir.exists() or not list(models_dir.glob("*.sql")):
         return False
+
+    fixer = fixer_agent or agent
+    fixer_kwargs = fixer_run_kwargs if fixer_agent is not None else run_kwargs
 
     correction_intro = (
         "dbt run failed after your last edit. Fix every failing model using valid "
         "PostgreSQL only (no TRY_CAST or invented functions). read_file each model "
         "you change. The orchestrator will re-run dbt automatically."
     )
+
+    if validation_gate in ("static", "static+explain"):
+        for _ in range(max_passes):
+            sql_by_file = {
+                p.stem: p.read_text(encoding="utf-8") for p in models_dir.glob("*.sql")
+            }
+            errors = validate_models(sql_by_file)
+            if not errors:
+                break
+            detail = "\n".join(f"- {name}: {'; '.join(errs)}" for name, errs in errors.items())
+            await fixer.run(
+                f"Some models have SQL syntax errors before dbt even runs. "
+                f"read_file and fix each one with valid PostgreSQL:\n{detail}",
+                usage_limits=usage_limits,
+                **(fixer_kwargs or {}),
+            )
 
     for attempt in range(max_passes):
         ensure_sources_yaml_raw_schema(models_dir, api.source_schema)
@@ -62,10 +90,10 @@ async def run_post_agent_dbt_loop(
         if attempt >= max_passes - 1:
             return False
 
-        await agent.run(
+        await fixer.run(
             f"{correction_intro}\n\nErrors:\n{error_text}",
             usage_limits=usage_limits,
-            **(run_kwargs or {}),
+            **(fixer_kwargs or {}),
         )
 
     return False
