@@ -100,3 +100,6 @@ def test_v2_fixtures_have_golden_schema_and_ground_truth():
         assert fx.destination_sql_path.exists()
         assert fx.target_schema_path is not None and fx.target_schema_path.exists()
         assert "_ground_truth" in fx.destination_sql_path.read_text(encoding="utf-8")
+        assert "ground_truth_recall" in fx.applicable_evaluators
+        assert "ground_truth_notes" in fx.applicable_evaluators
+        assert "ground_truth_field_accuracy" in fx.applicable_evaluators

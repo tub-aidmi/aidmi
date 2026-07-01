@@ -86,6 +86,7 @@ def build_artifacts_for_evaluate(
             description=fixture.description,
             reference_dbt_path=fixture.reference_dbt_path,
             applicable_evaluators=fixture.applicable_evaluators,
+            golden_schema=fixture.golden_schema,
         ),
         wall_clock_seconds=result.wall_clock_seconds,
         final_transform_result=transform_result,

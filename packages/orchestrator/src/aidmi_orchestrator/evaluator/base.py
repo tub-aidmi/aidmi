@@ -14,6 +14,7 @@ class FixtureMetadata:
     description: str
     reference_dbt_path: Path | None
     applicable_evaluators: list[str]
+    golden_schema: str | None = None
 
 
 @dataclass

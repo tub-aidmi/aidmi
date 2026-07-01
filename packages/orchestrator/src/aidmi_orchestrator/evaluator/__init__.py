@@ -6,3 +6,6 @@ from aidmi_orchestrator.evaluator import schema  # noqa: F401
 from aidmi_orchestrator.evaluator import row_equality  # noqa: F401
 from aidmi_orchestrator.evaluator import manifest_quality  # noqa: F401
 from aidmi_orchestrator.evaluator import data_preservation  # noqa: F401
+from aidmi_orchestrator.evaluator import ground_truth_recall  # noqa: F401
+from aidmi_orchestrator.evaluator import ground_truth_notes  # noqa: F401
+from aidmi_orchestrator.evaluator import ground_truth_field_accuracy  # noqa: F401

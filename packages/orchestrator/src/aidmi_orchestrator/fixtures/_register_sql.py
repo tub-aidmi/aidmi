@@ -7,6 +7,15 @@ from aidmi_orchestrator.fixtures.base import Fixture, register_fixture
 
 DEFAULT_EVALUATORS = ["execution", "llm_usage", "schema"]
 
+DEFAULT_EVALUATORS_V2 = [
+    "execution",
+    "llm_usage",
+    "schema",
+    "ground_truth_recall",
+    "ground_truth_notes",
+    "ground_truth_field_accuracy",
+]
+
 
 def register_sql_fixture(
     name: str,
