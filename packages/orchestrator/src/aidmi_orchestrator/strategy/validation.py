@@ -9,7 +9,7 @@ from __future__ import annotations
 import re
 
 import sqlglot
-from sqlglot.errors import ParseError
+from sqlglot.errors import ParseError, TokenError
 
 _JINJA_SOURCE_RE = re.compile(
     r"\{\{\s*source\s*\(\s*['\"][^'\"]+['\"]\s*,\s*['\"]([^'\"]+)['\"]\s*\)\s*\}\}"
@@ -31,7 +31,7 @@ def validate_model_sql(sql: str) -> list[str]:
         return ["model SQL is empty after removing dbt Jinja"]
     try:
         statements = sqlglot.parse(stripped, dialect="postgres")
-    except (ParseError, RecursionError) as exc:
+    except (ParseError, TokenError, RecursionError) as exc:
         return [f"SQL parse error: {exc}"]
     if not any(statements):
         return ["no parseable SQL statement found"]

@@ -42,3 +42,8 @@ def test_validate_models_returns_only_failing():
     result = validate_models({"Account": VALID, "Opportunity": DANGLING_PAREN})
     assert "Account" not in result
     assert "Opportunity" in result
+
+def test_tokenizer_error_is_flagged_not_raised():
+    # sqlglot raises TokenError (not ParseError) on this; the gate must catch it
+    errs = validate_model_sql('SELECT "unterminated')
+    assert errs != []
