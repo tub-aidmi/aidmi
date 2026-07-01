@@ -100,6 +100,10 @@ def _overall_status(models: list[DbtModelOutcome]) -> Literal["success", "partia
     return "error"
 
 
+def _dbt_run_params(fail_fast: bool) -> list[str]:
+    return ["--fail-fast"] if fail_fast else []
+
+
 def transform(run: MigrationRun) -> TransformResult:
     models_dir = run.dbt_project_path / "models"
     ensure_sources_yaml_raw_schema(models_dir, run.staging.source_schema)
@@ -111,7 +115,7 @@ def transform(run: MigrationRun) -> TransformResult:
     venv = dlt.dbt.get_venv(pipeline, venv_path="")
     runner = dlt.dbt.package(pipeline, str(run.dbt_project_path), venv=venv)
     try:
-        outcomes = runner.run_all()
+        outcomes = runner.run_all(run_params=_dbt_run_params(run.fail_fast))
     except Exception as err:
         if DBTProcessingError is not None and isinstance(err, DBTProcessingError):
             outcomes = err.run_results

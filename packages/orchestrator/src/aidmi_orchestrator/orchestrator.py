@@ -63,6 +63,7 @@ async def run_orchestrator(
         target_dataset="",
         target_tables=[],
         dbt_project_path=dbt_project_path,
+        fail_fast=False,
     )
 
     source_summary = discover(staging.db_url, staging.source_schema, samples_per_table=100)

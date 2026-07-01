@@ -33,6 +33,7 @@ class MigrationRun:
     target_dataset: str
     target_tables: list[str]
     dbt_project_path: Path
+    fail_fast: bool = True
 
 
 class CliMigrationConfig(BaseModel):
