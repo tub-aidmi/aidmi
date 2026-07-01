@@ -100,9 +100,22 @@ def _overall_status(models: list[DbtModelOutcome]) -> Literal["success", "partia
     return "error"
 
 
+def clear_out_schema(db_url: str, schema: str) -> None:
+    """Drop and recreate the per-run output schema before dbt materialization."""
+    import psycopg2
+    from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
+
+    with psycopg2.connect(db_url) as conn:
+        conn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
+        with conn.cursor() as cur:
+            cur.execute(f'DROP SCHEMA IF EXISTS "{schema}" CASCADE')
+            cur.execute(f'CREATE SCHEMA "{schema}"')
+
+
 def transform(run: MigrationRun) -> TransformResult:
     models_dir = run.dbt_project_path / "models"
     ensure_sources_yaml_raw_schema(models_dir, run.staging.source_schema)
+    clear_out_schema(run.staging.db_url, run.staging.out_schema)
     pipeline = dlt.pipeline(
         pipeline_name=f"dbt_{run.staging.out_schema}",
         destination=dlt.destinations.postgres(run.staging.db_url),

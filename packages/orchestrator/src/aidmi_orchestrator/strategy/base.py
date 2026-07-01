@@ -11,6 +11,8 @@ from pydantic import BaseModel
 
 from aidmi_pipeline.sources_yaml import ensure_sources_yaml_raw_schema
 
+from aidmi_orchestrator.strategy.sql_sanitize import sanitize_dbt_sql
+
 from aidmi_orchestrator.domain import (
     SourceSummary, TargetSchema, MappingManifest, TableMappingNote,
     ColumnNote, StrategyResult,
@@ -178,6 +180,24 @@ def normalize_source_refs(
     return _SOURCE_CALL_RE.sub(repl, sql)
 
 
+def discover_model_sql_files(dbt_project_path: Path) -> list[Path]:
+    """Find model SQL files; prefer top-level models/ over nested paths."""
+    primary = dbt_project_path / "models"
+    if primary.is_dir():
+        primary_files = sorted(primary.glob("*.sql"))
+        if primary_files:
+            return primary_files
+
+    candidates: dict[str, Path] = {}
+    for path in dbt_project_path.glob("**/models/*.sql"):
+        stem = path.stem
+        depth = len(path.relative_to(dbt_project_path).parts)
+        existing = candidates.get(stem)
+        if existing is None or depth < len(existing.relative_to(dbt_project_path).parts):
+            candidates[stem] = path
+    return sorted(candidates.values(), key=lambda p: p.stem)
+
+
 def write_proposal(
     dbt_project_path: Path,
     sql_by_table: dict[str, str],
@@ -196,7 +216,7 @@ def write_proposal(
     for schema, tname in source_tables:
         tables_by_schema.setdefault(schema, set()).add(tname)
     for target_table, sql in sql_by_table.items():
-        normalized = sql
+        normalized = sanitize_dbt_sql(sql)
         for schema, tables in tables_by_schema.items():
             normalized = normalize_source_refs(
                 normalized, canonical_slug=schema, known_tables=tables,

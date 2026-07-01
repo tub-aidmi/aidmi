@@ -127,3 +127,17 @@ def test_field_accuracy_evaluator(seeded_db):
     assert account["overall"] == pytest.approx(1.0)
     assert account["per_column"]["Name"] == pytest.approx(1.0)
     assert account["per_column"]["Customer_Tier__c"] == pytest.approx(1.0)
+
+
+def test_recall_evaluator_missing_table_lowers_overall_recall(seeded_db):
+    """A declared-but-missing table must count in the recall denominator."""
+    with psycopg2.connect(seeded_db) as conn:
+        with conn.cursor() as cur:
+            cur.execute(f'DROP TABLE "{OUT}"."Account"')
+
+    metrics = GroundTruthRecallEvaluator().evaluate(_artifacts(seeded_db))
+    assert metrics["gt_per_table"]["Account"]["missing_table"] is True
+    assert metrics["gt_per_table"]["Account"]["expected"] == 2
+    assert metrics["gt_per_table"]["Account"]["matched"] == 0
+    assert metrics["gt_recall_overall"] == pytest.approx(0.0)
+    assert metrics["gt_tables_materialized"] == pytest.approx(0.0)

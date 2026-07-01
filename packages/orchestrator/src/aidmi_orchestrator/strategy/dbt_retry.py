@@ -19,6 +19,15 @@ def extract_failing_models(result: Any) -> list[tuple[str, str]]:
     return failing
 
 
+def extract_skipped_models(result: Any) -> list[tuple[str, str]]:
+    """Return models skipped due to fail_fast (or similar) as synthetic failures."""
+    return [
+        (dbt_model_table_name(getattr(model, "model_name", "") or "<unknown>"), "skipped due to fail_fast")
+        for model in getattr(result, "models", []) or []
+        if getattr(model, "status", None) == "skipped"
+    ]
+
+
 def summarize_dbt_failure(result: Any) -> str:
     lines: list[str] = []
     overall = getattr(result, "overall_status", None)
@@ -27,6 +36,28 @@ def summarize_dbt_failure(result: Any) -> str:
     for name, message in extract_failing_models(result):
         lines.append(f"- {name}: {message}")
     return "\n".join(lines) if lines else "dbt run failed with no model details"
+
+
+def failures_for_retry(
+    result: Any,
+    all_table_names: list[str] | None,
+) -> list[tuple[str, str]]:
+    """Collect explicit failures plus tables not successfully materialized."""
+    failing = extract_failing_models(result)
+    if not all_table_names:
+        return failing
+
+    known = {name for name, _ in failing}
+    succeeded = {
+        dbt_model_table_name(getattr(m, "model_name", "") or "<unknown>")
+        for m in getattr(result, "models", []) or []
+        if getattr(m, "status", None) == "success"
+    }
+    summary = summarize_dbt_failure(result)
+    for name in all_table_names:
+        if name not in succeeded and name not in known:
+            failing.append((name, summary))
+    return failing
 
 
 async def retry_failing_tables(
@@ -63,19 +94,14 @@ async def retry_failing_tables(
         if attempt >= max_passes - 1:
             return False
 
-        failing = extract_failing_models(result)
+        failing = failures_for_retry(result, all_table_names)
         if not failing:
-            if not all_table_names:
-                return False
-            failing = [(name, summarize_dbt_failure(result)) for name in all_table_names]
-            regen_serial = True
-        else:
-            regen_serial = serial
+            return False
 
         try:
             await run_coroutines(
                 [regenerate(name, err) for name, err in failing],
-                serial=regen_serial,
+                serial=serial,
             )
         except Exception:
             return False

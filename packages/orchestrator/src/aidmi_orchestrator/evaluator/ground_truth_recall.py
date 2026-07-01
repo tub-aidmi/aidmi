@@ -31,8 +31,13 @@ class GroundTruthRecallEvaluator:
         total_matched = 0
         total_produced = 0
         total_golden = 0
+        tables_materialized = 0
 
         with psycopg2.connect(artifacts.staging_db_url) as conn:
+            for table in TARGET_TABLES:
+                if schema_has_table(conn, artifacts.out_schema, table):
+                    tables_materialized += 1
+
             for table in TARGET_TABLES:
                 if table not in artifacts.strategy_result.target_tables_written:
                     continue
@@ -42,15 +47,20 @@ class GroundTruthRecallEvaluator:
                 if not schema_has_table(conn, golden_schema, table):
                     continue
                 if not schema_has_table(conn, artifacts.out_schema, table):
+                    golden_rows = fetch_table_rows(conn, golden_schema, table)
+                    _, _, golden_n = match_produced_to_golden(
+                        golden_rows, [], legacy_col
+                    )
                     per_table[table] = {
-                        "expected": 0,
+                        "expected": golden_n,
                         "produced": 0,
                         "matched": 0,
-                        "recall": None,
-                        "precision": None,
-                        "f1": None,
+                        "recall": safe_rate(0, golden_n),
+                        "precision": safe_rate(0, 0),
+                        "f1": 0.0 if golden_n else None,
                         "missing_table": True,
                     }
+                    total_golden += golden_n
                     continue
 
                 golden_rows = fetch_table_rows(conn, golden_schema, table)
@@ -83,11 +93,14 @@ class GroundTruthRecallEvaluator:
             if overall_recall is not None and overall_precision is not None
             else None
         )
+        tables_materialized_rate = safe_rate(tables_materialized, len(TARGET_TABLES))
 
         return {
             "gt_recall_overall": overall_recall,
             "gt_precision_overall": overall_precision,
             "gt_f1_overall": overall_f1,
+            "gt_recall_strict": overall_recall,
+            "gt_tables_materialized": tables_materialized_rate,
             "gt_per_table": per_table,
         }
 
