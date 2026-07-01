@@ -153,7 +153,8 @@ clean-workspace:
   rm -rf aidmi_workspace
 
 # Run the hard-fixture ISE campaign (needs the SSH tunnel up on :4000).
-bench-hard-ise:
+# Depends on `up` (staging Postgres) and seeds the two fixtures first.
+bench-hard-ise: up (init-db "master" "messy_data")
   #!/usr/bin/env bash
   set -euo pipefail
   test -f .env || cp -n .env.example .env
