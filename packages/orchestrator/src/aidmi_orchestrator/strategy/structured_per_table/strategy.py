@@ -20,6 +20,8 @@ class StructuredPerTableConfig(BaseModel):
     enable_self_correction: bool = False
     max_self_correction_passes: int = 3
     serial_llm_calls: bool = False
+    fixer_model: ModelSpec | None = None
+    validation_gate: Literal["none", "static", "static+explain"] = "none"
 
 
 class StructuredPerTable:
@@ -62,6 +64,18 @@ class StructuredPerTable:
 
         mappings_by_table = {m.target_table: m for m in mappings}
 
+        fixer_agent = None
+        fixer_run_kwargs = None
+        if self.config.fixer_model is not None:
+            fixer_llm = api.make_llm(self.config.fixer_model, role="fixer")
+            fixer_agent = make_table_agent(
+                fixer_llm,
+                api=api,
+                enable_query_tool=(self.config.context_mode == "live_query_tool"),
+                max_query_tool_rows=self.config.max_query_tool_rows,
+            )
+            fixer_run_kwargs = google_run_kwargs(self.config.fixer_model)
+
         dbt_ok = True
         if self.config.enable_self_correction:
             dbt_ok = await run_dbt_self_correction(
@@ -75,6 +89,9 @@ class StructuredPerTable:
                 max_passes=self.config.max_self_correction_passes,
                 serial=self.config.serial_llm_calls,
                 run_kwargs=writer_run_kwargs,
+                fixer_agent=fixer_agent,
+                fixer_run_kwargs=fixer_run_kwargs,
+                validation_gate=self.config.validation_gate,
             )
 
         manifest = manifest_from_mappings(
