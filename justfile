@@ -151,3 +151,12 @@ repro run_id campaign:
 
 clean-workspace:
   rm -rf aidmi_workspace
+
+# Run the hard-fixture ISE campaign (needs the SSH tunnel up on :4000).
+bench-hard-ise:
+  #!/usr/bin/env bash
+  set -euo pipefail
+  test -f .env || cp -n .env.example .env
+  camp_id=$({{orch}} campaign new hard-ise | awk '{print $3}')
+  cp benchmarks/grids/hard-ise.yaml "{{benchmarks}}/$camp_id/grid.yaml"
+  {{orch}} sweep --campaign "{{benchmarks}}/$camp_id" --resume
