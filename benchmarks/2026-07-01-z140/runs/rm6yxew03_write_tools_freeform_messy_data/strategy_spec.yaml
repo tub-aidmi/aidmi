@@ -1,0 +1,21 @@
+name: freeform_ise_academicfix
+strategy: write_tools_freeform
+config:
+  writer_model:
+    provider: litellm
+    model_name: ise-ollama/qwen3.6:35b-a3b
+    base_url: http://localhost:4000/v1
+    api_key_env: LITELLM_API_KEY
+  fixer_model:
+    provider: litellm
+    model_name: academic/qwen3.5-397b-a17b
+    base_url: http://localhost:4000/v1
+    api_key_env: LITELLM_API_KEY
+  context_mode: live_query_tool
+  samples_per_table: 5
+  max_query_tool_rows: 150
+  enable_self_correction: true
+  inline_run_dbt_tool: true
+  validation_gate: static
+  max_tool_turns: 50
+  max_self_correction_passes: 6
