@@ -11,12 +11,6 @@ SELECT
 FROM {{ source('fixture_messy_data_src', 'Account') }}
 """
 
-LEAKED_FILENAME = """\
-{{ config(materialized='table') }}
-SELECT *
-FROM normalize_opportunity.sql
-"""
-
 DANGLING_PAREN = """\
 {{ config(materialized='table') }}
 SELECT "Id" AS "Id",
@@ -39,6 +33,10 @@ def test_dangling_paren_flagged():
 
 def test_empty_after_strip_flagged():
     assert validate_model_sql("{{ config(materialized='table') }}") != []
+
+def test_deeply_nested_parens_flagged():
+    sql = "SELECT " + "(" * 300 + "1" + ")" * 300
+    assert validate_model_sql(sql) != []
 
 def test_validate_models_returns_only_failing():
     result = validate_models({"Account": VALID, "Opportunity": DANGLING_PAREN})

@@ -1,3 +1,9 @@
+"""Static SQL validation gate: strip dbt Jinja, then parse with sqlglot.
+
+Catches parse-level malformed SQL (dangling parens, broken syntax) cheaply
+before a dbt round-trip. It does NOT catch semantically-valid-but-wrong SQL
+(e.g. a leaked `foo.sql` filename parses as schema.table) — dbt remains the
+source of truth for those."""
 from __future__ import annotations
 
 import re
@@ -25,7 +31,7 @@ def validate_model_sql(sql: str) -> list[str]:
         return ["model SQL is empty after removing dbt Jinja"]
     try:
         statements = sqlglot.parse(stripped, dialect="postgres")
-    except ParseError as exc:
+    except (ParseError, RecursionError) as exc:
         return [f"SQL parse error: {exc}"]
     if not any(statements):
         return ["no parseable SQL statement found"]
