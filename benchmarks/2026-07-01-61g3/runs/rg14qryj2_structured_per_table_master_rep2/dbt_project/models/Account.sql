@@ -1,0 +1,1 @@
+-- model failed to produce structured output: Exceeded maximum output retries (3)
