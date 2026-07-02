@@ -8,7 +8,7 @@ from pydantic_ai import Agent
 from aidmi_orchestrator.domain import ModelSpec, StrategyResult
 from aidmi_orchestrator.strategy.base import build_context_prompt, run_coroutines, write_proposal
 from aidmi_orchestrator.strategy.structured_common import (
-    generate_table_mapping_safe, make_table_agent, manifest_from_mappings, TableMapping,
+    generate_table_mapping_safe, make_table_agent, manifest_from_mappings, resolve_structured_status, TableMapping,
 )
 from aidmi_orchestrator.strategy.write_then_critique.critique import (
     CritiqueReport, run_critique_rounds,
@@ -138,7 +138,10 @@ class WriteThenCritique:
             strategy_name=self.name,
             strategy_config=self.config.model_dump(),
         )
-        status = "complete" if approved and dbt_ok else "partial"
+        if mappings and all(m.generation_failed for m in mappings.values()):
+            status = "errored"
+        else:
+            status = "complete" if approved and dbt_ok else "partial"
         return StrategyResult(
             target_tables_written=list(sql_by_table),
             target_schema=api.target_schema,

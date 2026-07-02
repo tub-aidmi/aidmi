@@ -85,7 +85,7 @@ class StrategyResult(BaseModel):
     target_tables_written: list[str]
     target_schema: TargetSchema | None = None
     manifest: MappingManifest | None = None
-    self_reported_status: Literal["complete", "partial", "gave_up"]
+    self_reported_status: Literal["complete", "partial", "gave_up", "errored"]
 
 
 # ---------- Provenance ----------

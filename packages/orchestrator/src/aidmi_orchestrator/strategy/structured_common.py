@@ -62,6 +62,7 @@ class TableMapping(BaseModel):
     dbt_sql: str
     column_notes: list[ColumnNoteOut]
     reasoning: str = ""
+    generation_failed: bool = False
 
 
 def make_table_agent(
@@ -110,7 +111,14 @@ async def generate_table_mapping_safe(
             dbt_sql=f"-- model failed to produce structured output: {exc}",
             column_notes=[],
             reasoning=f"structured output generation failed: {exc}",
+            generation_failed=True,
         )
+
+
+def resolve_structured_status(mappings: list[TableMapping], dbt_ok: bool) -> str:
+    if mappings and all(m.generation_failed for m in mappings):
+        return "errored"
+    return "complete" if dbt_ok else "partial"
 
 
 def manifest_from_mappings(

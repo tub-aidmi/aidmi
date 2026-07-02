@@ -6,7 +6,7 @@ from pydantic import BaseModel
 from aidmi_orchestrator.domain import ModelSpec, StrategyResult
 from aidmi_orchestrator.strategy.base import build_context_prompt, run_coroutines, write_proposal
 from aidmi_orchestrator.strategy.structured_common import (
-    generate_table_mapping_safe, make_table_agent, manifest_from_mappings,
+    generate_table_mapping_safe, make_table_agent, manifest_from_mappings, resolve_structured_status,
 )
 from aidmi_orchestrator.strategy.llm_run import google_run_kwargs
 from aidmi_orchestrator.strategy.self_correction import run_dbt_self_correction
@@ -104,5 +104,5 @@ class StructuredPerTable:
             target_tables_written=list(sql_by_table),
             target_schema=api.target_schema,
             manifest=manifest,
-            self_reported_status="complete" if dbt_ok else "partial",
+            self_reported_status=resolve_structured_status(list(mappings_by_table.values()), dbt_ok),
         )
