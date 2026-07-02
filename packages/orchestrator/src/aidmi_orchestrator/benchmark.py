@@ -121,6 +121,8 @@ def sweep_job_status(result: BenchmarkResult) -> str:
     if result.error:
         return "ERROR"
     status = result.strategy_result.self_reported_status
+    if status == "errored":
+        return "ERRORED"
     if status == "gave_up":
         return "GAVE_UP"
     if status == "partial":

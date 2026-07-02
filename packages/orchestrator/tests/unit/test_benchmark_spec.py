@@ -227,6 +227,9 @@ def _bench_result(**kwargs) -> BenchmarkResult:
 def test_sweep_job_status():
     assert sweep_job_status(_bench_result(error="boom")) == "ERROR"
     assert sweep_job_status(_bench_result(
+        strategy_result=StrategyResult(target_tables_written=[], self_reported_status="errored"),
+    )) == "ERRORED"
+    assert sweep_job_status(_bench_result(
         strategy_result=StrategyResult(target_tables_written=[], self_reported_status="gave_up"),
     )) == "GAVE_UP"
     assert sweep_job_status(_bench_result(
