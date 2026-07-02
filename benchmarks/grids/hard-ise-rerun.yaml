@@ -1,0 +1,45 @@
+fixture:
+  - master
+  - messy_data
+runs_per_cell: 3
+concurrency: 1
+per_model_exclusive: true
+exclusive_model_prefixes: ["ise-"]
+
+models:
+  qwen35b:
+    provider: litellm
+    model_name: ise-ollama/qwen3.6:35b-a3b
+    base_url: http://localhost:4000/v1
+    api_key_env: LITELLM_API_KEY
+  academic397b:
+    provider: litellm
+    model_name: academic/qwen3.5-397b-a17b
+    base_url: http://localhost:4000/v1
+    api_key_env: LITELLM_API_KEY
+
+cells:
+  - name: structured_ise_selfheal
+    strategy: structured_per_table
+    config:
+      writer_model: qwen35b
+      fixer_model: qwen35b
+      context_mode: live_query_tool
+      samples_per_table: 5
+      max_query_tool_rows: 150
+      enable_self_correction: true
+      validation_gate: static
+      max_self_correction_passes: 6
+      serial_llm_calls: true
+  - name: structured_ise_academicfix
+    strategy: structured_per_table
+    config:
+      writer_model: qwen35b
+      fixer_model: academic397b
+      context_mode: live_query_tool
+      samples_per_table: 5
+      max_query_tool_rows: 150
+      enable_self_correction: true
+      validation_gate: static
+      max_self_correction_passes: 6
+      serial_llm_calls: true
