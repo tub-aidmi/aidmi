@@ -1,0 +1,1 @@
+-- model failed to produce structured output: status_code: 400, model_name: ise-ollama/qwen3.6:35b-a3b, body: {'message': 'Budget has been exceeded! Team=56cd7786-0b5d-42aa-a52f-c379a5bbd5ae Current cost: 50.05355999999998, Max budget: 50.0', 'type': 'budget_exceeded', 'param': None, 'code': '400'}
