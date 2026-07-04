@@ -1,0 +1,88 @@
+fixture:
+  - master_v2
+  - messy_data_v2
+  - missing_relations_v2
+  - wrong_field_names_v2
+runs_per_cell: 3
+concurrency: 6
+per_model_exclusive: false
+exclusive_model_prefixes: []
+
+models:
+  gemini25flash:
+    provider: google_cloud
+    model_name: gemini-2.5-flash
+    api_key_env: GOOGLE_API_KEY
+    extra:
+      google_thinking_config:
+        thinking_budget: 2048
+
+cells:
+  - name: structured_per_table
+    strategy: structured_per_table
+    config:
+      writer_model: gemini25flash
+      context_mode: [metadata_only, live_query_tool]
+      enable_self_correction: [false, true]
+      max_self_correction_passes: 5
+      validation_gate: static
+
+  - name: write_tools_freeform
+    strategy: write_tools_freeform
+    config:
+      writer_model: gemini25flash
+      context_mode: [metadata_only, live_query_tool]
+      max_tool_turns: 40
+      enable_self_correction: [false, true]
+      max_self_correction_passes: 5
+      inline_run_dbt_tool: false
+
+  - name: write_tools_freeform_inline_dbt
+    strategy: write_tools_freeform
+    config:
+      writer_model: gemini25flash
+      context_mode: [metadata_only, live_query_tool]
+      max_tool_turns: 40
+      enable_self_correction: true
+      max_self_correction_passes: 5
+      inline_run_dbt_tool: true
+
+  - name: plan_then_execute
+    strategy: plan_then_execute
+    config:
+      planner_model: gemini25flash
+      writer_model: gemini25flash
+      context_mode: [metadata_only, live_query_tool]
+      enable_self_correction: [false, true]
+      max_self_correction_passes: 5
+
+  - name: write_then_critique
+    strategy: write_then_critique
+    config:
+      writer_model: gemini25flash
+      critic_model: gemini25flash
+      context_mode: [metadata_only, live_query_tool]
+      enable_self_correction: [false, true]
+      max_self_correction_passes: 5
+      max_critique_rounds: 3
+
+  - name: plan_write_critique
+    strategy: plan_write_critique
+    config:
+      planner_model: gemini25flash
+      writer_model: gemini25flash
+      critic_model: gemini25flash
+      context_mode: [metadata_only, live_query_tool]
+      max_dbt_correction_initial: 5
+      max_critique_rounds: 3
+      max_dbt_correction_per_critique: 3
+
+  - name: ensemble_vote
+    strategy: ensemble_vote
+    config:
+      writer_model: gemini25flash
+      judge_model: gemini25flash
+      context_mode: [metadata_only, live_query_tool]
+      enable_self_correction: [false, true]
+      max_self_correction_passes: 5
+      n_candidates: 3
