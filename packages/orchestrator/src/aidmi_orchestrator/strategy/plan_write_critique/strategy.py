@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from datetime import datetime
+from typing import Literal
 
 from pydantic import BaseModel, Field
 from pydantic_ai import Agent, Tool
@@ -9,13 +10,17 @@ from pydantic_ai import Agent, Tool
 from aidmi_orchestrator.domain import ModelSpec, StrategyResult
 from aidmi_orchestrator.progress import log_message
 from aidmi_orchestrator.strategy.base import build_context_prompt, run_coroutines, run_named_coroutines, write_proposal
-from aidmi_orchestrator.strategy.plan_then_execute.prompts import executor_user_prompt
+from aidmi_orchestrator.strategy.plan_then_execute.prompts import (
+    PLANNER_SYSTEM_PROMPT as PLANNER_SYSTEM_PROMPT_METADATA,
+    executor_user_prompt,
+)
 from aidmi_orchestrator.strategy.plan_then_execute.strategy import MappingPlan, plan_slice_text
 from aidmi_orchestrator.strategy.plan_write_critique.loops import (
     retry_failing_tables_with_progress,
     run_critique_with_dbt_loop,
 )
 from aidmi_orchestrator.strategy.plan_write_critique.prompts import (
+    CRITIC_SYSTEM_PROMPT,
     CRITIC_SYSTEM_PROMPT_WITH_QUERY_TOOL,
     critique_user_prompt,
     planner_user_prompt,
@@ -44,6 +49,7 @@ class PlanWriteCritiqueConfig(BaseModel):
     max_dbt_correction_initial: int = Field(default=3, ge=0)
     max_critique_rounds: int = Field(default=2, ge=1)
     max_dbt_correction_per_critique: int = Field(default=2, ge=0)
+    context_mode: Literal["metadata_only", "metadata_plus_samples", "live_query_tool"] = "live_query_tool"
     samples_per_table: int = 3
     max_query_tool_rows: int = 100
     serial_llm_calls: bool = False
@@ -68,15 +74,17 @@ class PlanWriteCritique:
         writer = api.make_llm(writer_spec, role="writer")
         critic = api.make_llm(critic_spec, role="critic")
 
+        live_query = self.config.context_mode == "live_query_tool"
         context = build_context_prompt(
             api.source_summary,
             api.target_schema,
-            mode="live_query_tool",
+            self.config.context_mode,
             samples_per_table=self.config.samples_per_table,
         )
 
         log_progress("Calling planner model to create mapping plan...")
-        planner_agent = Agent(planner, output_type=MappingPlan, system_prompt=PLANNER_SYSTEM_PROMPT)
+        planner_system = PLANNER_SYSTEM_PROMPT if live_query else PLANNER_SYSTEM_PROMPT_METADATA
+        planner_agent = Agent(planner, output_type=MappingPlan, system_prompt=planner_system)
         plan = (await planner_agent.run(planner_user_prompt(context))).output
         target_table_names = [t.name for t in api.target_schema.tables]
         planned = {t.target_table for t in plan.tables}
@@ -104,7 +112,7 @@ class PlanWriteCritique:
         writer_agent = make_table_agent(
             writer,
             api=api,
-            enable_query_tool=True,
+            enable_query_tool=live_query,
             max_query_tool_rows=self.config.max_query_tool_rows,
         )
 
@@ -207,11 +215,18 @@ class PlanWriteCritique:
             data={"success": initial_dbt_ok if initial_dbt_ok is not None else True},
         ))
 
+        critic_tools = (
+            [Tool(make_query_postgres(api, self.config.max_query_tool_rows), name="query_postgres")]
+            if live_query
+            else []
+        )
         critic_agent = Agent(
             critic,
             output_type=CritiqueReport,
-            system_prompt=CRITIC_SYSTEM_PROMPT_WITH_QUERY_TOOL,
-            tools=[Tool(make_query_postgres(api, self.config.max_query_tool_rows), name="query_postgres")],
+            system_prompt=(
+                CRITIC_SYSTEM_PROMPT_WITH_QUERY_TOOL if live_query else CRITIC_SYSTEM_PROMPT
+            ),
+            tools=critic_tools,
         )
 
         async def critique(current: dict[str, TableMapping]) -> CritiqueReport:
@@ -221,6 +236,7 @@ class PlanWriteCritique:
                     render_proposal(current),
                     api.out_schema,
                     target_table_names,
+                    with_query_tool=live_query,
                 )
             )
             api.trace.record(StrategyEvent(

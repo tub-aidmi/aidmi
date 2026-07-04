@@ -74,6 +74,15 @@ def test_config_defaults_and_model_fallbacks() -> None:
     assert cfg.max_dbt_correction_initial == 3
     assert cfg.max_critique_rounds == 2
     assert cfg.max_dbt_correction_per_critique == 2
+    assert cfg.context_mode == "live_query_tool"
+
+
+def test_config_accepts_context_mode() -> None:
+    cfg = PlanWriteCritiqueConfig(
+        planner_model=ModelSpec(provider="litellm", model_name="planner"),
+        context_mode="metadata_only",
+    )
+    assert cfg.context_mode == "metadata_only"
 
 
 def test_config_rejects_zero_critique_rounds() -> None:
