@@ -141,10 +141,19 @@ def sql_val(v: Any) -> str:
     return "'" + str(v).replace("'", "''") + "'"
 
 
-def format_inserts(table: str, columns: list[str], rows: list[tuple[Any, ...]]) -> str:
+def format_inserts(
+    table: str,
+    columns: list[str],
+    rows: list[tuple[Any, ...]],
+    *,
+    quote_columns: bool = False,
+) -> str:
     if not rows:
         return ""
-    col_list = ", ".join(f'"{c.strip(chr(34))}"' for c in columns)
+    if quote_columns:
+        col_list = ", ".join(f'"{c.strip(chr(34))}"' for c in columns)
+    else:
+        col_list = ", ".join(columns)
     value_lines = []
     for row in rows:
         vals = ", ".join(sql_val(v) for v in row)
@@ -532,6 +541,7 @@ def write_destination_pg(data: dict[str, list[dict[str, Any]]], golden_schema: s
                 "Legacy_Customer_ID__c",
             ],
             account_rows,
+            quote_columns=True,
         ),
         format_inserts(
             '"Contact"',
@@ -548,6 +558,7 @@ def write_destination_pg(data: dict[str, list[dict[str, Any]]], golden_schema: s
                 "Legacy_Contact_ID__c",
             ],
             contact_rows,
+            quote_columns=True,
         ),
         format_inserts(
             '"Opportunity"',
@@ -562,6 +573,7 @@ def write_destination_pg(data: dict[str, list[dict[str, Any]]], golden_schema: s
                 "Legacy_Opportunity_ID__c",
             ],
             opp_rows,
+            quote_columns=True,
         ),
         format_inserts(
             '"Project__c"',
@@ -575,6 +587,7 @@ def write_destination_pg(data: dict[str, list[dict[str, Any]]], golden_schema: s
                 "Legacy_Project_ID__c",
             ],
             proj_rows,
+            quote_columns=True,
         ),
         format_inserts(
             '"Installed_Asset__c"',
@@ -588,6 +601,7 @@ def write_destination_pg(data: dict[str, list[dict[str, Any]]], golden_schema: s
                 "Legacy_Asset_ID__c",
             ],
             asset_rows,
+            quote_columns=True,
         ),
         GROUND_TRUTH_DDL_PG,
         format_inserts(
