@@ -7,12 +7,22 @@ from aidmi_orchestrator.fixtures.base import Fixture, register_fixture
 
 DEFAULT_EVALUATORS = ["execution", "llm_usage", "schema"]
 
+DEFAULT_EVALUATORS_V2 = [
+    "execution",
+    "llm_usage",
+    "schema",
+    "ground_truth_recall",
+    "ground_truth_notes",
+    "ground_truth_field_accuracy",
+]
+
 
 def register_sql_fixture(
     name: str,
     description: str,
     *,
     evaluators: list[str] | None = None,
+    golden_schema: str | None = None,
 ) -> None:
     here = Path(__file__).parent / name
     register_fixture(
@@ -25,5 +35,6 @@ def register_sql_fixture(
             target_schema_path=here / "target_schema.json",
             reference_dbt_path=None,
             applicable_evaluators=evaluators or DEFAULT_EVALUATORS,
+            golden_schema=golden_schema,
         )
     )

@@ -71,6 +71,35 @@ def test_mock_strategy_registered_and_instantiable():
 
 def test_sql_fixtures_all_registered():
     import aidmi_orchestrator.fixtures  # noqa: F401
-    for name in ("mock", "master", "wrong_field_names", "messy_data", "missing_relations"):
+    for name in (
+        "mock",
+        "master",
+        "wrong_field_names",
+        "messy_data",
+        "missing_relations",
+        "wrong_field_names_v2",
+        "messy_data_v2",
+        "missing_relations_v2",
+        "master_v2",
+    ):
         fx = get_fixture(name)
         assert fx.source_schema == f"fixture_{name}_src"
+
+
+def test_v2_fixtures_have_golden_schema_and_ground_truth():
+    import aidmi_orchestrator.fixtures  # noqa: F401
+    for name in (
+        "wrong_field_names_v2",
+        "messy_data_v2",
+        "missing_relations_v2",
+        "master_v2",
+    ):
+        fx = get_fixture(name)
+        assert fx.golden_schema == f"fixture_{name}_golden"
+        assert fx.source_sql_path.exists()
+        assert fx.destination_sql_path.exists()
+        assert fx.target_schema_path is not None and fx.target_schema_path.exists()
+        assert "_ground_truth" in fx.destination_sql_path.read_text(encoding="utf-8")
+        assert "ground_truth_recall" in fx.applicable_evaluators
+        assert "ground_truth_notes" in fx.applicable_evaluators
+        assert "ground_truth_field_accuracy" in fx.applicable_evaluators

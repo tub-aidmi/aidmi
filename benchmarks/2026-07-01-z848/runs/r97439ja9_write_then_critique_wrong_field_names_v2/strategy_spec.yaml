@@ -1,0 +1,21 @@
+name: write_then_critique
+strategy: write_then_critique
+config:
+  writer_model:
+    provider: google_cloud
+    model_name: gemini-2.5-flash
+    api_key_env: GOOGLE_API_KEY
+    extra:
+      google_thinking_config:
+        thinking_budget: 2048
+  critic_model:
+    provider: google_cloud
+    model_name: gemini-2.5-flash
+    api_key_env: GOOGLE_API_KEY
+    extra:
+      google_thinking_config:
+        thinking_budget: 2048
+  context_mode: live_query_tool
+  max_critique_rounds: 2
+  enable_self_correction: true
+  max_self_correction_passes: 5

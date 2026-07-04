@@ -38,6 +38,8 @@ def retry_correction_reminder() -> str:
         "When fixing errors:",
         "- Ensure every mixed-case output column uses a double-quoted alias: `expr AS \"ColumnName\"`.",
         "- Ensure every CAST includes `AS <type>`: `CAST(expr AS DOUBLE PRECISION)`, not `CAST(expr)`.",
+        "- Populate every `Legacy_*__c` column from the source natural key — evaluators join on these.",
+        "- `AccountId` / `Account__c` must reference the Salesforce Account `Id`, not raw source customer numbers.",
         POSTGRES_SQL_GUIDELINES,
     )
 
@@ -78,7 +80,7 @@ def freeform_system_prompt(
         + "\n".join(tool_lines)
         + "\n\n"
         "Layout you must produce:\n"
-        "- models/<target_table>.sql — one per target table\n"
+        "- models/<target_table>.sql — one per target table (paths are relative to the dbt project root, not dbt_project/models/)\n"
         "- models/sources.yml — declare every source used by your models\n\n"
         "Raw source data lives in the physical Postgres source schema shown in context. "
         "Transformed dbt models materialize into a per-run output schema at run time."

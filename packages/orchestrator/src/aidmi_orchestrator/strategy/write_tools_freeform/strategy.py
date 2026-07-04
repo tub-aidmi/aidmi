@@ -12,6 +12,7 @@ from aidmi_orchestrator.domain import ModelSpec, StrategyResult
 from aidmi_orchestrator.progress import log_message
 from aidmi_orchestrator.strategy.base import (
     build_context_prompt,
+    discover_model_sql_files,
 )
 from aidmi_orchestrator.strategy.llm_run import google_run_kwargs
 from aidmi_orchestrator.strategy.write_tools_freeform.prompts import (
@@ -93,9 +94,7 @@ class WriteToolsFreeform:
 
         models_dir = api.dbt_project_path / "models"
         ensure_sources_yaml_raw_schema(models_dir, api.source_schema)
-        produced = [
-            p.stem for p in models_dir.glob("*.sql")
-        ] if models_dir.exists() else []
+        produced = [p.stem for p in discover_model_sql_files(api.dbt_project_path)]
         log_message(f"agent finished: {len(produced)} model(s) written", scope=self.name)
 
         fixer_agent = None

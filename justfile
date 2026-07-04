@@ -49,6 +49,9 @@ gen-target-schema fixture:
 gen-target-schema-file input output:
   {{orch-py}} python -m aidmi_orchestrator.scripts.gen_target_schema --input {{input}} --output {{output}}
 
+build-fixtures:
+  {{orch-py}} python -m aidmi_orchestrator.scripts.build_fixtures
+
 # --- Tests ---
 
 test-pipeline:

@@ -125,6 +125,7 @@ async def run_orchestrator(
         description=fixture.description,
         reference_dbt_path=fixture.reference_dbt_path,
         applicable_evaluators=fixture.applicable_evaluators,
+        golden_schema=fixture.golden_schema,
     )
     return RunArtifacts(
         run_id=run_id,

@@ -11,6 +11,7 @@ from datetime import datetime
 
 import psycopg2
 
+from aidmi_orchestrator.strategy.sql_sanitize import sanitize_dbt_sql, validate_dbt_sql
 from aidmi_orchestrator.trace import ToolCallEvent
 
 
@@ -22,9 +23,39 @@ def _ensure_under(root: Path, candidate: str) -> Path:
     return p
 
 
+def _reject_nested_dbt_project_path(path: str) -> str | None:
+    if "dbt_project" in Path(path).parts:
+        return (
+            f"ERROR: path {path!r} must not include 'dbt_project/'. "
+            "Use models/<Table>.sql relative to the project root."
+        )
+    return None
+
+
 def make_write_file(api):
     async def write_file(path: str, content: str) -> str:
         start = time.perf_counter()
+        nested_err = _reject_nested_dbt_project_path(path)
+        if nested_err:
+            latency_ms = (time.perf_counter() - start) * 1000
+            api.trace.record(ToolCallEvent(
+                timestamp=datetime.utcnow(), tool_name="write_file",
+                args={"path": path, "size": len(content)}, result=nested_err,
+                latency_ms=latency_ms,
+            ))
+            return nested_err
+        if path.endswith(".sql"):
+            content = sanitize_dbt_sql(content)
+            validation_err = validate_dbt_sql(content)
+            if validation_err:
+                latency_ms = (time.perf_counter() - start) * 1000
+                msg = f"ERROR: {validation_err} Fix the SQL and try again."
+                api.trace.record(ToolCallEvent(
+                    timestamp=datetime.utcnow(), tool_name="write_file",
+                    args={"path": path, "size": len(content)}, result=msg,
+                    latency_ms=latency_ms,
+                ))
+                return msg
         try:
             target = _ensure_under(api.dbt_project_path, path)
             target.parent.mkdir(parents=True, exist_ok=True)
