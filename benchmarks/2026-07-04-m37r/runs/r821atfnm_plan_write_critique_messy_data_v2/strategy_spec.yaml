@@ -1,0 +1,27 @@
+name: plan_write_critique
+strategy: plan_write_critique
+config:
+  planner_model:
+    provider: google_cloud
+    model_name: gemini-2.5-flash
+    api_key_env: GOOGLE_API_KEY
+    extra:
+      google_thinking_config:
+        thinking_budget: 2048
+  writer_model:
+    provider: google_cloud
+    model_name: gemini-2.5-flash
+    api_key_env: GOOGLE_API_KEY
+    extra:
+      google_thinking_config:
+        thinking_budget: 2048
+  critic_model:
+    provider: google_cloud
+    model_name: gemini-2.5-flash
+    api_key_env: GOOGLE_API_KEY
+    extra:
+      google_thinking_config:
+        thinking_budget: 2048
+  max_dbt_correction_initial: 5
+  max_critique_rounds: 3
+  max_dbt_correction_per_critique: 3
