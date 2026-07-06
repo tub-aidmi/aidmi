@@ -27,6 +27,9 @@ def test_write_tools_freeform_google_cloud_smoke(staging_db_url, tmp_path):
             "provider": "google_cloud",
             "model_name": "gemini-2.5-flash",
             "api_key_env": "GOOGLE_API_KEY",
+            "extra": {
+                "google_thinking_config": {"thinking_budget": 2048},
+            },
         },
         "context_mode": "metadata_plus_samples",
         "samples_per_table": 3,
@@ -40,6 +43,10 @@ def test_write_tools_freeform_google_cloud_smoke(staging_db_url, tmp_path):
 
     assert result.error is None, f"orchestrator errored: {result.error}"
     assert result.strategy_result.target_tables_written
-    assert result.metrics.get("manifest_present") is True
     assert result.metrics["llm_calls_total"] >= 1
     assert result.metrics["dollar_cost_total"] >= 0
+    assert "tokens_thoughts_total" in result.metrics
+    assert "context_utilization_peak" in result.metrics
+    assert "usage_details_total" in result.metrics
+    assert result.metrics["tokens_thoughts_total"] >= 0
+    assert result.metrics["context_utilization_peak"] >= 0

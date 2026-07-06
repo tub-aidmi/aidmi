@@ -113,6 +113,54 @@ from pydantic_ai.messages import ModelResponse, ModelMessage
 from pydantic_ai.settings import ModelSettings
 
 
+def _base_usage_dict(response: ModelResponse) -> dict[str, Any]:
+    u = response.usage
+    if u is None:
+        return {
+            "input_tokens": 0,
+            "output_tokens": 0,
+            "cache_read_tokens": 0,
+            "cache_write_tokens": 0,
+        }
+    return {
+        "input_tokens": getattr(u, "input_tokens", 0) or 0,
+        "output_tokens": getattr(u, "output_tokens", 0) or 0,
+        "cache_read_tokens": getattr(u, "cache_read_tokens", 0) or 0,
+        "cache_write_tokens": getattr(u, "cache_write_tokens", 0) or 0,
+    }
+
+
+def _usage_dict(response: ModelResponse) -> dict[str, Any]:
+    usage = _base_usage_dict(response)
+    try:
+        u = response.usage
+        if u is not None:
+            raw_details = getattr(u, "details", None) or {}
+            if isinstance(raw_details, dict) and raw_details:
+                details: dict[str, int | float] = {}
+                for key, value in raw_details.items():
+                    if isinstance(value, (int, float)) and not isinstance(value, bool):
+                        details[str(key)] = value
+                if details:
+                    usage["details"] = details
+        vendor_details = (
+            getattr(response, "provider_details", None)
+            or getattr(response, "vendor_details", None)
+            or {}
+        )
+        if isinstance(vendor_details, dict) and vendor_details:
+            vendor: dict[str, str] = {}
+            for key in ("traffic_type", "service_tier"):
+                value = vendor_details.get(key)
+                if isinstance(value, str) and value:
+                    vendor[key] = value
+            if vendor:
+                usage["vendor"] = vendor
+    except Exception:
+        pass
+    return usage
+
+
 @dataclasses.dataclass(init=False)
 class TracedModel(WrapperModel):
     """Wraps a PydanticAI Model via WrapperModel. Every request() call records an LlmCallEvent."""
@@ -136,13 +184,7 @@ class TracedModel(WrapperModel):
         start = time.perf_counter()
         response = await self.wrapped.request(messages, model_settings, model_request_parameters)
         latency_ms = (time.perf_counter() - start) * 1000
-        u = response.usage
-        usage_dict = {
-            "input_tokens": u.input_tokens,
-            "output_tokens": u.output_tokens,
-            "cache_read_tokens": u.cache_read_tokens,
-            "cache_write_tokens": u.cache_write_tokens,
-        }
+        usage_dict = _usage_dict(response)
         self._trace.record(LlmCallEvent(
             timestamp=datetime.utcnow(),
             role=self._role,

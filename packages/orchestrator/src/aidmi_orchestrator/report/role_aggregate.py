@@ -14,6 +14,7 @@ ROLE_ORDER = ("writer", "planner", "critic", "judge")
 ROLE_STACKED_METRICS = (
     "tokens_input_by_role",
     "tokens_output_by_role",
+    "tokens_thoughts_by_role",
     "llm_calls_by_role",
     "latency_ms_sum_by_role",
 )

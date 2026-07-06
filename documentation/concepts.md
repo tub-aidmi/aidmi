@@ -73,13 +73,13 @@ Metric names are free-form. Each evaluator emits whatever keys it wants; the har
 | Name | When it runs | Sample metrics |
 |------|--------------|----------------|
 | `execution` | Always | `dbt_success`, `dbt_models_succeeded/failed`, `dbt_error_messages` |
-| `llm_usage` | Trace contains LLM call events | `llm_calls_by_role`, `tokens_input_total`, `tokens_input_cached`, `cache_hit_rate`, `dollar_cost_total`, `dollar_cost_by_role`, `latency_ms_p95_by_role` |
+| `llm_usage` | Trace contains LLM call events | `llm_calls_by_role`, `tokens_input_total`, `tokens_input_peak`, `tokens_thoughts_total`, `context_utilization_peak`, `tokens_input_cached`, `cache_hit_rate`, `dollar_cost_total`, `dollar_cost_by_role`, `latency_ms_p95_by_role` |
 | `schema` | Always | `produced_column_count`, `produced_type_histogram`; coverage metrics when a target schema is available |
 | `row_equality` | Fixture has a reference dbt project | `row_count_match`, `row_set_diff_count`, per-table `column_value_match_rate` |
 | `manifest_quality` | Strategy produced a `MappingManifest` | Scores the per-column mapping notes for completeness and specificity. |
 | `data_preservation` | Always | Checks that non-nullable source columns appear in at least one output model; flags columns dropped without a note. |
 
-`llm_usage` prices each call using LiteLLM's `model_cost` table. For models LiteLLM does not know about (custom Ollama tags, internal proxies), an optional `configs/pricing.json` override file maps `provider/model_name` to per-token rates.
+`llm_usage` prices each call using LiteLLM's `model_cost` table. For models LiteLLM does not know about (custom Ollama tags, internal proxies), an optional `configs/pricing.json` override file maps `provider/model_name` to per-token rates. Gemini-specific fields (`thoughts_tokens`, modality breakdowns, `traffic_type`) are captured best-effort from PydanticAI `usage.details` and default to 0 when the provider omits them; missing data never fails a run.
 
 ## Fixture
 

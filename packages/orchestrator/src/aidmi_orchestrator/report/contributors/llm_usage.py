@@ -10,6 +10,8 @@ class LlmUsageContributor:
             MetricDescriptor("llm_calls_total", "count", headline=True, plot_scopes=g),
             MetricDescriptor("tokens_input_total", "tokens", headline=True, plot_scopes=g),
             MetricDescriptor("tokens_output_total", "tokens", headline=True, plot_scopes=g),
+            MetricDescriptor("tokens_thoughts_total", "tokens", headline=True, plot_scopes=g),
+            MetricDescriptor("context_utilization_peak", "ratio", headline=True, plot_scopes=g),
             MetricDescriptor("dollar_cost_total", "cost", headline=True, plot_scopes=g),
         ]
 

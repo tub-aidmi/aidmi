@@ -80,6 +80,111 @@ def test_llm_usage_evaluator_aggregates_by_role():
     assert out["latency_ms_p50_by_role"]["writer"] >= 0
     assert "writer" in out["latency_ms_p95_by_role"]
     assert out["latency_ms_p95_by_role"]["writer"] >= 0
+    assert out["tokens_thoughts_total"] == 0
+    assert out["tokens_tool_use_prompt_total"] == 0
+    assert out["tokens_input_peak"] == 1000
+    assert out["context_utilization_peak"] >= 0
+    assert out["usage_details_total"] == {}
+
+
+def test_llm_usage_evaluator_gemini_details():
+    trace = [
+        LlmCallEvent(
+            timestamp=datetime.utcnow(),
+            role="writer",
+            model_spec=ModelSpec(provider="google_cloud", model_name="gemini-2.5-flash"),
+            messages=[], response="ok",
+            usage={
+                "input_tokens": 2000,
+                "output_tokens": 400,
+                "cache_read_tokens": 100,
+                "details": {
+                    "thoughts_tokens": 50,
+                    "tool_use_prompt_tokens": 25,
+                    "text_prompt_tokens": 1800,
+                },
+                "vendor": {"traffic_type": "ON_DEMAND"},
+            },
+            latency_ms=100.0,
+        ),
+        LlmCallEvent(
+            timestamp=datetime.utcnow(),
+            role="planner",
+            model_spec=ModelSpec(provider="google_cloud", model_name="gemini-2.5-flash"),
+            messages=[], response="ok",
+            usage={
+                "input_tokens": 5000,
+                "output_tokens": 200,
+                "details": {"thoughts_tokens": 10},
+            },
+            latency_ms=50.0,
+        ),
+    ]
+    out = LlmUsageEvaluator().evaluate(_artifacts(trace=trace))
+    assert out["tokens_thoughts_total"] == 60
+    assert out["tokens_thoughts_by_role"] == {"writer": 50, "planner": 10}
+    assert out["tokens_tool_use_prompt_total"] == 25
+    assert out["tokens_input_peak"] == 5000
+    assert out["tokens_input_peak_by_role"] == {"writer": 2000, "planner": 5000}
+    assert out["usage_details_total"]["text_prompt_tokens"] == 1800
+    assert out["traffic_type_counts"] == {"ON_DEMAND": 1}
+    assert out["context_utilization_peak"] > 0
+    assert out["context_utilization_peak"] < 0.01
+    assert out["dollar_cost_total"] > 0
+
+
+def test_llm_usage_evaluator_legacy_usage_only():
+    trace = [
+        LlmCallEvent(
+            timestamp=datetime.utcnow(),
+            role="writer",
+            model_spec=ModelSpec(provider="openai", model_name="gpt-4o-mini"),
+            messages=[], response="ok",
+            usage={"input_tokens": 100, "output_tokens": 50, "cache_read_tokens": 0},
+            latency_ms=10.0,
+        ),
+    ]
+    out = LlmUsageEvaluator().evaluate(_artifacts(trace=trace))
+    assert out["tokens_thoughts_total"] == 0
+    assert out["tokens_tool_use_prompt_total"] == 0
+    assert out["tokens_input_peak"] == 100
+    assert out["usage_details_total"] == {}
+
+
+def test_llm_usage_evaluator_malformed_details():
+    trace = [
+        LlmCallEvent(
+            timestamp=datetime.utcnow(),
+            role="writer",
+            model_spec=ModelSpec(provider="openai", model_name="gpt-4o-mini"),
+            messages=[], response="ok",
+            usage={
+                "input_tokens": 100,
+                "output_tokens": 50,
+                "details": {"thoughts_tokens": "bad", "ok": 3},
+            },
+            latency_ms=10.0,
+        ),
+    ]
+    out = LlmUsageEvaluator().evaluate(_artifacts(trace=trace))
+    assert out["tokens_thoughts_total"] == 0
+    assert out["usage_details_total"] == {"ok": 3}
+
+
+def test_llm_usage_evaluator_unknown_model_no_context_limit():
+    trace = [
+        LlmCallEvent(
+            timestamp=datetime.utcnow(),
+            role="writer",
+            model_spec=ModelSpec(provider="corporate", model_name="totally-fake-nonexistent-zzz"),
+            messages=[], response="ok",
+            usage={"input_tokens": 999999, "output_tokens": 1},
+            latency_ms=10.0,
+        ),
+    ]
+    out = LlmUsageEvaluator().evaluate(_artifacts(trace=trace))
+    assert out["context_utilization_peak"] == 0.0
+    assert out["tokens_input_peak"] == 999999
 
 
 import psycopg2

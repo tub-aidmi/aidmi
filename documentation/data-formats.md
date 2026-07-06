@@ -280,7 +280,11 @@ The four built-in evaluators contribute the following:
 | `dbt_error_messages` | execution | List of error strings from failed models. |
 | `strategy_status` | execution | Echo of `strategy_result.self_reported_status`. |
 | `llm_calls_total`, `llm_calls_by_role` | llm_usage | Counts. |
-| `tokens_input_total`, `tokens_input_by_role`, `tokens_input_cached`, `tokens_input_uncached`, `tokens_output_total`, `tokens_output_by_role` | llm_usage | Token sums. |
+| `tokens_input_total`, `tokens_input_by_role`, `tokens_input_cached`, `tokens_input_uncached`, `tokens_input_peak`, `tokens_input_peak_by_role`, `tokens_output_total`, `tokens_output_by_role` | llm_usage | Token sums and per-call input peaks. |
+| `tokens_thoughts_total`, `tokens_thoughts_by_role`, `tokens_tool_use_prompt_total`, `tokens_tool_use_prompt_by_role` | llm_usage | Gemini thinking and tool-result prompt tokens (best-effort; 0 when unavailable). |
+| `context_utilization_peak` | llm_usage | Max `input_tokens / max_input_tokens` across calls where LiteLLM knows the model limit; 0 when unknown. |
+| `usage_details_total` | llm_usage | Dict summing numeric `usage.details` keys from trace (modality breakdowns, etc.). |
+| `traffic_type_counts` | llm_usage | Histogram of Gemini `traffic_type` values seen in the run. |
 | `cache_hit_rate` | llm_usage | Cached / total input tokens, in `[0, 1]`. |
 | `dollar_cost_total`, `dollar_cost_by_role` | llm_usage | Computed via LiteLLM `model_cost` + optional override. `null` if no pricing data found. |
 | `latency_ms_by_role`, `latency_ms_sum_by_role` | llm_usage | Per-role mean and sum of call latencies (ms). |

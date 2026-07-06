@@ -56,11 +56,19 @@ _EVENT_CLASSES: dict[str, type[TraceEvent]] = {
 def format_trace_progress(event: TraceEvent) -> str | None:
     if isinstance(event, LlmCallEvent):
         usage = event.usage or {}
-        return (
+        summary = (
             f"LLM {event.role} {event.model_spec.model_name} "
             f"({event.latency_ms:.0f}ms, "
             f"in={usage.get('input_tokens', '?')} out={usage.get('output_tokens', '?')})"
         )
+        try:
+            details = usage.get("details") or {}
+            thoughts = details.get("thoughts_tokens", 0) or 0
+            if isinstance(thoughts, (int, float)) and thoughts > 0:
+                summary += f" thoughts={int(thoughts)}"
+        except Exception:
+            pass
+        return summary
     if isinstance(event, ToolCallEvent):
         return f"tool {event.tool_name} ({event.latency_ms:.0f}ms)"
     if isinstance(event, DbtRunEvent):
