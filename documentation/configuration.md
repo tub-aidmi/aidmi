@@ -140,7 +140,7 @@ Used by every LLM-driven strategy as the `writer_model` (or other role-named) fi
 | `model_name` | string | yes | Model identifier the provider accepts (e.g., `gpt-4o-mini`, `claude-3-5-sonnet-latest`, `llama3:70b`, `gemini-2.5-flash`). |
 | `base_url` | string | no | Override the provider's default base URL. Useful for OpenAI-compatible proxies and Ollama. |
 | `api_key_env` | string | no | Name of the environment variable holding the API key. The key itself is never serialized. Omit or leave unset for providers that require no key (see Ollama). |
-| `extra` | object | no | Provider-specific options. For `google_cloud` ADC auth: `project`, `location`. |
+| `extra` | object | no | Provider-specific options. For `google_cloud`: `project`, `location`, `google_thinking_config`. For all providers: optional `llm_retry` with `max_retries` (default 5), `base_seconds` (default 2), `max_seconds` (default 60) for transient HTTP 429/5xx backoff. |
 
 ### Examples
 

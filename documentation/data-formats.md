@@ -283,6 +283,7 @@ The four built-in evaluators contribute the following:
 | `tokens_input_total`, `tokens_input_by_role`, `tokens_input_cached`, `tokens_input_uncached`, `tokens_input_peak`, `tokens_input_peak_by_role`, `tokens_output_total`, `tokens_output_by_role` | llm_usage | Token sums and per-call input peaks. |
 | `tokens_thoughts_total`, `tokens_thoughts_by_role`, `tokens_tool_use_prompt_total`, `tokens_tool_use_prompt_by_role` | llm_usage | Gemini thinking and tool-result prompt tokens (best-effort; 0 when unavailable). |
 | `context_utilization_peak` | llm_usage | Max `input_tokens / max_input_tokens` across calls where LiteLLM knows the model limit; 0 when unknown. |
+| `llm_retries_total` | llm_usage | Sum of HTTP retries before successful LLM calls (transient 429/5xx backoff in `TracedModel`). |
 | `usage_details_total` | llm_usage | Dict summing numeric `usage.details` keys from trace (modality breakdowns, etc.). |
 | `traffic_type_counts` | llm_usage | Histogram of Gemini `traffic_type` values seen in the run. |
 | `cache_hit_rate` | llm_usage | Cached / total input tokens, in `[0, 1]`. |

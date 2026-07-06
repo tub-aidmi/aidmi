@@ -1,12 +1,21 @@
 """Provider registry + Model construction + TracedModel wrapper."""
 from __future__ import annotations
+import asyncio
 import dataclasses
 import os
 import time
 from typing import Any, Callable
 from datetime import datetime
 
+from pydantic_ai.exceptions import ModelHTTPError
+
 from aidmi_orchestrator.domain import ModelSpec
+from aidmi_orchestrator.llm_retry import (
+    is_retryable_model_http_error,
+    resolve_retry_settings,
+    retry_delay_seconds,
+)
+from aidmi_orchestrator.progress import log_message
 from aidmi_orchestrator.trace import TraceSink, LlmCallEvent
 
 
@@ -181,17 +190,42 @@ class TracedModel(WrapperModel):
         model_settings: ModelSettings | None,
         model_request_parameters: ModelRequestParameters,
     ) -> ModelResponse:
-        start = time.perf_counter()
-        response = await self.wrapped.request(messages, model_settings, model_request_parameters)
-        latency_ms = (time.perf_counter() - start) * 1000
-        usage_dict = _usage_dict(response)
-        self._trace.record(LlmCallEvent(
-            timestamp=datetime.utcnow(),
-            role=self._role,
-            model_spec=self._spec,
-            messages=[m.model_dump() if hasattr(m, "model_dump") else {"raw": str(m)} for m in messages],
-            response=(response.model_dump() if hasattr(response, "model_dump") else str(response)),
-            usage=usage_dict,
-            latency_ms=latency_ms,
-        ))
-        return response
+        max_retries, base_seconds, max_seconds = resolve_retry_settings(self._spec)
+        scope = getattr(self._trace, "_progress_scope", None)
+
+        for attempt in range(max_retries + 1):
+            start = time.perf_counter()
+            try:
+                response = await self.wrapped.request(
+                    messages, model_settings, model_request_parameters,
+                )
+            except ModelHTTPError as exc:
+                if attempt >= max_retries or not is_retryable_model_http_error(exc):
+                    raise
+                delay = retry_delay_seconds(
+                    attempt, base_seconds=base_seconds, max_seconds=max_seconds,
+                )
+                log_message(
+                    f"LLM {self._role} {self._spec.model_name} HTTP {exc.status_code}, "
+                    f"retry {attempt + 1}/{max_retries} in {delay:.1f}s",
+                    scope=scope,
+                )
+                await asyncio.sleep(delay)
+                continue
+
+            latency_ms = (time.perf_counter() - start) * 1000
+            usage_dict = _usage_dict(response)
+            if attempt > 0:
+                usage_dict["retry_count"] = attempt
+            self._trace.record(LlmCallEvent(
+                timestamp=datetime.utcnow(),
+                role=self._role,
+                model_spec=self._spec,
+                messages=[m.model_dump() if hasattr(m, "model_dump") else {"raw": str(m)} for m in messages],
+                response=(response.model_dump() if hasattr(response, "model_dump") else str(response)),
+                usage=usage_dict,
+                latency_ms=latency_ms,
+            ))
+            return response
+
+        raise RuntimeError("unreachable: LLM retry loop exhausted without response or exception")

@@ -1,6 +1,9 @@
 import asyncio
 from dataclasses import dataclass, field
+from unittest.mock import patch
 
+import pytest
+from pydantic_ai.exceptions import ModelHTTPError
 from pydantic_ai.messages import ModelMessage, ModelResponse
 from pydantic_ai.models import Model, ModelRequestParameters
 from pydantic_ai.models.function import FunctionModel
@@ -35,6 +38,37 @@ class _StubModel(Model):
         model_request_parameters: ModelRequestParameters,
     ) -> ModelResponse:
         return self._response
+
+
+@dataclass(init=False)
+class _FlakyModel(Model):
+    _responses: list[ModelResponse | BaseException]
+    _call_count: int = field(default=0, repr=False)
+    _model_name: str = field(default="fake", repr=False)
+
+    def __init__(self, responses: list[ModelResponse | BaseException]):
+        super().__init__()
+        self._responses = responses
+
+    @property
+    def model_name(self) -> str:
+        return self._model_name
+
+    @property
+    def system(self) -> str:
+        return "flaky"
+
+    async def request(
+        self,
+        messages: list[ModelMessage],
+        model_settings,
+        model_request_parameters: ModelRequestParameters,
+    ) -> ModelResponse:
+        outcome = self._responses[min(self._call_count, len(self._responses) - 1)]
+        self._call_count += 1
+        if isinstance(outcome, BaseException):
+            raise outcome
+        return outcome
 
 
 def _response(
@@ -164,3 +198,56 @@ def test_traced_model_records_full_gemini_usage(tmp_path):
     recorded = events[0].usage
     assert recorded["details"]["thoughts_tokens"] == 128
     assert recorded["vendor"]["traffic_type"] == "ON_DEMAND"
+
+
+def test_traced_model_retries_transient_http_error(tmp_path):
+    ok = _response(usage=RequestUsage(input_tokens=10, output_tokens=5))
+    inner = _FlakyModel([
+        ModelHTTPError(429, "gemini-2.5-flash", {"status": "RESOURCE_EXHAUSTED"}),
+        ok,
+    ])
+    events: list[LlmCallEvent] = []
+    sink = TraceSink(tmp_path / "trace.jsonl")
+
+    class _CapturingSink:
+        def record(self, event):
+            if isinstance(event, LlmCallEvent):
+                events.append(event)
+            sink.record(event)
+
+    spec = ModelSpec(
+        provider="google_cloud",
+        model_name="gemini-2.5-flash",
+        extra={"llm_retry": {"max_retries": 2, "base_seconds": 0.01, "max_seconds": 0.02}},
+    )
+    traced = TracedModel(inner, spec, "writer", _CapturingSink())
+
+    async def _noop_sleep(_seconds: float) -> None:
+        return None
+
+    with patch("aidmi_orchestrator.llm.asyncio.sleep", new=_noop_sleep):
+        response = asyncio.run(traced.request([], None, ModelRequestParameters()))
+    sink.close()
+
+    assert response is not None
+    assert inner._call_count == 2
+    assert len(events) == 1
+    assert events[0].usage["retry_count"] == 1
+
+
+def test_traced_model_does_not_retry_client_error(tmp_path):
+    inner = _FlakyModel([
+        ModelHTTPError(400, "gemini-2.5-flash", {"message": "bad request"}),
+    ])
+    sink = TraceSink(tmp_path / "trace.jsonl")
+    traced = TracedModel(
+        inner,
+        ModelSpec(provider="google_cloud", model_name="gemini-2.5-flash"),
+        "writer",
+        sink,
+    )
+    with pytest.raises(ModelHTTPError) as exc_info:
+        asyncio.run(traced.request([], None, ModelRequestParameters()))
+    sink.close()
+    assert exc_info.value.status_code == 400
+    assert inner._call_count == 1

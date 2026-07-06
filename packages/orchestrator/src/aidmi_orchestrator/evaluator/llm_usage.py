@@ -73,6 +73,7 @@ class LlmUsageEvaluator:
         tokens_tool_use_prompt_total = 0
         tokens_input_peak = 0
         context_utilization_peak = 0.0
+        llm_retries_total = 0
         usage_details_total: dict[str, float] = defaultdict(float)
         traffic_type_counts: dict[str, int] = defaultdict(int)
         cost_total = 0.0
@@ -112,6 +113,8 @@ class LlmUsageEvaluator:
             traffic_type = _vendor_str(usage, "traffic_type")
             if traffic_type:
                 traffic_type_counts[traffic_type] += 1
+
+            llm_retries_total += _safe_int(usage.get("retry_count", 0))
 
             context_limit = lookup_context_limit(
                 ev.model_spec.provider, ev.model_spec.model_name,
@@ -167,6 +170,7 @@ class LlmUsageEvaluator:
             "tokens_tool_use_prompt_total": tokens_tool_use_prompt_total,
             "tokens_tool_use_prompt_by_role": dict(tokens_tool_use_prompt_by_role),
             "context_utilization_peak": context_utilization_peak,
+            "llm_retries_total": llm_retries_total,
             "usage_details_total": dict(usage_details_total),
             "traffic_type_counts": dict(traffic_type_counts),
             "cache_hit_rate": (tokens_in_cached / tokens_in_total) if tokens_in_total else 0.0,
