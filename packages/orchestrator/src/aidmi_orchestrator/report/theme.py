@@ -20,12 +20,24 @@ SEQUENTIAL_BLUE = [
     "#3987e5", "#2a78d6", "#256abf", "#1c5cab", "#184f95", "#104281", "#0d366b",
 ]
 
+# Sequential red ramp for "risk" magnitude encodings (variance/std): darker =
+# more spread = less trustworthy. Distinct hue from the blue "how good" ramp so
+# a std heatmap never reads as a quality heatmap.
+SEQUENTIAL_RED = [
+    "#fddfd6", "#fbc9ba", "#f8b09c", "#f4977f", "#ee7c62", "#e5604a",
+    "#d9463a", "#c5342f", "#ac2827", "#8f1f21", "#71181b",
+]
+
 def color_for_cell(cell): return CELL_COLORS.get(cell, _FALLBACK_C)
 def marker_for_model(model): return MODEL_MARKERS.get(model, _FALLBACK_M)
 
 def sequential_cmap():
     from matplotlib.colors import LinearSegmentedColormap
     return LinearSegmentedColormap.from_list("aidmi_seq_blue", SEQUENTIAL_BLUE)
+
+def sequential_cmap_red():
+    from matplotlib.colors import LinearSegmentedColormap
+    return LinearSegmentedColormap.from_list("aidmi_seq_red", SEQUENTIAL_RED)
 
 def apply_theme():
     mpl.rcParams.update({

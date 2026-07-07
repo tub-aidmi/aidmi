@@ -4,12 +4,21 @@ from __future__ import annotations
 from pathlib import Path
 
 from aidmi_orchestrator.report.data import RunRecord, write_tidy_csv
-from aidmi_orchestrator.report.figures.heatmap import fig_heatmap
+from aidmi_orchestrator.report.figures.distribution import (
+    fig_metric_distribution,
+    fig_score_histogram,
+)
+from aidmi_orchestrator.report.figures.efficiency import (
+    fig_cost_drivers,
+    fig_efficiency,
+)
+from aidmi_orchestrator.report.figures.heatmap import fig_heatmap, fig_std_heatmap
 from aidmi_orchestrator.report.figures.levers import fig_lever_ctx, fig_lever_sc
 from aidmi_orchestrator.report.figures.metric import fig_prec_recall
 from aidmi_orchestrator.report.figures.pareto import fig_pareto
-from aidmi_orchestrator.report.figures.reliability import fig_rep_spread
+from aidmi_orchestrator.report.figures.reliability import fig_rep_range, fig_rep_spread
 from aidmi_orchestrator.report.figures.strategy import fig_cost_latency, fig_scorecard
+from aidmi_orchestrator.report.figures.tokens import fig_thinking_tokens
 from aidmi_orchestrator.report.html import Section, render_gallery
 from aidmi_orchestrator.report.tables import (
     appendix_table,
@@ -24,11 +33,18 @@ def _build_core_figures(records: list[RunRecord], figdir: Path) -> dict[str, Pat
     return {
         "pareto": fig_pareto(records, figdir),
         "prec_recall": fig_prec_recall(records, figdir),
+        "metric_distribution": fig_metric_distribution(records, figdir),
+        "score_histogram": fig_score_histogram(records, figdir),
         "lever_sc": fig_lever_sc(records, figdir),
         "lever_ctx": fig_lever_ctx(records, figdir),
         "scorecard": fig_scorecard(records, figdir),
         "cost_latency": fig_cost_latency(records, figdir),
+        "thinking_tokens": fig_thinking_tokens(records, figdir),
+        "efficiency": fig_efficiency(records, figdir),
+        "cost_drivers": fig_cost_drivers(records, figdir),
         "rep_spread": fig_rep_spread(records, figdir),
+        "rep_range": fig_rep_range(records, figdir),
+        "heatmap_f1_std": fig_std_heatmap(records, figdir),
         "heatmap_materialized": fig_heatmap(
             records, figdir,
             metric="materialized", filename="heatmap_materialized.svg",
@@ -71,6 +87,11 @@ def _build_sections(
             "Precision saturates near 1.0, so recall and materialization — not f1 — are the discriminating quality axes.",
         ),
         Section(
+            "distribution", "Distribution",
+            [figs["metric_distribution"], figs["score_histogram"]],
+            "Scores are bimodal — runs pile at 0 and 1, not the mean. The box + raw dots expose the spread a mean bar hides.",
+        ),
+        Section(
             "levers", "Levers", [figs["lever_sc"], figs["lever_ctx"]],
             "Self-correction is the dominant lever; context mode barely moves quality while costing more.",
         ),
@@ -79,14 +100,19 @@ def _build_sections(
             "Per-strategy materialization, recall, field accuracy, and their cost/latency trade-offs.",
         ),
         Section(
-            "reliability", "Reliability", [figs["rep_spread"]],
+            "efficiency", "Efficiency",
+            [figs["efficiency"], figs["thinking_tokens"], figs["cost_drivers"]],
+            "Resource per unit of quality (cost/f1, tokens/f1), the reasoning-token tax, and the retry/cache drivers behind cost.",
+        ),
+        Section(
+            "reliability", "Reliability", [figs["rep_spread"], figs["rep_range"]],
             "Many configs are non-unanimous across identical reps; silent failures produce nothing despite reporting complete.",
             ("silent_failure",),
         ),
         Section(
             "fixtures", "Fixtures",
-            [figs["heatmap_materialized"], figs["heatmap_field_acc"]],
-            "Materialization and field accuracy decouple across fixtures.",
+            [figs["heatmap_materialized"], figs["heatmap_field_acc"], figs["heatmap_f1_std"]],
+            "Materialization and field accuracy decouple across fixtures; the std heatmap flags cells whose mean you shouldn't trust.",
         ),
     ]
     if multi_model:

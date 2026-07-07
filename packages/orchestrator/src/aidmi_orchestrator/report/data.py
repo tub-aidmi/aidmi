@@ -20,6 +20,9 @@ class RunRecord:
     tokens_in: int | None; tokens_out: int | None
     status: str | None; silent_fail: bool
     tables_declared: int; cols_covered: float | None
+    tokens_thoughts: int | None = None
+    retries: int | None = None
+    cache_hit_rate: float | None = None
 
 def _model_name(cfg: dict) -> str:
     for key in ("writer_model", "planner_model", "critic_model"):
@@ -57,6 +60,9 @@ def _record(row: dict, fallback_campaign: str) -> RunRecord:
         tokens_in=m.get("tokens_input_total"), tokens_out=m.get("tokens_output_total"),
         status=status, silent_fail=silent,
         tables_declared=len(per_table), cols_covered=m.get("target_columns_covered"),
+        tokens_thoughts=m.get("tokens_thoughts_total"),
+        retries=m.get("llm_retries_total"),
+        cache_hit_rate=m.get("cache_hit_rate"),
     )
 
 def _iter_paths(paths):

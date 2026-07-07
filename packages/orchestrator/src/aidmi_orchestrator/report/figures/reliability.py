@@ -181,3 +181,81 @@ def fig_rep_spread(records, out_dir) -> Path:
     fig.savefig(out, format="svg", metadata={"Date": None})
     plt.close(fig)
     return out
+
+
+def fig_rep_range(records, out_dir) -> Path:
+    """Per-config f1 min-max range, exposing continuous-metric replicate noise.
+
+    rep_spread above only speaks binary materialized/failed. This one is for the
+    continuous score: each config is a vertical bar from its worst to its best
+    rep with a dot at the mean, sorted by mean. A tall bar is a config whose
+    reported mean f1 is a coin flip -- the same thing runs 0.16 one rep and 0.78
+    the next -- which a mean bar or heatmap silently averages away.
+    """
+    import matplotlib as mpl
+    import matplotlib.pyplot as plt
+    from matplotlib.lines import Line2D
+
+    apply_theme()
+    mpl.rcParams["svg.hashsalt"] = "aidmi-rep-range"
+    out_dir = Path(out_dir)
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    # A rep that materialized nothing has a null f1; that is a zero-quality rep,
+    # not an absent one, so zero-fill it -- a config that passes 2/3 and dies on
+    # the third should show a bar all the way down to 0, not a tight cluster.
+    reps = rep_values(records, _config_key, lambda r: r.f1 if r.f1 is not None else 0.0)
+    reps = {k: v for k, v in reps.items() if len(v) >= 2}
+    means = {k: sum(v) / len(v) for k, v in reps.items()}
+    keys = sorted(reps, key=lambda k: (means[k], _sort_key(k)))
+
+    multi_model = len({k[-1] for k in keys}) > 1
+    spreads = sorted((max(v) - min(v) for v in reps.values()), reverse=True)
+    volatile = sum(1 for s in spreads if s >= 0.25)
+
+    width = max(10.0, 0.16 * len(keys) + 3.0)
+    fig, ax = plt.subplots(figsize=(width, 5.0))
+
+    for i, k in enumerate(keys):
+        vals = reps[k]
+        color = color_for_cell(k[0])
+        ax.plot([i, i], [min(vals), max(vals)], color=color, lw=2.0, alpha=0.55, zorder=2)
+        marker = marker_for_model(k[-1]) if multi_model else _DEFAULT_MARKER
+        ax.scatter(
+            [i], [means[k]], marker=marker, s=20, color=color,
+            edgecolors=_SURFACE, linewidths=0.4, zorder=4,
+        )
+
+    ax.text(
+        0.012, 0.02,
+        f"{volatile} of {len(keys)} configs span ≥0.25 f1 across identical reps",
+        transform=ax.transAxes, fontsize=8.5, color=_MUTED, ha="left", va="bottom",
+    )
+
+    ax.set_xlim(-0.6, len(keys) - 0.4)
+    ax.set_xticks([])
+    ax.set_xlabel(
+        f"{len(keys)} configs (cell × fixture × ctx × sc × model), sorted by mean f1 →",
+        fontsize=10,
+    )
+    ax.set_ylim(-0.05, 1.08)
+    ax.set_ylabel("F1 (min–max range, dot = mean)")
+
+    cells = sorted({k[0] for k in keys})
+    handles = [
+        Line2D(
+            [], [], marker=_DEFAULT_MARKER, linestyle="none", markersize=8,
+            markerfacecolor=color_for_cell(c), markeredgecolor=_SURFACE, label=c,
+        )
+        for c in cells
+    ]
+    ax.legend(
+        handles=handles, loc="upper left", bbox_to_anchor=(1.005, 1.0),
+        fontsize=8, labelcolor=_INK,
+    )
+    fig.tight_layout()
+
+    out = out_dir / "rep_range.svg"
+    fig.savefig(out, format="svg", metadata={"Date": None})
+    plt.close(fig)
+    return out
