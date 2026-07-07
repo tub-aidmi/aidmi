@@ -44,6 +44,17 @@ def _appendix_key(r: RunRecord) -> tuple[str, str, str, bool | None]:
     return (r.model, r.cell, r.ctx, r.sc)
 
 
+def _norm(key: tuple) -> tuple:
+    """All-string, None-safe comparable form of a config tuple for stable ordering."""
+    return tuple("" if x is None else str(x) for x in key)
+
+
+def _best(items: dict, *, largest: bool):
+    """Pick the extremal (key, value) with a deterministic tie-break on the config tuple."""
+    pick = max if largest else min
+    return pick(items.items(), key=lambda kv: (kv[1], _norm(kv[0])))
+
+
 def _row(cells: list[str]) -> str:
     return "<tr>" + "".join(f"<td>{c}</td>" for c in cells) + "</tr>"
 
@@ -74,27 +85,24 @@ def best_config_table(records: list[RunRecord]) -> str:
     rows: list[str] = []
 
     if recall_by_config:
-        key = max(recall_by_config, key=recall_by_config.get)
-        cell, ctx, sc, model = key
+        (cell, ctx, sc, model), value = _best(recall_by_config, largest=True)
         rows.append(_row([
             "Highest mean recall", _esc(cell), _esc(ctx), _fmt_sc(sc), _esc(model),
-            _fmt_rate3(recall_by_config[key]),
+            _fmt_rate3(value),
         ]))
 
     if cost_by_config:
-        key = min(cost_by_config, key=cost_by_config.get)
-        cell, ctx, sc, model = key
+        (cell, ctx, sc, model), value = _best(cost_by_config, largest=False)
         rows.append(_row([
             "Lowest mean cost", _esc(cell), _esc(ctx), _fmt_sc(sc), _esc(model),
-            f"${cost_by_config[key]:.4f}",
+            f"${value:.4f}",
         ]))
 
     if mat_by_config:
-        key = max(mat_by_config, key=mat_by_config.get)
-        cell, ctx, sc, model = key
+        (cell, ctx, sc, model), value = _best(mat_by_config, largest=True)
         rows.append(_row([
             "Highest materialization pass-rate", _esc(cell), _esc(ctx), _fmt_sc(sc), _esc(model),
-            _fmt_pct(mat_by_config[key]),
+            _fmt_pct(value),
         ]))
 
     return _table(header, rows)
@@ -127,7 +135,7 @@ def appendix_table(records: list[RunRecord]) -> str:
     cols_covered_values = rep_values(records, key, lambda r: r.cols_covered)
     mat_by_config = materialization_rate(records, key)
 
-    configs = sorted({key(r) for r in records})
+    configs = sorted({key(r) for r in records}, key=_norm)
 
     header = [
         "Model", "Cell", "Context", "Self-correct",
