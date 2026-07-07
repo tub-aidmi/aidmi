@@ -59,8 +59,13 @@ def fig_pareto(records, out_dir) -> Path:
     keys = sorted(
         (k for k in cost if k in recall and cost[k] > 0), key=_sort_key
     )
+    # Configs that have a recall but no positive cost can't sit on a log axis;
+    # they are dropped from the scatter. Count them so the loss is visible, not
+    # silent (free local models report $0 cost and would otherwise vanish).
+    plotted = set(keys)
+    omitted = sum(1 for k in recall if k not in plotted)
 
-    multi_model = len({r.model for r in records}) > 1
+    multi_model = len({k[3] for k in keys}) > 1
 
     fig, ax = plt.subplots(figsize=(11.0, 5.0))
 
@@ -98,7 +103,14 @@ def fig_pareto(records, out_dir) -> Path:
 
     _add_legends(fig, ax, keys, multi_model, Line2D)
 
-    fig.subplots_adjust(left=0.07, right=0.62, top=0.95, bottom=0.12)
+    fig.subplots_adjust(left=0.07, right=0.62, top=0.95, bottom=0.17)
+    if omitted:
+        plural = "s" if omitted != 1 else ""
+        fig.text(
+            0.07, 0.02,
+            f"{omitted} config{plural} with $0 cost omitted (log axis)",
+            fontsize=9, color=_MUTED, ha="left", va="bottom",
+        )
     out = out_dir / "pareto.svg"
     fig.savefig(out, format="svg", metadata={"Date": None})
     plt.close(fig)
