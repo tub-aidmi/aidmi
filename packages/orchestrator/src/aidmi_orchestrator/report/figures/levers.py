@@ -69,13 +69,11 @@ def _draw_panel(ax, cells, model, mat_or_rec, overall, x_order, is_rate):
 
     ax.set_xlim(-0.35, len(x_order) - 1 + 0.35)
     ax.set_xticks(range(len(x_order)))
+    ax.set_ylim(-0.03, 1.03)
     if is_rate:
-        ax.set_ylim(-0.03, 1.03)
         from matplotlib.ticker import PercentFormatter
 
         ax.yaxis.set_major_formatter(PercentFormatter(xmax=1.0))
-    else:
-        ax.set_ylim(-0.03, 1.03)
 
 
 def _legend(fig, cells):
@@ -107,7 +105,7 @@ def _legend(fig, cells):
 
 def _slope_figure(
     records, out_dir, filename, salt, attr, x_order, x_labels, title,
-    cost_annotation,
+    cost_by_model=None,
 ):
     import matplotlib as mpl
     import matplotlib.pyplot as plt
@@ -128,6 +126,7 @@ def _slope_figure(
 
     models = sorted({r.model for r in filtered})
     cells = sorted({r.cell for r in filtered})
+    cost_by_model = cost_by_model or {}
 
     n_rows = max(len(models), 1)
     fig, axes = plt.subplots(
@@ -141,24 +140,22 @@ def _slope_figure(
 
         ax_mat.set_xticklabels(x_labels)
         ax_rec.set_xticklabels(x_labels)
-        ax_mat.set_ylabel(f"{model}\nMaterialization rate")
+        ax_mat.set_ylabel("Materialization rate")
         ax_rec.set_ylabel("Recall")
-        if i == 0:
-            ax_mat.set_title("Materialization rate", color=_INK)
-            ax_rec.set_title("Recall", color=_INK)
+        # Per-model-row header. The cost delta (ctx figure only) is scoped to THIS
+        # model row, so a multi-model campaign never shows a single pooled Δ that
+        # matches no row and could mask opposite per-model trends.
+        ax_mat.set_title(model, loc="left", color=_INK, fontsize=12)
+        if model in cost_by_model:
+            ax_rec.set_title(
+                cost_by_model[model], loc="right", color=_MUTED, fontsize=9.5,
+            )
 
     fig.suptitle(title, color=_INK, fontsize=13, x=0.05, y=0.99, ha="left")
-    top = 0.86
-    if cost_annotation:
-        fig.text(
-            0.05, 0.925, cost_annotation, color=_MUTED, fontsize=9.5,
-            ha="left", va="top",
-        )
-        top = 0.80
 
     _legend(fig, cells)
     fig.subplots_adjust(
-        left=0.11, right=0.78, top=top, bottom=0.1, hspace=0.45, wspace=0.3,
+        left=0.11, right=0.78, top=0.85, bottom=0.1, hspace=0.6, wspace=0.3,
     )
 
     out = out_dir / filename
@@ -171,26 +168,28 @@ def fig_lever_sc(records, out_dir) -> Path:
     return _slope_figure(
         records, out_dir, "lever_sc.svg", "aidmi-lever-sc",
         attr="sc", x_order=_SC_ORDER, x_labels=_SC_LABELS,
-        title="Lever: self-correction (off -> on)", cost_annotation=None,
+        title="Lever: self-correction (off -> on)",
     )
 
 
 def fig_lever_ctx(records, out_dir) -> Path:
     filtered = _filter_valid(records, "ctx", _CTX_ORDER)
-    cost = group_mean(filtered, lambda r: r.ctx, lambda r: r.cost)
-    annotation = None
-    if "metadata_only" in cost and "live_query_tool" in cost:
-        meta_cost = cost["metadata_only"]
-        live_cost = cost["live_query_tool"]
-        delta = live_cost - meta_cost
+    cost = group_mean(filtered, lambda r: (r.model, r.ctx), lambda r: r.cost)
+    cost_by_model = {}
+    for model in sorted({m for m, _ in cost}):
+        meta = cost.get((model, "metadata_only"))
+        live = cost.get((model, "live_query_tool"))
+        if meta is None or live is None:
+            continue
+        delta = live - meta
         sign = "+" if delta >= 0 else "-"
-        annotation = (
-            f"Mean cost/run: metadata-only ${meta_cost:.3f}, "
-            f"live-query ${live_cost:.3f} (Δ {sign}${abs(delta):.3f})"
+        cost_by_model[model] = (
+            f"Mean cost/run: metadata-only ${meta:.3f}, "
+            f"live-query ${live:.3f} (Δ {sign}${abs(delta):.3f})"
         )
     return _slope_figure(
         records, out_dir, "lever_ctx.svg", "aidmi-lever-ctx",
         attr="ctx", x_order=_CTX_ORDER, x_labels=_CTX_LABELS,
         title="Lever: context mode (metadata-only -> live-query)",
-        cost_annotation=annotation,
+        cost_by_model=cost_by_model,
     )
