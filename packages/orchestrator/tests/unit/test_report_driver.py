@@ -24,6 +24,7 @@ CORE_FIGURES = [
     "score_histogram.svg",
     "lever_sc.svg",
     "lever_ctx.svg",
+    "ctx_comparison.svg",
     "scorecard.svg",
     "cost_latency.svg",
     "thinking_tokens.svg",

@@ -4,6 +4,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from aidmi_orchestrator.report.data import RunRecord, write_tidy_csv
+from aidmi_orchestrator.report.figures.context import fig_ctx_comparison
 from aidmi_orchestrator.report.figures.distribution import (
     fig_metric_distribution,
     fig_score_histogram,
@@ -37,6 +38,7 @@ def _build_core_figures(records: list[RunRecord], figdir: Path) -> dict[str, Pat
         "score_histogram": fig_score_histogram(records, figdir),
         "lever_sc": fig_lever_sc(records, figdir),
         "lever_ctx": fig_lever_ctx(records, figdir),
+        "ctx_comparison": fig_ctx_comparison(records, figdir),
         "scorecard": fig_scorecard(records, figdir),
         "cost_latency": fig_cost_latency(records, figdir),
         "thinking_tokens": fig_thinking_tokens(records, figdir),
@@ -92,8 +94,9 @@ def _build_sections(
             "Scores are bimodal — runs pile at 0 and 1, not the mean. The box + raw dots expose the spread a mean bar hides.",
         ),
         Section(
-            "levers", "Levers", [figs["lever_sc"], figs["lever_ctx"]],
-            "Self-correction is the dominant lever; context mode barely moves quality while costing more.",
+            "levers", "Levers",
+            [figs["lever_sc"], figs["lever_ctx"], figs["ctx_comparison"]],
+            "Self-correction is the dominant lever; live_query_tool spends ~2.5× the input tokens of metadata_only for a fraction of a point of f1.",
         ),
         Section(
             "strategy", "Strategy", [figs["scorecard"], figs["cost_latency"]],
