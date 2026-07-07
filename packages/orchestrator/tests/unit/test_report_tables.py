@@ -47,9 +47,12 @@ def test_silent_failure_table_returns_html_table():
 
 def test_silent_failure_count_matches_fixture():
     recs = load_records([FIX])
+    expected = sum(1 for r in recs if r.silent_fail)
     out = silent_failure_table(recs)
-    assert "1 silent failure" in out
-    # the single silent-fail row's identifying fields appear in the table
+    assert f"{expected} silent failure" in out
+    # one <tr> per silent-fail row, plus the header row
+    assert out.count("<tr") == expected + 1
+    # the silent-fail rows' identifying fields appear in the table
     assert "structured_per_table" in out
     assert "gemini25flash" in out
     assert "master" in out
@@ -80,8 +83,8 @@ def test_appendix_table_has_coverage_columns():
 def test_appendix_table_has_one_row_per_config():
     recs = load_records([FIX])
     out = appendix_table(recs)
-    # 3 fixture records -> 3 distinct (model, cell, ctx, sc) configs in the mini fixture
-    assert out.count("<tr") == 1 + 3  # header row + 3 data rows
+    expected = len({(r.model, r.cell, r.ctx, r.sc) for r in recs})
+    assert out.count("<tr") == 1 + expected  # header row + one row per config
 
 
 def test_appendix_table_handles_sc_none():
