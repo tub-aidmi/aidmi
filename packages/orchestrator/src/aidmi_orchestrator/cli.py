@@ -353,40 +353,17 @@ def evaluate(
 def report(
     results: Annotated[list[Path], typer.Argument(help="campaign dirs or results.jsonl files")],
     out: Annotated[Path, typer.Option(help="report output directory")] = Path("./report"),
-    matrix_metric: Annotated[str, typer.Option(help="metric for the strategy × model matrix")] = "target_columns_covered",
-    metrics: Annotated[str | None, typer.Option(help="comma-separated headline metric override")] = None,
-    no_plots: Annotated[bool, typer.Option("--no-plots", help="skip SVG heatmaps")] = False,
 ):
-    """Aggregate campaign results into markdown/CSV tables and SVG heatmaps."""
-    import aidmi_orchestrator.report  # noqa: F401
-    from aidmi_orchestrator.report.aggregate import aggregate, build_rep_series, load_results
-    from aidmi_orchestrator.report.catalog import build_report_plan
-    from aidmi_orchestrator.report.render.markdown import render_markdown, render_matrix
-    from aidmi_orchestrator.report.render.plots import write_plots
-    from aidmi_orchestrator.report.render.tables import write_tables
+    """Render benchmark campaign(s) into an SVG figure gallery."""
+    from aidmi_orchestrator.report.data import load_records
+    from aidmi_orchestrator.report.driver import build_report
 
-    rows = load_results(results)
-    if not rows:
+    records = load_records(results)
+    if not records:
         raise typer.BadParameter("no result rows found in the given paths")
-    cells = aggregate(rows)
-    series = build_rep_series(rows)
-    plan = build_report_plan()
-    headline = [m.strip() for m in metrics.split(",")] if metrics else plan.headline_metrics
-
     out.mkdir(parents=True, exist_ok=True)
-    md = render_markdown(cells, headline) + "\n" + render_matrix(cells, matrix_metric)
-    (out / "summary.md").write_text(md, encoding="utf-8")
-    write_tables(cells, out)
-    written = ["summary.md", "cells.csv", "summary.csv"]
-    if not no_plots:
-        try:
-            artifacts = write_plots(cells, series, rows, out / "plots", plan)
-        except RuntimeError as e:
-            raise typer.BadParameter(str(e)) from None
-        n_svg = sum(1 for p in artifacts if p.suffix == ".svg")
-        n_csv = sum(1 for p in artifacts if p.suffix == ".csv")
-        written.append(f"plots/ ({n_svg} SVGs, {n_csv} CSVs)")
-    typer.echo(f"report over {len(rows)} runs / {len(cells)} cells -> {out}: {', '.join(written)}")
+    written = build_report(records, out)
+    typer.echo(f"report over {len(records)} runs -> {out}: {len(written)} files")
 
 
 if __name__ == "__main__":
