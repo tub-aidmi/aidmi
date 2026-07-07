@@ -12,7 +12,7 @@ MODEL_LABELS = {
 @dataclass(frozen=True)
 class RunRecord:
     campaign: str; model: str; fixture: str; cell: str
-    ctx: str; sc: bool | None; rep: int
+    ctx: str | None; sc: bool | None; rep: int
     materialized: bool
     recall: float | None; precision: float | None; field_acc: float | None
     f1: float | None; recall_strict: float | None
@@ -42,7 +42,7 @@ def _record(row: dict, fallback_campaign: str) -> RunRecord:
     materialized = bool(m.get("dbt_success"))
     status = m.get("strategy_status")
     tables_mat = m.get("gt_tables_materialized")
-    silent = status == "complete" and not materialized and (m.get("gt_recall_overall") is None or not tables_mat)
+    silent = status == "complete" and (m.get("gt_recall_overall") is None or not tables_mat)
     prov = row.get("provenance") or {}
     return RunRecord(
         campaign=prov.get("campaign_id") or fallback_campaign,

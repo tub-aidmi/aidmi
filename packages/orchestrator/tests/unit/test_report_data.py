@@ -24,6 +24,17 @@ def test_silent_fail_flagged():
     assert sf.status == "complete" and sf.materialized is False
 
 
+def test_silent_fail_when_dbt_success_but_nothing_materialized():
+    # dbt reports success yet zero target tables materialized (recall null):
+    # this is a silent failure regardless of dbt_success.
+    recs = load_records([FIX])
+    sf = next(
+        r for r in recs
+        if r.materialized and r.status == "complete" and r.recall is None
+    )
+    assert sf.silent_fail is True
+
+
 def test_campaign_and_model_always_present():
     recs = load_records([FIX])
     assert all(r.campaign and r.model for r in recs)
