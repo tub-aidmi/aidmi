@@ -1,0 +1,24 @@
+-- depends_on: {{ ref('Account') }} -- This dependency is illustrative for understanding, but per instructions, do not use ref() in initial writes.
+-- depends_on: {{ ref('Project__c') }}
+
+{{ config(materialized='table') }}
+
+SELECT
+    asset.id AS "Id",
+    asset.name AS "Name",
+    asset.serial AS "Serial_Number__c",
+    asset.warranty AS "Warranty_End_Date__c",
+    COALESCE(account.id, asset.client) AS "Account__c",
+    COALESCE(project.id, asset.project) AS "Project__c",
+    asset.id AS "Legacy_Asset_ID__c",
+    NULL AS "CreatedDate",
+    NULL AS "LastModifiedDate",
+    0 AS "IsDeleted"
+FROM
+    {{ source('fixture_missing_relations_v2_src', 'asset') }} AS asset
+LEFT JOIN
+    {{ source('fixture_missing_relations_v2_src', 'account') }} AS account
+    ON asset.client = account.id
+LEFT JOIN
+    {{ source('fixture_missing_relations_v2_src', 'project') }} AS project
+    ON asset.project = project.id

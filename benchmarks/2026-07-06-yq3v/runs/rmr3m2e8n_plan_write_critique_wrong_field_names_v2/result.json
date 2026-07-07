@@ -1,0 +1,1260 @@
+{
+  "run_id": "rmr3m2e8n_plan_write_critique_wrong_field_names_v2",
+  "fixture_name": "wrong_field_names_v2",
+  "strategy_name": "plan_write_critique",
+  "strategy_spec_name": "plan_write_critique_context_mode_metadata_only",
+  "strategy_config": {
+    "planner_model": {
+      "provider": "google_cloud",
+      "model_name": "gemini-2.5-flash",
+      "base_url": null,
+      "api_key_env": "GOOGLE_API_KEY",
+      "extra": {
+        "google_thinking_config": {
+          "thinking_budget": 2048
+        }
+      }
+    },
+    "writer_model": {
+      "provider": "google_cloud",
+      "model_name": "gemini-2.5-flash",
+      "base_url": null,
+      "api_key_env": "GOOGLE_API_KEY",
+      "extra": {
+        "google_thinking_config": {
+          "thinking_budget": 2048
+        }
+      }
+    },
+    "critic_model": {
+      "provider": "google_cloud",
+      "model_name": "gemini-2.5-flash",
+      "base_url": null,
+      "api_key_env": "GOOGLE_API_KEY",
+      "extra": {
+        "google_thinking_config": {
+          "thinking_budget": 2048
+        }
+      }
+    },
+    "max_dbt_correction_initial": 5,
+    "max_critique_rounds": 3,
+    "max_dbt_correction_per_critique": 3,
+    "context_mode": "metadata_only",
+    "samples_per_table": 3,
+    "max_query_tool_rows": 100,
+    "serial_llm_calls": false
+  },
+  "rep_index": 0,
+  "started_at": "2026-07-06T20:23:17.219481",
+  "completed_at": "2026-07-06T20:25:24.123026",
+  "wall_clock_seconds": 126.903545,
+  "strategy_result": {
+    "target_tables_written": [
+      "Account",
+      "Contact",
+      "Opportunity",
+      "Project__c",
+      "Installed_Asset__c"
+    ],
+    "target_schema": {
+      "tables": [
+        {
+          "name": "Account",
+          "description": null,
+          "columns": [
+            {
+              "name": "Id",
+              "sql_type": "text",
+              "nullable": false,
+              "description": null,
+              "enum_values": null
+            },
+            {
+              "name": "Name",
+              "sql_type": "text",
+              "nullable": false,
+              "description": null,
+              "enum_values": null
+            },
+            {
+              "name": "ERP_Number__c",
+              "sql_type": "text",
+              "nullable": true,
+              "description": null,
+              "enum_values": null
+            },
+            {
+              "name": "Customer_Tier__c",
+              "sql_type": "text",
+              "nullable": true,
+              "description": null,
+              "enum_values": [
+                "Gold",
+                "Silver",
+                "Bronze",
+                "Platinum"
+              ]
+            },
+            {
+              "name": "Region__c",
+              "sql_type": "text",
+              "nullable": true,
+              "description": null,
+              "enum_values": null
+            },
+            {
+              "name": "Industry",
+              "sql_type": "text",
+              "nullable": true,
+              "description": null,
+              "enum_values": null
+            },
+            {
+              "name": "Website",
+              "sql_type": "text",
+              "nullable": true,
+              "description": null,
+              "enum_values": null
+            },
+            {
+              "name": "BillingCity",
+              "sql_type": "text",
+              "nullable": true,
+              "description": null,
+              "enum_values": null
+            },
+            {
+              "name": "BillingCountry",
+              "sql_type": "text",
+              "nullable": true,
+              "description": null,
+              "enum_values": null
+            },
+            {
+              "name": "Legacy_Customer_ID__c",
+              "sql_type": "text",
+              "nullable": true,
+              "description": null,
+              "enum_values": null
+            },
+            {
+              "name": "CreatedDate",
+              "sql_type": "text",
+              "nullable": true,
+              "description": null,
+              "enum_values": null
+            },
+            {
+              "name": "LastModifiedDate",
+              "sql_type": "text",
+              "nullable": true,
+              "description": null,
+              "enum_values": null
+            },
+            {
+              "name": "IsDeleted",
+              "sql_type": "integer",
+              "nullable": true,
+              "description": null,
+              "enum_values": null
+            }
+          ],
+          "primary_key": [
+            "Id"
+          ]
+        },
+        {
+          "name": "Contact",
+          "description": null,
+          "columns": [
+            {
+              "name": "Id",
+              "sql_type": "text",
+              "nullable": false,
+              "description": null,
+              "enum_values": null
+            },
+            {
+              "name": "FirstName",
+              "sql_type": "text",
+              "nullable": true,
+              "description": null,
+              "enum_values": null
+            },
+            {
+              "name": "LastName",
+              "sql_type": "text",
+              "nullable": false,
+              "description": null,
+              "enum_values": null
+            },
+            {
+              "name": "Email",
+              "sql_type": "text",
+              "nullable": true,
+              "description": null,
+              "enum_values": null
+            },
+            {
+              "name": "Phone",
+              "sql_type": "text",
+              "nullable": true,
+              "description": null,
+              "enum_values": null
+            },
+            {
+              "name": "Title",
+              "sql_type": "text",
+              "nullable": true,
+              "description": null,
+              "enum_values": null
+            },
+            {
+              "name": "Role__c",
+              "sql_type": "text",
+              "nullable": true,
+              "description": null,
+              "enum_values": [
+                "Decision Maker",
+                "End User",
+                "Technical Contact",
+                "Executive Sponsor"
+              ]
+            },
+            {
+              "name": "Preferred_Language__c",
+              "sql_type": "text",
+              "nullable": true,
+              "description": null,
+              "enum_values": [
+                "DE",
+                "EN",
+                "FR",
+                "ES",
+                "IT"
+              ]
+            },
+            {
+              "name": "AccountId",
+              "sql_type": "text",
+              "nullable": true,
+              "description": null,
+              "enum_values": null
+            },
+            {
+              "name": "Legacy_Contact_ID__c",
+              "sql_type": "text",
+              "nullable": true,
+              "description": null,
+              "enum_values": null
+            },
+            {
+              "name": "CreatedDate",
+              "sql_type": "text",
+              "nullable": true,
+              "description": null,
+              "enum_values": null
+            },
+            {
+              "name": "LastModifiedDate",
+              "sql_type": "text",
+              "nullable": true,
+              "description": null,
+              "enum_values": null
+            },
+            {
+              "name": "IsDeleted",
+              "sql_type": "integer",
+              "nullable": true,
+              "description": null,
+              "enum_values": null
+            }
+          ],
+          "primary_key": [
+            "Id"
+          ]
+        },
+        {
+          "name": "Opportunity",
+          "description": null,
+          "columns": [
+            {
+              "name": "Id",
+              "sql_type": "text",
+              "nullable": false,
+              "description": null,
+              "enum_values": null
+            },
+            {
+              "name": "Name",
+              "sql_type": "text",
+              "nullable": false,
+              "description": null,
+              "enum_values": null
+            },
+            {
+              "name": "StageName",
+              "sql_type": "text",
+              "nullable": false,
+              "description": null,
+              "enum_values": [
+                "Prospecting",
+                "Qualification",
+                "Needs Analysis",
+                "Value Proposition",
+                "Id. Decision Makers",
+                "Perception Analysis",
+                "Proposal/Price Quote",
+                "Negotiation/Review",
+                "Closed Won",
+                "Closed Lost"
+              ]
+            },
+            {
+              "name": "CloseDate",
+              "sql_type": "text",
+              "nullable": false,
+              "description": null,
+              "enum_values": null
+            },
+            {
+              "name": "Amount",
+              "sql_type": "double precision",
+              "nullable": true,
+              "description": null,
+              "enum_values": null
+            },
+            {
+              "name": "CurrencyIsoCode",
+              "sql_type": "text",
+              "nullable": true,
+              "description": null,
+              "enum_values": null
+            },
+            {
+              "name": "AccountId",
+              "sql_type": "text",
+              "nullable": true,
+              "description": null,
+              "enum_values": null
+            },
+            {
+              "name": "Legacy_Opportunity_ID__c",
+              "sql_type": "text",
+              "nullable": true,
+              "description": null,
+              "enum_values": null
+            },
+            {
+              "name": "CreatedDate",
+              "sql_type": "text",
+              "nullable": true,
+              "description": null,
+              "enum_values": null
+            },
+            {
+              "name": "LastModifiedDate",
+              "sql_type": "text",
+              "nullable": true,
+              "description": null,
+              "enum_values": null
+            },
+            {
+              "name": "IsDeleted",
+              "sql_type": "integer",
+              "nullable": true,
+              "description": null,
+              "enum_values": null
+            }
+          ],
+          "primary_key": [
+            "Id"
+          ]
+        },
+        {
+          "name": "Project__c",
+          "description": null,
+          "columns": [
+            {
+              "name": "Id",
+              "sql_type": "text",
+              "nullable": false,
+              "description": null,
+              "enum_values": null
+            },
+            {
+              "name": "Name",
+              "sql_type": "text",
+              "nullable": false,
+              "description": null,
+              "enum_values": null
+            },
+            {
+              "name": "Project_Status__c",
+              "sql_type": "text",
+              "nullable": true,
+              "description": null,
+              "enum_values": [
+                "Active",
+                "Completed",
+                "In Planning",
+                "On Hold",
+                "Cancelled"
+              ]
+            },
+            {
+              "name": "Go_Live_Date__c",
+              "sql_type": "text",
+              "nullable": true,
+              "description": null,
+              "enum_values": null
+            },
+            {
+              "name": "Account__c",
+              "sql_type": "text",
+              "nullable": true,
+              "description": null,
+              "enum_values": null
+            },
+            {
+              "name": "Opportunity__c",
+              "sql_type": "text",
+              "nullable": true,
+              "description": null,
+              "enum_values": null
+            },
+            {
+              "name": "Legacy_Project_ID__c",
+              "sql_type": "text",
+              "nullable": true,
+              "description": null,
+              "enum_values": null
+            },
+            {
+              "name": "CreatedDate",
+              "sql_type": "text",
+              "nullable": true,
+              "description": null,
+              "enum_values": null
+            },
+            {
+              "name": "LastModifiedDate",
+              "sql_type": "text",
+              "nullable": true,
+              "description": null,
+              "enum_values": null
+            },
+            {
+              "name": "IsDeleted",
+              "sql_type": "integer",
+              "nullable": true,
+              "description": null,
+              "enum_values": null
+            }
+          ],
+          "primary_key": [
+            "Id"
+          ]
+        },
+        {
+          "name": "Installed_Asset__c",
+          "description": null,
+          "columns": [
+            {
+              "name": "Id",
+              "sql_type": "text",
+              "nullable": false,
+              "description": null,
+              "enum_values": null
+            },
+            {
+              "name": "Name",
+              "sql_type": "text",
+              "nullable": false,
+              "description": null,
+              "enum_values": null
+            },
+            {
+              "name": "Serial_Number__c",
+              "sql_type": "text",
+              "nullable": true,
+              "description": null,
+              "enum_values": null
+            },
+            {
+              "name": "Warranty_End_Date__c",
+              "sql_type": "text",
+              "nullable": true,
+              "description": null,
+              "enum_values": null
+            },
+            {
+              "name": "Account__c",
+              "sql_type": "text",
+              "nullable": true,
+              "description": null,
+              "enum_values": null
+            },
+            {
+              "name": "Project__c",
+              "sql_type": "text",
+              "nullable": true,
+              "description": null,
+              "enum_values": null
+            },
+            {
+              "name": "Legacy_Asset_ID__c",
+              "sql_type": "text",
+              "nullable": true,
+              "description": null,
+              "enum_values": null
+            },
+            {
+              "name": "CreatedDate",
+              "sql_type": "text",
+              "nullable": true,
+              "description": null,
+              "enum_values": null
+            },
+            {
+              "name": "LastModifiedDate",
+              "sql_type": "text",
+              "nullable": true,
+              "description": null,
+              "enum_values": null
+            },
+            {
+              "name": "IsDeleted",
+              "sql_type": "integer",
+              "nullable": true,
+              "description": null,
+              "enum_values": null
+            }
+          ],
+          "primary_key": [
+            "Id"
+          ]
+        }
+      ]
+    },
+    "manifest": {
+      "tables": [
+        {
+          "target_table": "Account",
+          "source_tables": [
+            "ansprechpartner",
+            "assets",
+            "chancen",
+            "kunden",
+            "proj"
+          ],
+          "column_notes": [
+            {
+              "target_column": "Id",
+              "source_columns": [
+                "kunden.kunden_nr"
+              ],
+              "explanation": "Derived directly from the source customer number, serving as the unique identifier for the Account."
+            },
+            {
+              "target_column": "Name",
+              "source_columns": [
+                "kunden.firmenname",
+                "kunden.kunden_nr"
+              ],
+              "explanation": "The company name, trimmed of whitespace, with a fallback to the customer number if the name is missing."
+            },
+            {
+              "target_column": "ERP_Number__c",
+              "source_columns": [
+                "kunden.erp_nummer"
+              ],
+              "explanation": "Direct mapping of the ERP number from the source."
+            },
+            {
+              "target_column": "Customer_Tier__c",
+              "source_columns": [
+                "kunden.kategorie"
+              ],
+              "explanation": "Mapped from the source 'kategorie' column, with case-insensitive matching to the defined enum values."
+            },
+            {
+              "target_column": "Region__c",
+              "source_columns": [
+                "kunden.gebiet"
+              ],
+              "explanation": "Direct mapping of the geographical region."
+            },
+            {
+              "target_column": "Industry",
+              "source_columns": [
+                "kunden.branche"
+              ],
+              "explanation": "Direct mapping of the industry."
+            },
+            {
+              "target_column": "Website",
+              "source_columns": [
+                "kunden.webseite"
+              ],
+              "explanation": "The company website, with leading/trailing whitespace removed."
+            },
+            {
+              "target_column": "BillingCity",
+              "source_columns": [
+                "kunden.ort"
+              ],
+              "explanation": "Direct mapping of the billing city."
+            },
+            {
+              "target_column": "BillingCountry",
+              "source_columns": [
+                "kunden.land"
+              ],
+              "explanation": "Direct mapping of the billing country."
+            },
+            {
+              "target_column": "Legacy_Customer_ID__c",
+              "source_columns": [
+                "kunden.kunden_nr"
+              ],
+              "explanation": "Populated with the original source customer ID for verification and historical tracking."
+            },
+            {
+              "target_column": "CreatedDate",
+              "source_columns": [],
+              "explanation": "Generated timestamp indicating when the record was created in the target system."
+            },
+            {
+              "target_column": "LastModifiedDate",
+              "source_columns": [],
+              "explanation": "Generated timestamp indicating when the record was last modified in the target system."
+            },
+            {
+              "target_column": "IsDeleted",
+              "source_columns": [],
+              "explanation": "Defaulted to 0, indicating the record is not deleted."
+            }
+          ],
+          "reasoning": "The mapping plan covers all five target tables: Account, Contact, Opportunity, Project__c, and Installed_Asset__c. \n\n### Key Decisions:\n\n1.  **Primary Keys (`Id` columns):** Each target table's `Id` will be derived directly from the natural key of its primary source table (e.g., `kunden.kunden_nr` for `Account.Id`, `ansprechpartner.ap_id` for `Contact.Id`).\n2.  **Foreign Keys (`AccountId`, `Account__c`, `Opportunity__c`, `Project__c`):** All references to Account, Opportunity, and Project IDs will use the corresponding natural keys from their source tables. For example, `AccountId` in `Contact` will come directly from `ansprechpartner.kunde`, as it is assumed to be the same format as `kunden.kunden_nr` (which forms `Account.Id`). This strategy is consistently applied across all foreign key relationships.\n3.  **Enum Mapping Strategy:** All enum-typed target columns will use a `CASE` statement to map source values to the defined target enum domain. Source values will be `TRIM(UPPER(...))`ed for robust matching. Unmatched values will default to `NULL`, except for `NOT NULL` target columns where a sensible default (e.g., 'Prospecting' for `Opportunity.StageName`) will be provided.\n4.  **Date Transformation:** Source date columns (`garantie_bis`, `abschlussdatum`, `go_live`) will be parsed using `TO_DATE` with multiple format attempts (`YYYY-MM-DD`, `DD.MM.YYYY`, `MM/DD/YYYY`) and then formatted to `YYYY-MM-DD` using `TO_CHAR`. Unparseable dates will result in `NULL`, or a sentinel date (`1900-01-01`) if the target column is `NOT NULL`.\n5.  **Amount and Currency:** `Opportunity.Amount` (from `chancen.volumen`) is `double precision` and assumed to be in a standard numeric format, requiring direct mapping. `Opportunity.CurrencyIsoCode` (from `chancen.waehrung`) will be `TRIM(UPPER(...))`ed, assuming source values are already valid ISO codes or can be directly mapped.\n6.  **Legacy IDs:** All `Legacy_*__c` columns will be populated with the natural key from their respective primary source table (e.g., `Account.Legacy_Customer_ID__c` from `kunden.kunden_nr`).\n7.  **Default/Generated Columns:** `CreatedDate`, `LastModifiedDate` will default to `CURRENT_TIMESTAMP::TEXT`. `IsDeleted` will default to `0` (false) as no corresponding source columns exist.\n8.  **String Normalization:** `TRIM()` will be applied to most string columns. `LOWER()` will be used for emails. `COALESCE` will handle `NOT NULL` target columns where source might be `NULL`.\nThe Account Id is directly mapped from the source customer number. The Name column handles nulls by falling back to the customer number. Enum values for Customer_Tier__c are normalized and mapped using a CASE statement, and other fields are directly mapped or generated as per the plan."
+        },
+        {
+          "target_table": "Contact",
+          "source_tables": [
+            "ansprechpartner",
+            "assets",
+            "chancen",
+            "kunden",
+            "proj"
+          ],
+          "column_notes": [
+            {
+              "target_column": "Id",
+              "source_columns": [
+                "ansprechpartner.ap_id"
+              ],
+              "explanation": "Directly mapped from the source contact ID, trimmed for consistency."
+            },
+            {
+              "target_column": "FirstName",
+              "source_columns": [
+                "ansprechpartner.vorname"
+              ],
+              "explanation": "First name from the source, trimmed."
+            },
+            {
+              "target_column": "LastName",
+              "source_columns": [
+                "ansprechpartner.nachname"
+              ],
+              "explanation": "Last name from the source, trimmed. Provides 'Unknown' if the source is null to satisfy the NOT NULL constraint."
+            },
+            {
+              "target_column": "Email",
+              "source_columns": [
+                "ansprechpartner.email_adresse"
+              ],
+              "explanation": "Email address from the source, trimmed and converted to lowercase."
+            },
+            {
+              "target_column": "Phone",
+              "source_columns": [
+                "ansprechpartner.telefonnummer"
+              ],
+              "explanation": "Phone number from the source, trimmed."
+            },
+            {
+              "target_column": "Title",
+              "source_columns": [
+                "ansprechpartner.position"
+              ],
+              "explanation": "Title/position from the source, trimmed."
+            },
+            {
+              "target_column": "Role__c",
+              "source_columns": [
+                "ansprechpartner.funktion"
+              ],
+              "explanation": "Mapped from the source 'funktion' to target enum values. Normalizes source values by trimming and uppercasing before mapping. Defaults to NULL if no match."
+            },
+            {
+              "target_column": "Preferred_Language__c",
+              "source_columns": [
+                "ansprechpartner.sprache"
+              ],
+              "explanation": "Mapped from the source 'sprache' to target enum values. Normalizes source values by trimming and uppercasing before mapping. Defaults to NULL if no match."
+            },
+            {
+              "target_column": "AccountId",
+              "source_columns": [
+                "ansprechpartner.kunde"
+              ],
+              "explanation": "Customer reference from the source, assumed to be the natural key for the Account table."
+            },
+            {
+              "target_column": "Legacy_Contact_ID__c",
+              "source_columns": [
+                "ansprechpartner.ap_id"
+              ],
+              "explanation": "The original source contact ID, used for verification."
+            },
+            {
+              "target_column": "CreatedDate",
+              "source_columns": [],
+              "explanation": "Timestamp of record creation, defaulted to the current timestamp."
+            },
+            {
+              "target_column": "LastModifiedDate",
+              "source_columns": [],
+              "explanation": "Timestamp of last modification, defaulted to the current timestamp."
+            },
+            {
+              "target_column": "IsDeleted",
+              "source_columns": [],
+              "explanation": "Deletion flag, defaulted to 0 (false) as no source column is available."
+            }
+          ],
+          "reasoning": "The mapping plan covers all five target tables: Account, Contact, Opportunity, Project__c, and Installed_Asset__c. \n\n### Key Decisions:\n\n1.  **Primary Keys (`Id` columns):** Each target table's `Id` will be derived directly from the natural key of its primary source table (e.g., `kunden.kunden_nr` for `Account.Id`, `ansprechpartner.ap_id` for `Contact.Id`).\n2.  **Foreign Keys (`AccountId`, `Account__c`, `Opportunity__c`, `Project__c`):** All references to Account, Opportunity, and Project IDs will use the corresponding natural keys from their source tables. For example, `AccountId` in `Contact` will come directly from `ansprechpartner.kunde`, as it is assumed to be the same format as `kunden.kunden_nr` (which forms `Account.Id`). This strategy is consistently applied across all foreign key relationships.\n3.  **Enum Mapping Strategy:** All enum-typed target columns will use a `CASE` statement to map source values to the defined target enum domain. Source values will be `TRIM(UPPER(...))`ed for robust matching. Unmatched values will default to `NULL`, except for `NOT NULL` target columns where a sensible default (e.g., 'Prospecting' for `Opportunity.StageName`) will be provided.\n4.  **Date Transformation:** Source date columns (`garantie_bis`, `abschlussdatum`, `go_live`) will be parsed using `TO_DATE` with multiple format attempts (`YYYY-MM-DD`, `DD.MM.YYYY`, `MM/DD/YYYY`) and then formatted to `YYYY-MM-DD` using `TO_CHAR`. Unparseable dates will result in `NULL`, or a sentinel date (`1900-01-01`) if the target column is `NOT NULL`.\n5.  **Amount and Currency:** `Opportunity.Amount` (from `chancen.volumen`) is `double precision` and assumed to be in a standard numeric format, requiring direct mapping. `Opportunity.CurrencyIsoCode` (from `chancen.waehrung`) will be `TRIM(UPPER(...))`ed, assuming source values are already valid ISO codes or can be directly mapped.\n6.  **Legacy IDs:** All `Legacy_*__c` columns will be populated with the natural key from their respective primary source table (e.g., `Account.Legacy_Customer_ID__c` from `kunden.kunden_nr`).\n7.  **Default/Generated Columns:** `CreatedDate`, `LastModifiedDate` will default to `CURRENT_TIMESTAMP::TEXT`. `IsDeleted` will default to `0` (false) as no corresponding source columns exist.\n8.  **String Normalization:** `TRIM()` will be applied to most string columns. `LOWER()` will be used for emails. `COALESCE` will handle `NOT NULL` target columns where source might be `NULL`.\nThe Contact model transforms data from the `ansprechpartner` source table. I used `TRIM()` for string normalization, `COALESCE()` for the NOT NULL `LastName` field, and `CASE` statements for enum mappings of `Role__c` and `Preferred_Language__c` as per the plan. `AccountId` is mapped directly from the customer reference field, assuming it aligns with `Account.Id`."
+        },
+        {
+          "target_table": "Opportunity",
+          "source_tables": [
+            "ansprechpartner",
+            "assets",
+            "chancen",
+            "kunden",
+            "proj"
+          ],
+          "column_notes": [
+            {
+              "target_column": "Id",
+              "source_columns": [
+                "chancen.chance_id"
+              ],
+              "explanation": "Directly maps from the source chance_id, trimmed for consistency."
+            },
+            {
+              "target_column": "Name",
+              "source_columns": [
+                "chancen.bezeichnung"
+              ],
+              "explanation": "Maps from 'bezeichnung', trimmed and coalesced with a default name ('Default Opportunity Name') to satisfy the NOT NULL constraint."
+            },
+            {
+              "target_column": "StageName",
+              "source_columns": [
+                "chancen.phase"
+              ],
+              "explanation": "Maps 'phase' to a standardized set of stage names, normalizing case and providing 'Prospecting' as a default for unmatched or NULL values."
+            },
+            {
+              "target_column": "CloseDate",
+              "source_columns": [
+                "chancen.abschlussdatum"
+              ],
+              "explanation": "Parses 'abschlussdatum' from various date formats and converts it to 'YYYY-MM-DD' text. Defaults to '1900-01-01' if parsing fails, to satisfy NOT NULL."
+            },
+            {
+              "target_column": "Amount",
+              "source_columns": [
+                "chancen.volumen"
+              ],
+              "explanation": "Directly maps the 'volumen' column, representing the opportunity amount."
+            },
+            {
+              "target_column": "CurrencyIsoCode",
+              "source_columns": [
+                "chancen.waehrung"
+              ],
+              "explanation": "Maps 'waehrung' to a standardized currency ISO code, trimmed and uppercased."
+            },
+            {
+              "target_column": "AccountId",
+              "source_columns": [
+                "chancen.kd_nr"
+              ],
+              "explanation": "Maps 'kd_nr' to the AccountId, trimmed for consistency."
+            },
+            {
+              "target_column": "Legacy_Opportunity_ID__c",
+              "source_columns": [
+                "chancen.chance_id"
+              ],
+              "explanation": "Populated with the original 'chance_id' for legacy tracking and verification, trimmed for consistency."
+            },
+            {
+              "target_column": "CreatedDate",
+              "source_columns": [],
+              "explanation": "Populated with the current timestamp as a text string."
+            },
+            {
+              "target_column": "LastModifiedDate",
+              "source_columns": [],
+              "explanation": "Populated with the current timestamp as a text string."
+            },
+            {
+              "target_column": "IsDeleted",
+              "source_columns": [],
+              "explanation": "Defaults to 0 (false) as no corresponding source column exists."
+            }
+          ],
+          "reasoning": "The primary issue with the previous model was the `Name` column, which is `NOT NULL` in the target but derived from a nullable source column. I have added `COALESCE(TRIM(bezeichnung), 'Default Opportunity Name')` to ensure a non-NULL value is always provided for `Name`. All other NOT NULL constraints are already handled correctly with appropriate default or fallback values."
+        },
+        {
+          "target_table": "Project__c",
+          "source_tables": [
+            "ansprechpartner",
+            "assets",
+            "chancen",
+            "kunden",
+            "proj"
+          ],
+          "column_notes": [
+            {
+              "target_column": "Id",
+              "source_columns": [
+                "proj.proj_id"
+              ],
+              "explanation": "Directly maps from the project ID in the source table."
+            },
+            {
+              "target_column": "Name",
+              "source_columns": [
+                "proj.name"
+              ],
+              "explanation": "Maps from the project name, trimming whitespace. Provides 'Unknown Project' as a default if the source name is NULL to satisfy the NOT NULL constraint."
+            },
+            {
+              "target_column": "Project_Status__c",
+              "source_columns": [
+                "proj.status"
+              ],
+              "explanation": "Maps source status values to predefined enum values, converting to uppercase and trimming whitespace for robust matching."
+            },
+            {
+              "target_column": "Go_Live_Date__c",
+              "source_columns": [
+                "proj.go_live"
+              ],
+              "explanation": "Parses the go-live date from various source formats and formats it as YYYY-MM-DD. Returns NULL if unparseable."
+            },
+            {
+              "target_column": "Account__c",
+              "source_columns": [
+                "proj.kd"
+              ],
+              "explanation": "Directly maps the customer ID from the source, which acts as the foreign key to Account.Id."
+            },
+            {
+              "target_column": "Opportunity__c",
+              "source_columns": [
+                "proj.opp"
+              ],
+              "explanation": "Directly maps the opportunity ID from the source, which acts as the foreign key to Opportunity.Id."
+            },
+            {
+              "target_column": "Legacy_Project_ID__c",
+              "source_columns": [
+                "proj.proj_id"
+              ],
+              "explanation": "Populated with the natural key (project ID) from the source for verification."
+            },
+            {
+              "target_column": "CreatedDate",
+              "source_columns": [],
+              "explanation": "Populated with the current timestamp as a text string."
+            },
+            {
+              "target_column": "LastModifiedDate",
+              "source_columns": [],
+              "explanation": "Populated with the current timestamp as a text string."
+            },
+            {
+              "target_column": "IsDeleted",
+              "source_columns": [],
+              "explanation": "Defaults to 0 as there is no corresponding source column."
+            }
+          ],
+          "reasoning": "The previous model was updated to handle the `NOT NULL` constraint on the `Name` column. A `COALESCE` function is now used to provide a default value of 'Unknown Project' if the source `proj.name` is NULL, ensuring the target constraint is met. All other transformations remain as they were valid based on the requirements."
+        },
+        {
+          "target_table": "Installed_Asset__c",
+          "source_tables": [
+            "ansprechpartner",
+            "assets",
+            "chancen",
+            "kunden",
+            "proj"
+          ],
+          "column_notes": [
+            {
+              "target_column": "Id",
+              "source_columns": [
+                "assets.asset_id"
+              ],
+              "explanation": "Directly mapped from the source asset ID, trimmed for consistency."
+            },
+            {
+              "target_column": "Name",
+              "source_columns": [
+                "assets.bezeichnung"
+              ],
+              "explanation": "Mapped from the asset description, trimmed and defaulting to 'N/A' if null, as it's a NOT NULL column."
+            },
+            {
+              "target_column": "Serial_Number__c",
+              "source_columns": [
+                "assets.seriennr"
+              ],
+              "explanation": "Mapped from the source serial number, trimmed for consistency."
+            },
+            {
+              "target_column": "Warranty_End_Date__c",
+              "source_columns": [
+                "assets.garantie_bis"
+              ],
+              "explanation": "Parsed from the source warranty date, attempting multiple date formats (YYYY-MM-DD, DD.MM.YYYY, MM/DD/YYYY) and formatted to YYYY-MM-DD. Defaults to NULL if unparseable."
+            },
+            {
+              "target_column": "Account__c",
+              "source_columns": [
+                "assets.kd_ref"
+              ],
+              "explanation": "Mapped from the customer reference, serving as the foreign key to Account.Id."
+            },
+            {
+              "target_column": "Project__c",
+              "source_columns": [
+                "assets.projekt_ref"
+              ],
+              "explanation": "Mapped from the project reference, serving as the foreign key to Project__c.Id."
+            },
+            {
+              "target_column": "Legacy_Asset_ID__c",
+              "source_columns": [
+                "assets.asset_id"
+              ],
+              "explanation": "Populated with the original source asset ID for traceability and verification."
+            },
+            {
+              "target_column": "CreatedDate",
+              "source_columns": [],
+              "explanation": "Defaults to the current timestamp as no source column is available."
+            },
+            {
+              "target_column": "LastModifiedDate",
+              "source_columns": [],
+              "explanation": "Defaults to the current timestamp as no source column is available."
+            },
+            {
+              "target_column": "IsDeleted",
+              "source_columns": [],
+              "explanation": "Defaults to 0 (false) as no source column indicates deletion status."
+            }
+          ],
+          "reasoning": "The mapping plan covers all five target tables: Account, Contact, Opportunity, Project__c, and Installed_Asset__c. \n\n### Key Decisions:\n\n1.  **Primary Keys (`Id` columns):** Each target table's `Id` will be derived directly from the natural key of its primary source table (e.g., `kunden.kunden_nr` for `Account.Id`, `ansprechpartner.ap_id` for `Contact.Id`).\n2.  **Foreign Keys (`AccountId`, `Account__c`, `Opportunity__c`, `Project__c`):** All references to Account, Opportunity, and Project IDs will use the corresponding natural keys from their source tables. For example, `AccountId` in `Contact` will come directly from `ansprechpartner.kunde`, as it is assumed to be the same format as `kunden.kunden_nr` (which forms `Account.Id`). This strategy is consistently applied across all foreign key relationships.\n3.  **Enum Mapping Strategy:** All enum-typed target columns will use a `CASE` statement to map source values to the defined target enum domain. Source values will be `TRIM(UPPER(...))`ed for robust matching. Unmatched values will default to `NULL`, except for `NOT NULL` target columns where a sensible default (e.g., 'Prospecting' for `Opportunity.StageName`) will be provided.\n4.  **Date Transformation:** Source date columns (`garantie_bis`, `abschlussdatum`, `go_live`) will be parsed using `TO_DATE` with multiple format attempts (`YYYY-MM-DD`, `DD.MM.YYYY`, `MM/DD/YYYY`) and then formatted to `YYYY-MM-DD` using `TO_CHAR`. Unparseable dates will result in `NULL`, or a sentinel date (`1900-01-01`) if the target column is `NOT NULL`.\n5.  **Amount and Currency:** `Opportunity.Amount` (from `chancen.volumen`) is `double precision` and assumed to be in a standard numeric format, requiring direct mapping. `Opportunity.CurrencyIsoCode` (from `chancen.waehrung`) will be `TRIM(UPPER(...))`ed, assuming source values are already valid ISO codes or can be directly mapped.\n6.  **Legacy IDs:** All `Legacy_*__c` columns will be populated with the natural key from their respective primary source table (e.g., `Account.Legacy_Customer_ID__c` from `kunden.kunden_nr`).\n7.  **Default/Generated Columns:** `CreatedDate`, `LastModifiedDate` will default to `CURRENT_TIMESTAMP::TEXT`. `IsDeleted` will default to `0` (false) as no corresponding source columns exist.\n8.  **String Normalization:** `TRIM()` will be applied to most string columns. `LOWER()` will be used for emails. `COALESCE` will handle `NOT NULL` target columns where source might be `NULL`.\nThis model transforms `fixture_wrong_field_names_v2_src.assets` into the `Installed_Asset__c` target table. It maps direct fields, handles date parsing for `Warranty_End_Date__c`, and assigns default values for `CreatedDate`, `LastModifiedDate`, and `IsDeleted`. Foreign keys `Account__c` and `Project__c` are mapped directly from their respective source reference fields."
+        }
+      ],
+      "strategy_name": "plan_write_critique",
+      "strategy_config": {
+        "planner_model": {
+          "provider": "google_cloud",
+          "model_name": "gemini-2.5-flash",
+          "base_url": null,
+          "api_key_env": "GOOGLE_API_KEY",
+          "extra": {
+            "google_thinking_config": {
+              "thinking_budget": 2048
+            }
+          }
+        },
+        "writer_model": {
+          "provider": "google_cloud",
+          "model_name": "gemini-2.5-flash",
+          "base_url": null,
+          "api_key_env": "GOOGLE_API_KEY",
+          "extra": {
+            "google_thinking_config": {
+              "thinking_budget": 2048
+            }
+          }
+        },
+        "critic_model": {
+          "provider": "google_cloud",
+          "model_name": "gemini-2.5-flash",
+          "base_url": null,
+          "api_key_env": "GOOGLE_API_KEY",
+          "extra": {
+            "google_thinking_config": {
+              "thinking_budget": 2048
+            }
+          }
+        },
+        "max_dbt_correction_initial": 5,
+        "max_critique_rounds": 3,
+        "max_dbt_correction_per_critique": 3,
+        "context_mode": "metadata_only",
+        "samples_per_table": 3,
+        "max_query_tool_rows": 100,
+        "serial_llm_calls": false
+      }
+    },
+    "self_reported_status": "complete"
+  },
+  "metrics": {
+    "dbt_success": true,
+    "dbt_models_succeeded": 5,
+    "dbt_models_failed": 0,
+    "dbt_error_messages": [],
+    "strategy_status": "complete",
+    "llm_calls_total": 10,
+    "llm_calls_by_role": {
+      "planner": 1,
+      "writer": 7,
+      "critic": 2
+    },
+    "tokens_input_total": 46809,
+    "tokens_input_by_role": {
+      "planner": 2126,
+      "writer": 26860,
+      "critic": 17823
+    },
+    "tokens_input_cached": 0,
+    "tokens_input_uncached": 46809,
+    "tokens_input_peak": 9586,
+    "tokens_input_peak_by_role": {
+      "planner": 2126,
+      "writer": 4355,
+      "critic": 9586
+    },
+    "tokens_output_total": 27901,
+    "tokens_output_by_role": {
+      "planner": 8003,
+      "writer": 9170,
+      "critic": 10728
+    },
+    "tokens_thoughts_total": 18522,
+    "tokens_thoughts_by_role": {
+      "planner": 5218,
+      "writer": 3419,
+      "critic": 9885
+    },
+    "tokens_tool_use_prompt_total": 0,
+    "tokens_tool_use_prompt_by_role": {
+      "planner": 0,
+      "writer": 0,
+      "critic": 0
+    },
+    "context_utilization_peak": 0.009141921997070312,
+    "llm_retries_total": 0,
+    "usage_details_total": {
+      "thoughts_tokens": 18522.0,
+      "text_prompt_tokens": 46809.0,
+      "text_candidates_tokens": 9379.0
+    },
+    "traffic_type_counts": {
+      "ON_DEMAND": 10
+    },
+    "cache_hit_rate": 0.0,
+    "dollar_cost_total": 0.13010020000000003,
+    "dollar_cost_by_role": {
+      "planner": 0.033690300000000006,
+      "writer": 0.0395305,
+      "critic": 0.05687940000000001
+    },
+    "latency_ms_by_role": {
+      "planner": 42206.20545797283,
+      "writer": 7624.830392704877,
+      "critic": 23348.963874508627
+    },
+    "latency_ms_sum_by_role": {
+      "planner": 42206.20545797283,
+      "writer": 53373.81274893414,
+      "critic": 46697.92774901725
+    },
+    "latency_ms_total": 142277.94595592422,
+    "latency_ms_p50_by_role": {
+      "planner": 42206.20545797283,
+      "writer": 8217.469291004818,
+      "critic": 23348.963874508627
+    },
+    "latency_ms_p95_by_role": {
+      "planner": 42206.20545797283,
+      "writer": 8763.73429101659,
+      "critic": 26739.1504580155
+    },
+    "produced_column_count": 57,
+    "produced_type_histogram": {
+      "text": 51,
+      "integer": 5,
+      "double precision": 1
+    },
+    "target_columns_covered": 1.0,
+    "extraneous_columns": 0,
+    "type_mismatches": 0,
+    "gt_recall_overall": 1.0,
+    "gt_precision_overall": 1.0,
+    "gt_f1_overall": 1.0,
+    "gt_recall_strict": 1.0,
+    "gt_tables_materialized": 1.0,
+    "gt_per_table": {
+      "Account": {
+        "expected": 100,
+        "produced": 100,
+        "matched": 100,
+        "recall": 1.0,
+        "precision": 1.0,
+        "f1": 1.0
+      },
+      "Contact": {
+        "expected": 201,
+        "produced": 201,
+        "matched": 201,
+        "recall": 1.0,
+        "precision": 1.0,
+        "f1": 1.0
+      },
+      "Opportunity": {
+        "expected": 235,
+        "produced": 235,
+        "matched": 235,
+        "recall": 1.0,
+        "precision": 1.0,
+        "f1": 1.0
+      },
+      "Project__c": {
+        "expected": 155,
+        "produced": 155,
+        "matched": 155,
+        "recall": 1.0,
+        "precision": 1.0,
+        "f1": 1.0
+      },
+      "Installed_Asset__c": {
+        "expected": 400,
+        "produced": 400,
+        "matched": 400,
+        "recall": 1.0,
+        "precision": 1.0,
+        "f1": 1.0
+      }
+    },
+    "gt_notes_by_category": {
+      "clean": {
+        "expected": 1091,
+        "matched": 1091,
+        "recall": 1.0
+      }
+    },
+    "gt_field_accuracy_overall": 0.6969026548672567,
+    "gt_field_accuracy_per_table": {
+      "Account": {
+        "overall": 0.9488888888888889,
+        "per_column": {
+          "BillingCity": 1.0,
+          "BillingCountry": 1.0,
+          "Customer_Tier__c": 0.54,
+          "ERP_Number__c": 1.0,
+          "Industry": 1.0,
+          "Legacy_Customer_ID__c": 1.0,
+          "Name": 1.0,
+          "Region__c": 1.0,
+          "Website": 1.0
+        },
+        "compared_cells": 900,
+        "matched_cells": 854
+      },
+      "Contact": {
+        "overall": 0.6666666666666666,
+        "per_column": {
+          "AccountId": 0.0,
+          "Email": 1.0,
+          "FirstName": 1.0,
+          "LastName": 1.0,
+          "Legacy_Contact_ID__c": 1.0,
+          "Phone": 1.0,
+          "Preferred_Language__c": 0.0,
+          "Role__c": 0.0,
+          "Title": 1.0
+        },
+        "compared_cells": 1809,
+        "matched_cells": 1206
+      },
+      "Opportunity": {
+        "overall": 0.7477203647416414,
+        "per_column": {
+          "AccountId": 0.0,
+          "Amount": 1.0,
+          "CloseDate": 1.0,
+          "CurrencyIsoCode": 1.0,
+          "Legacy_Opportunity_ID__c": 1.0,
+          "Name": 1.0,
+          "StageName": 0.23404255319148937
+        },
+        "compared_cells": 1645,
+        "matched_cells": 1230
+      },
+      "Project__c": {
+        "overall": 0.5,
+        "per_column": {
+          "Account__c": 0.0,
+          "Go_Live_Date__c": 1.0,
+          "Legacy_Project_ID__c": 1.0,
+          "Name": 1.0,
+          "Opportunity__c": 0.0,
+          "Project_Status__c": 0.0
+        },
+        "compared_cells": 930,
+        "matched_cells": 465
+      },
+      "Installed_Asset__c": {
+        "overall": 0.6666666666666666,
+        "per_column": {
+          "Account__c": 0.0,
+          "Legacy_Asset_ID__c": 1.0,
+          "Name": 1.0,
+          "Project__c": 0.0,
+          "Serial_Number__c": 1.0,
+          "Warranty_End_Date__c": 1.0
+        },
+        "compared_cells": 2400,
+        "matched_cells": 1600
+      }
+    }
+  },
+  "error": null,
+  "source_schema": "fixture_wrong_field_names_v2_src",
+  "out_schema": "rmr3m2e8n_plan_write_critique_wrong_field_names_v2",
+  "provenance": {
+    "campaign_id": "2026-07-06-yq3v",
+    "git_sha": "87cbd688494ada7ac5780d8cab183b820277e00e",
+    "git_branch": "main",
+    "git_dirty": true,
+    "orchestrator_version": "0.1.0",
+    "strategy_spec_path": null,
+    "strategy_spec_sha256": null,
+    "dbt_project_sha256": "4f5cf6660197c80f01039c4ef508288aeafe3d39b0e7967f19c8b1a15f221584",
+    "recorded_at": "2026-07-06T20:25:24.382267"
+  }
+}

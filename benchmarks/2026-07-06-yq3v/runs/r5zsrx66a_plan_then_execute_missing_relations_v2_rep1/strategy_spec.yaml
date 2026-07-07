@@ -1,0 +1,20 @@
+name: plan_then_execute_context_mode_metadata_only_enable_self_correction_true
+strategy: plan_then_execute
+config:
+  planner_model:
+    provider: google_cloud
+    model_name: gemini-2.5-flash
+    api_key_env: GOOGLE_API_KEY
+    extra:
+      google_thinking_config:
+        thinking_budget: 2048
+  writer_model:
+    provider: google_cloud
+    model_name: gemini-2.5-flash
+    api_key_env: GOOGLE_API_KEY
+    extra:
+      google_thinking_config:
+        thinking_budget: 2048
+  max_self_correction_passes: 5
+  context_mode: metadata_only
+  enable_self_correction: true

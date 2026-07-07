@@ -1,0 +1,21 @@
+name: ensemble_vote_context_mode_metadata_only_enable_self_correction_true
+strategy: ensemble_vote
+config:
+  writer_model:
+    provider: google_cloud
+    model_name: gemini-2.5-flash
+    api_key_env: GOOGLE_API_KEY
+    extra:
+      google_thinking_config:
+        thinking_budget: 2048
+  judge_model:
+    provider: google_cloud
+    model_name: gemini-2.5-flash
+    api_key_env: GOOGLE_API_KEY
+    extra:
+      google_thinking_config:
+        thinking_budget: 2048
+  max_self_correction_passes: 5
+  n_candidates: 3
+  context_mode: metadata_only
+  enable_self_correction: true

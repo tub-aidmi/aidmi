@@ -1,0 +1,14 @@
+name: structured_per_table_context_mode_metadata_only_enable_self_correction_false
+strategy: structured_per_table
+config:
+  writer_model:
+    provider: google_cloud
+    model_name: gemini-2.5-flash
+    api_key_env: GOOGLE_API_KEY
+    extra:
+      google_thinking_config:
+        thinking_budget: 2048
+  max_self_correction_passes: 5
+  validation_gate: static
+  context_mode: metadata_only
+  enable_self_correction: false

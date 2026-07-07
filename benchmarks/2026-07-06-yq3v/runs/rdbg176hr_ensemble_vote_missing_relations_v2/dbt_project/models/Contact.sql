@@ -1,0 +1,34 @@
+-- dbt model for Contact
+-- depends_on: fixture_missing_relations_v2_src.contact, fixture_missing_relations_v2_src.account
+
+{{ config(materialized='table') }}
+
+SELECT
+    c.id AS "Id",
+    CASE
+        WHEN POSITION(' ' IN c.full_name) > 0 THEN SUBSTRING(c.full_name FROM 1 FOR POSITION(' ' IN c.full_name) - 1)
+        ELSE NULL
+    END AS "FirstName",
+    COALESCE(
+        CASE
+            WHEN POSITION(' ' IN c.full_name) > 0 THEN SUBSTRING(c.full_name FROM POSITION(' ' IN c.full_name) + 1)
+            ELSE c.full_name
+        END,
+        'Unknown' -- Default for NOT NULL LastName
+    ) AS "LastName",
+    c.email AS "Email",
+    NULL AS "Phone",
+    NULL AS "Title",
+    NULL AS "Role__c", -- No source for this enum
+    NULL AS "Preferred_Language__c", -- No source for this enum
+    a.id AS "AccountId", -- Join with account source to get AccountId
+    c.id AS "Legacy_Contact_ID__c",
+    NULL AS "CreatedDate",
+    NULL AS "LastModifiedDate",
+    0 AS "IsDeleted"
+FROM
+    {{ source('fixture_missing_relations_v2_src', 'contact') }} AS c
+LEFT JOIN
+    {{ source('fixture_missing_relations_v2_src', 'account') }} AS a
+ON
+    c.account_ref = a.id

@@ -1,0 +1,19 @@
+{{ config(materialized='table') }}
+
+SELECT
+    id AS "Id",
+    COALESCE(name, 'Unknown') AS "Name",
+    serial_number__c AS "Serial_Number__c",
+    TO_CHAR(CASE
+        WHEN warranty_end_date__c ~ '^\d{4}-\d{2}-\d{2}$' THEN TO_DATE(warranty_end_date__c, 'YYYY-MM-DD')
+        WHEN warranty_end_date__c ~ '^\d{2}/\d{2}/\d{4}$' THEN TO_DATE(warranty_end_date__c, 'MM/DD/YYYY')
+        WHEN warranty_end_date__c ~ '^\d{2}.\d{2}.\d{4}$' THEN TO_DATE(warranty_end_date__c, 'DD.MM.YYYY')
+        ELSE NULL
+    END, 'YYYY-MM-DD') AS "Warranty_End_Date__c",
+    account__c AS "Account__c",
+    project__c AS "Project__c",
+    id AS "Legacy_Asset_ID__c",
+    NULL::text AS "CreatedDate",
+    NULL::text AS "LastModifiedDate",
+    0 AS "IsDeleted"
+FROM {{ source('fixture_messy_data_v2_src', 'installed_asset__c') }}

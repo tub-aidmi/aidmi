@@ -1,0 +1,1 @@
+selezione dbt sql

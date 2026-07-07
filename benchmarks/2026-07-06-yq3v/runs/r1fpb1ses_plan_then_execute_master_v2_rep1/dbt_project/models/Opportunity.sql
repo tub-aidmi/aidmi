@@ -1,0 +1,1 @@
+renovating the kitchen. ', 2) FROM (VALUES ('123.456,78 €'), ('$987,654.32'), ('1.234'), ('5,678')) AS t(val);
