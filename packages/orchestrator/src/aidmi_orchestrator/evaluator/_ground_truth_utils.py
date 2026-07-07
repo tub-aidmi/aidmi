@@ -127,6 +127,12 @@ def values_equal(produced: Any, golden: Any) -> bool:
     return str(produced) == str(golden)
 
 
+def row_is_field_correct(golden_row: dict[str, Any], produced_row: dict[str, Any]) -> bool:
+    """A matched row is strict-correct iff every compared column matches."""
+    results = compare_matched_rows(golden_row, produced_row)
+    return all(results.values()) if results else False
+
+
 def compare_matched_rows(
     golden_row: dict[str, Any],
     produced_row: dict[str, Any],
