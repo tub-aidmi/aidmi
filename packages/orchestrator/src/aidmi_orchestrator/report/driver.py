@@ -27,8 +27,8 @@ from aidmi_orchestrator.report.tables import (
     failure_accounting_table,
     silent_failure_table,
     summary_by_ctx_table,
-    summary_by_sc_ctx_table,
     summary_by_sc_table,
+    summary_by_strategy_table,
     summary_overall_table,
 )
 from aidmi_orchestrator.report.theme import apply_theme
@@ -87,9 +87,9 @@ def _build_sections(
         Section(
             "summary", "Summary", [],
             "Run totals with mean / median / sd for the headline metrics — overall, "
-            "then split by the two dominant levers (self-correction, context mode) "
-            "and their interaction.",
-            ("summary_overall", "summary_sc", "summary_ctx", "summary_scxctx"),
+            "split by the two dominant levers (self-correction, context mode), then "
+            "per strategy with self-correction on.",
+            ("summary_overall", "summary_sc", "summary_ctx", "summary_strategy"),
         ),
         Section(
             "headline", "Headline", [figs["pareto"]],
@@ -165,7 +165,7 @@ def build_report(records: list[RunRecord], out_dir: Path) -> list[Path]:
         "summary_overall": summary_overall_table(records),
         "summary_sc": summary_by_sc_table(records),
         "summary_ctx": summary_by_ctx_table(records),
-        "summary_scxctx": summary_by_sc_ctx_table(records),
+        "summary_strategy": summary_by_strategy_table(records),
         "best_config": best_config_table(records),
         "failure_accounting": failure_accounting_table(records),
         "silent_failure": silent_failure_table(records),

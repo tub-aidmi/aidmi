@@ -6,8 +6,8 @@ from aidmi_orchestrator.report.tables import (
     best_config_table,
     silent_failure_table,
     summary_by_ctx_table,
-    summary_by_sc_ctx_table,
     summary_by_sc_table,
+    summary_by_strategy_table,
     summary_overall_table,
 )
 
@@ -186,13 +186,29 @@ def test_summary_by_ctx_warns_pooled():
     assert "metadata_only" in out
 
 
-def test_summary_by_sc_ctx_only_present_combos():
+def test_summary_by_strategy_only_sc_on_rows():
     recs = [
-        _mk("a", "metadata_only", False, "m", recall=0.4, materialized=True),
-        _mk("a", "live_query_tool", True, "m", recall=1.0, materialized=True),
+        _mk("alpha", "metadata_only", True, "m", recall=1.0, materialized=True),
+        _mk("alpha", "live_query_tool", True, "m", recall=0.8, materialized=True),
+        _mk("beta", "metadata_only", True, "m", recall=0.5, materialized=True),
+        _mk("beta", "metadata_only", False, "m", recall=0.2, materialized=True),
     ]
-    out = summary_by_sc_ctx_table(recs)
-    assert "off · metadata_only" in out
-    assert "on · live_query_tool" in out
-    # header + 2 present combos only (not the 2 absent cross cells)
-    assert out.count("<tr") == 3
+    out = summary_by_strategy_table(recs)
+    # one row per strategy that has sc=on runs; sc=off runs are excluded
+    assert out.count("<tr") == 3  # header + alpha + beta
+    assert "<td>alpha</td>" in out
+    assert "<td>beta</td>" in out
+    # alpha (mean recall 0.9) sorts above beta (0.5)
+    assert out.index("alpha") < out.index("beta")
+
+
+def test_summary_by_strategy_pools_both_context_modes():
+    # alpha has one run per context mode, both sc=on -> a single pooled row of n=2
+    recs = [
+        _mk("alpha", "metadata_only", True, "m", recall=1.0, materialized=True),
+        _mk("alpha", "live_query_tool", True, "m", recall=0.0, materialized=True),
+    ]
+    out = summary_by_strategy_table(recs)
+    assert out.count("<tr") == 2  # header + one pooled alpha row
+    assert ">2<" in out  # both context runs pooled
+    assert "0.500 / 0.500 ±0.500" in out  # recall pooled across both modes

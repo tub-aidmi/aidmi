@@ -195,15 +195,22 @@ def summary_by_ctx_table(records: list[RunRecord]) -> str:
     )
 
 
-def summary_by_sc_ctx_table(records: list[RunRecord]) -> str:
-    groups = []
-    for sc in (True, False):
-        for ctx in _ctx_order(records):
-            recs = [r for r in records if r.sc is sc and r.ctx == ctx]
-            if recs:
-                groups.append((f"{_fmt_sc(sc)} · {ctx or 'n/a'}", recs))
+def _mean_recall(recs: list[RunRecord]) -> float:
+    vals = _zero_vals(recs, lambda r: r.recall)
+    return sum(vals) / len(vals) if vals else 0.0
+
+
+def summary_by_strategy_table(records: list[RunRecord]) -> str:
+    on = [r for r in records if r.sc is True]
+    groups = [(cell, [r for r in on if r.cell == cell])
+              for cell in sorted({r.cell for r in on})]
+    groups.sort(key=lambda g: (-_mean_recall(g[1]), g[0]))
     return _summary_table(
-        groups, caption="Split by self-correction × context mode. " + _SUMMARY_LEGEND)
+        groups,
+        caption="Per strategy — self-correction on only, both context modes "
+        "pooled (context makes little overall difference). Ordered by mean "
+        "recall. " + _SUMMARY_LEGEND,
+    )
 
 
 def failure_accounting_table(records: list[RunRecord]) -> str:
