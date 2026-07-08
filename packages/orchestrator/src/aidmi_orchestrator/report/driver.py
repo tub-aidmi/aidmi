@@ -93,13 +93,6 @@ def _build_sections(
              "summary_sc_on", "summary_sc_off"),
         ),
         Section(
-            "metric_choice", "Metric choice", [figs["prec_recall"]],
-            "Precision saturates near 1.0, so recall and materialization — not f1 — are the discriminating quality axes. "
-            "The table reports recall and f1 both ways: evaluated-only means silently drop runs that produced nothing, "
-            "so they overstate quality; the 'incl. failed' columns count those runs as 0.",
-            ("failure_accounting",),
-        ),
-        Section(
             "distribution", "Distribution",
             [figs["metric_distribution"], figs["score_histogram"]],
             "Scores are bimodal — runs pile at 0 and 1, not the mean. The box + raw dots expose the spread a mean bar hides.",
