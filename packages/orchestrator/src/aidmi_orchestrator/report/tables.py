@@ -117,11 +117,13 @@ def best_config_table(records: list[RunRecord]) -> str:
 
 
 _SUMMARY_HEADER = [
-    "Group", "n", "Recall*", "f1*", "Field acc", "Mat%", "Cost $", "Secs",
+    "Group", "n", "Recall", "f1", "Field acc", "Mat%", "Cost $", "Time (s)",
 ]
 _SUMMARY_LEGEND = (
-    "Cells: mean / median ±sd. * recall and f1 count a run that produced "
-    "nothing as 0; field acc, cost and secs are over evaluated runs only."
+    "Cells: mean / median ±sd. Recall counts a run that produced nothing as a "
+    "genuine 0-of-N score; f1, field acc, cost and time are over runs that "
+    "produced output (f1 is undefined with no rows). Mat% is the share of runs "
+    "that materialized at least one target table."
 )
 
 
@@ -149,7 +151,7 @@ def _summary_row(label: str, recs: list[RunRecord]) -> str:
     return _row([
         _esc(label), _esc(len(recs)),
         _fmt_stats(_zero_vals(recs, lambda r: r.recall)),
-        _fmt_stats(_zero_vals(recs, lambda r: r.f1)),
+        _fmt_stats(_eval_vals(recs, lambda r: r.f1)),
         _fmt_stats(_eval_vals(recs, lambda r: r.field_acc)),
         _fmt_pct(mat),
         _fmt_stats(_eval_vals(recs, lambda r: r.cost), prec=4, prefix="$"),
