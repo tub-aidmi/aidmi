@@ -31,7 +31,14 @@ def _row_key(attr):
     return lambda r: (r.model, r.cell, getattr(r, attr))
 
 
-def _draw_panel(ax, cells, model, mat_or_rec, overall, x_order, is_rate):
+def _total_tokens(r):
+    if r.tokens_in is None and r.tokens_out is None:
+        return None
+    return (r.tokens_in or 0) + (r.tokens_out or 0)
+
+
+def _draw_panel(ax, cells, model, mat_or_rec, overall, x_order, *, is_rate,
+                unit_axis):
     for cell in cells:
         color = color_for_cell(cell)
         pts = [
@@ -69,11 +76,14 @@ def _draw_panel(ax, cells, model, mat_or_rec, overall, x_order, is_rate):
 
     ax.set_xlim(-0.35, len(x_order) - 1 + 0.35)
     ax.set_xticks(range(len(x_order)))
-    ax.set_ylim(-0.03, 1.03)
-    if is_rate:
-        from matplotlib.ticker import PercentFormatter
+    if unit_axis:
+        ax.set_ylim(-0.03, 1.03)
+        if is_rate:
+            from matplotlib.ticker import PercentFormatter
 
-        ax.yaxis.set_major_formatter(PercentFormatter(xmax=1.0))
+            ax.yaxis.set_major_formatter(PercentFormatter(xmax=1.0))
+    else:
+        ax.set_ylim(bottom=0)
 
 
 def _legend(fig, cells):
@@ -117,45 +127,51 @@ def _slope_figure(
 
     filtered = _filter_valid(records, attr, x_order)
     key = _row_key(attr)
-    mat = materialization_rate(filtered, key)
-    rec = group_mean(filtered, key, lambda r: r.recall)
-
     model_x_key = lambda r: (r.model, getattr(r, attr))  # noqa: E731
-    mat_overall = materialization_rate(filtered, model_x_key)
-    rec_overall = group_mean(filtered, model_x_key, lambda r: r.recall)
+
+    # Three stacked metric rows sharing the lever x-axis: materialization and
+    # recall on a [0,1] axis, tokens on an absolute axis.
+    metrics = [
+        ("Materialization rate", materialization_rate(filtered, key),
+         materialization_rate(filtered, model_x_key), True, True),
+        ("Recall", group_mean(filtered, key, lambda r: r.recall),
+         group_mean(filtered, model_x_key, lambda r: r.recall), False, True),
+        ("Mean tokens/run (in+out)", group_mean(filtered, key, _total_tokens),
+         group_mean(filtered, model_x_key, _total_tokens), False, False),
+    ]
 
     models = sorted({r.model for r in filtered})
     cells = sorted({r.cell for r in filtered})
     cost_by_model = cost_by_model or {}
+    n_cols = max(len(models), 1)
 
-    n_rows = max(len(models), 1)
     fig, axes = plt.subplots(
-        nrows=n_rows, ncols=2, figsize=(12.5, 3.6 * n_rows + 0.6), squeeze=False,
+        nrows=len(metrics), ncols=n_cols, sharex=True, squeeze=False,
+        figsize=(6.5 * n_cols + 0.6, 8.6),
     )
 
-    for i, model in enumerate(models):
-        ax_mat, ax_rec = axes[i][0], axes[i][1]
-        _draw_panel(ax_mat, cells, model, mat, mat_overall, x_order, is_rate=True)
-        _draw_panel(ax_rec, cells, model, rec, rec_overall, x_order, is_rate=False)
-
-        ax_mat.set_xticklabels(x_labels)
-        ax_rec.set_xticklabels(x_labels)
-        ax_mat.set_ylabel("Materialization rate")
-        ax_rec.set_ylabel("Recall")
-        # Per-model-row header. The cost delta (ctx figure only) is scoped to THIS
-        # model row, so a multi-model campaign never shows a single pooled Δ that
-        # matches no row and could mask opposite per-model trends.
-        ax_mat.set_title(model, loc="left", color=_INK, fontsize=12)
+    for j, model in enumerate(models):
+        for i, (ylabel, values, overall, is_rate, unit_axis) in enumerate(metrics):
+            ax = axes[i][j]
+            _draw_panel(ax, cells, model, values, overall, x_order,
+                        is_rate=is_rate, unit_axis=unit_axis)
+            ax.set_ylabel(ylabel)
+        top = axes[0][j]
+        # Model header (multi-model only); the ctx cost delta is scoped to THIS
+        # model column so a pooled Δ never masks opposite per-model trends.
+        header = model if len(models) > 1 else ""
         if model in cost_by_model:
-            ax_rec.set_title(
-                cost_by_model[model], loc="right", color=_MUTED, fontsize=9.5,
-            )
+            header = f"{header}  {cost_by_model[model]}".strip()
+        if header:
+            top.set_title(header, loc="left", color=_MUTED, fontsize=9.5)
+        axes[-1][j].set_xticks(range(len(x_order)))
+        axes[-1][j].set_xticklabels(x_labels)
 
     fig.suptitle(title, color=_INK, fontsize=13, x=0.05, y=0.99, ha="left")
 
     _legend(fig, cells)
     fig.subplots_adjust(
-        left=0.11, right=0.78, top=0.85, bottom=0.1, hspace=0.6, wspace=0.3,
+        left=0.13, right=0.78, top=0.9, bottom=0.08, hspace=0.18,
     )
 
     out = out_dir / filename

@@ -93,14 +93,14 @@ def _build_sections(
              "summary_sc_on", "summary_sc_off"),
         ),
         Section(
+            "levers", "Levers",
+            [figs["lever_sc"], figs["lever_ctx"]],
+            "Self-correction is the dominant lever; live_query_tool spends ~2.5× the input tokens of metadata_only for a fraction of a point of f1. Each figure stacks materialization, recall, and token spend against the lever.",
+        ),
+        Section(
             "distribution", "Distribution",
             [figs["metric_distribution"], figs["score_histogram"]],
             "Scores are bimodal — runs pile at 0 and 1, not the mean. The box + raw dots expose the spread a mean bar hides.",
-        ),
-        Section(
-            "levers", "Levers",
-            [figs["lever_sc"], figs["lever_ctx"], figs["ctx_comparison"]],
-            "Self-correction is the dominant lever; live_query_tool spends ~2.5× the input tokens of metadata_only for a fraction of a point of f1.",
         ),
         Section(
             "strategy", "Strategy", [figs["scorecard"], figs["cost_latency"]],
