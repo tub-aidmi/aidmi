@@ -24,6 +24,7 @@ from aidmi_orchestrator.report.html import Section, render_gallery
 from aidmi_orchestrator.report.tables import (
     appendix_table,
     best_config_table,
+    failure_accounting_table,
     silent_failure_table,
 )
 from aidmi_orchestrator.report.theme import apply_theme
@@ -86,7 +87,10 @@ def _build_sections(
         ),
         Section(
             "metric_choice", "Metric choice", [figs["prec_recall"]],
-            "Precision saturates near 1.0, so recall and materialization — not f1 — are the discriminating quality axes.",
+            "Precision saturates near 1.0, so recall and materialization — not f1 — are the discriminating quality axes. "
+            "The table reports recall and f1 both ways: evaluated-only means silently drop runs that produced nothing, "
+            "so they overstate quality; the 'incl. failed' columns count those runs as 0.",
+            ("failure_accounting",),
         ),
         Section(
             "distribution", "Distribution",
@@ -148,6 +152,7 @@ def build_report(records: list[RunRecord], out_dir: Path) -> list[Path]:
 
     tables = {
         "best_config": best_config_table(records),
+        "failure_accounting": failure_accounting_table(records),
         "silent_failure": silent_failure_table(records),
         "appendix": appendix_table(records),
     }

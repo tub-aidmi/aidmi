@@ -4,7 +4,14 @@ from __future__ import annotations
 import html
 import statistics
 
-from aidmi_orchestrator.report.aggregate import group_mean, materialization_rate, rep_values
+from collections import Counter
+
+from aidmi_orchestrator.report.aggregate import (
+    group_mean,
+    group_mean_zero,
+    materialization_rate,
+    rep_values,
+)
 from aidmi_orchestrator.report.data import RunRecord
 
 
@@ -106,6 +113,50 @@ def best_config_table(records: list[RunRecord]) -> str:
         ]))
 
     return _table(header, rows)
+
+
+def failure_accounting_table(records: list[RunRecord]) -> str:
+    """Per-strategy recall and f1 reported both ways: including and excluding
+    failed runs.
+
+    A run that materialized nothing produced nothing evaluable: its recall is 0
+    and its f1 is null (precision is undefined with no produced rows). group_mean
+    drops those nulls (evaluated-only view), so the evaluated-only f1 silently
+    excludes every failed run and overstates quality; group_mean_zero counts them
+    as 0 (including-failed view). Showing both alongside the failed-run count
+    exposes the size of that inflation.
+    """
+    cell_key = lambda r: r.cell  # noqa: E731
+    recall_eval = group_mean(records, cell_key, lambda r: r.recall)
+    recall_all = group_mean_zero(records, cell_key, lambda r: r.recall)
+    f1_eval = group_mean(records, cell_key, lambda r: r.f1)
+    f1_all = group_mean_zero(records, cell_key, lambda r: r.f1)
+
+    runs = Counter(r.cell for r in records)
+    failed = Counter(r.cell for r in records if not r.materialized)
+
+    cells = sorted(runs, key=lambda c: (-f1_all.get(c, 0.0), c))
+
+    header = [
+        "Strategy", "Runs", "Failed (nothing produced)",
+        "Recall incl. failed", "Recall evaluated",
+        "f1 incl. failed", "f1 evaluated",
+    ]
+    rows = [
+        _row([
+            _esc(c), _esc(runs[c]), _esc(failed[c]),
+            _fmt_rate3(recall_all.get(c)), _fmt_rate3(recall_eval.get(c)),
+            _fmt_rate3(f1_all.get(c)), _fmt_rate3(f1_eval.get(c)),
+        ])
+        for c in cells
+    ]
+    total_failed = sum(failed.values())
+    caption = (
+        f"{total_failed} of {sum(runs.values())} runs materialized nothing; "
+        f"'evaluated' columns drop them (inflating the mean), 'incl. failed' "
+        f"count them as recall/f1 0"
+    )
+    return _table(header, rows, caption=caption)
 
 
 def silent_failure_table(records: list[RunRecord]) -> str:
