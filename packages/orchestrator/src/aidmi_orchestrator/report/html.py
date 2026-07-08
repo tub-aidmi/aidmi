@@ -97,6 +97,7 @@ nav a:hover { text-decoration: underline; }
 main { max-width: 1100px; margin: 0 auto; padding: 1rem 1.5rem 3rem; }
 h1 { margin: 1.5rem 0 0.25rem; }
 h2 { margin-top: 2.5rem; padding-top: 0.5rem; border-top: 1px solid #ddd; }
+h3 { margin: 1.5rem 0 0.5rem; font-size: 1.05rem; }
 .caption { color: #444; font-style: italic; margin-top: 0; }
 .figures { display: flex; flex-wrap: wrap; gap: 1rem; margin: 1rem 0; }
 figure { margin: 0; max-width: 520px; }

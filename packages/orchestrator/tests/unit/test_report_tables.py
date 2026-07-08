@@ -6,10 +6,9 @@ from aidmi_orchestrator.report.tables import (
     best_config_table,
     silent_failure_table,
     summary_by_ctx_table,
-    summary_by_fixture_table,
     summary_by_sc_table,
-    summary_by_strategy_table,
     summary_overall_table,
+    summary_sc_block,
 )
 
 FIX = Path(__file__).parent / "fixtures" / "mini_results.jsonl"
@@ -187,45 +186,36 @@ def test_summary_by_ctx_warns_pooled():
     assert "metadata_only" in out
 
 
-def test_summary_by_strategy_only_sc_on_rows():
-    recs = [
-        _mk("alpha", "metadata_only", True, "m", recall=1.0, materialized=True),
-        _mk("alpha", "live_query_tool", True, "m", recall=0.8, materialized=True),
-        _mk("beta", "metadata_only", True, "m", recall=0.5, materialized=True),
-        _mk("beta", "metadata_only", False, "m", recall=0.2, materialized=True),
+def _block_recs():
+    return [
+        _mk("alpha", "metadata_only", True, "m", recall=1.0, fixture="fx1"),
+        _mk("alpha", "live_query_tool", True, "m", recall=0.8, fixture="fx2"),
+        _mk("beta", "metadata_only", True, "m", recall=0.5, fixture="fx1"),
+        _mk("beta", "metadata_only", False, "m", recall=0.2, fixture="fx2"),
     ]
-    out = summary_by_strategy_table(recs)
-    # one row per strategy that has sc=on runs; sc=off runs are excluded
-    assert out.count("<tr") == 3  # header + alpha + beta
+
+
+def test_summary_sc_block_on_has_heading_and_both_tables():
+    out = summary_sc_block(_block_recs(), sc=True)
+    assert "<h3>Self-correction on</h3>" in out
+    # strategy table then fixture table, both present
+    assert "Per strategy" in out
+    assert "Per fixture" in out
+    assert out.index("Per strategy") < out.index("Per fixture")
+
+
+def test_summary_sc_block_filters_to_its_sc_setting():
+    out = summary_sc_block(_block_recs(), sc=True)
+    # only sc=on runs: alpha (2 ctx runs) + beta (1 run) -> 2 strategies, 2 fixtures
     assert "<td>alpha</td>" in out
     assert "<td>beta</td>" in out
-    # alpha (mean recall 0.9) sorts above beta (0.5)
-    assert out.index("alpha") < out.index("beta")
+    # alpha mean recall 0.9 sorts above beta 0.5 in the strategy table
+    assert out.index("<td>alpha</td>") < out.index("<td>beta</td>")
 
 
-def test_summary_by_strategy_pools_both_context_modes():
-    # alpha has one run per context mode, both sc=on -> a single pooled row of n=2
-    recs = [
-        _mk("alpha", "metadata_only", True, "m", recall=1.0, materialized=True),
-        _mk("alpha", "live_query_tool", True, "m", recall=0.0, materialized=True),
-    ]
-    out = summary_by_strategy_table(recs)
-    assert out.count("<tr") == 2  # header + one pooled alpha row
-    assert ">2<" in out  # both context runs pooled
-    assert "0.500 / 0.500 ±0.500" in out  # recall pooled across both modes
-
-
-def test_summary_by_fixture_only_sc_on_pooled_by_strategy():
-    recs = [
-        _mk("alpha", "metadata_only", True, "m", recall=1.0, fixture="fx1"),
-        _mk("beta", "live_query_tool", True, "m", recall=0.8, fixture="fx1"),
-        _mk("alpha", "metadata_only", True, "m", recall=0.2, fixture="fx2"),
-        _mk("alpha", "metadata_only", False, "m", recall=0.9, fixture="fx1"),
-    ]
-    out = summary_by_fixture_table(recs)
-    # one row per fixture with sc=on runs; sc=off excluded
-    assert out.count("<tr") == 3  # header + fx1 + fx2
-    assert "<td>fx1</td>" in out
-    assert "<td>fx2</td>" in out
-    # fx1 pools its two sc=on strategies (mean recall 0.9) above fx2 (0.2)
-    assert out.index("fx1") < out.index("fx2")
+def test_summary_sc_block_off_excludes_on_runs():
+    out = summary_sc_block(_block_recs(), sc=False)
+    assert "<h3>Self-correction off</h3>" in out
+    # only the single sc=off beta run survives
+    assert "<td>beta</td>" in out
+    assert "<td>alpha</td>" not in out

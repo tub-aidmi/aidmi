@@ -200,29 +200,29 @@ def _mean_recall(recs: list[RunRecord]) -> float:
     return sum(vals) / len(vals) if vals else 0.0
 
 
-def summary_by_strategy_table(records: list[RunRecord]) -> str:
-    on = [r for r in records if r.sc is True]
-    groups = [(cell, [r for r in on if r.cell == cell])
-              for cell in sorted({r.cell for r in on})]
+def _by_attr_table(records: list[RunRecord], attr: str, caption: str) -> str:
+    groups = [(value, [r for r in records if getattr(r, attr) == value])
+              for value in sorted({getattr(r, attr) for r in records})]
     groups.sort(key=lambda g: (-_mean_recall(g[1]), g[0]))
-    return _summary_table(
-        groups,
-        caption="Per strategy — self-correction on only, both context modes "
-        "pooled (context makes little overall difference). Ordered by mean "
-        "recall. " + _SUMMARY_LEGEND,
-    )
+    return _summary_table(groups, caption=caption)
 
 
-def summary_by_fixture_table(records: list[RunRecord]) -> str:
-    on = [r for r in records if r.sc is True]
-    groups = [(fixture, [r for r in on if r.fixture == fixture])
-              for fixture in sorted({r.fixture for r in on})]
-    groups.sort(key=lambda g: (-_mean_recall(g[1]), g[0]))
-    return _summary_table(
-        groups,
-        caption="Per fixture — self-correction on only, strategies and both "
-        "context modes pooled. Ordered by mean recall. " + _SUMMARY_LEGEND,
+def summary_sc_block(records: list[RunRecord], *, sc: bool) -> str:
+    """A self-correction subsection: a per-strategy and a per-fixture table over
+    the runs at the given sc setting, both context modes pooled."""
+    subset = [r for r in records if r.sc is sc]
+    state = "on" if sc else "off"
+    strategy = _by_attr_table(
+        subset, "cell",
+        f"Per strategy — self-correction {state}, both context modes pooled. "
+        f"Ordered by mean recall. " + _SUMMARY_LEGEND,
     )
+    fixture = _by_attr_table(
+        subset, "fixture",
+        f"Per fixture — self-correction {state}, strategies and both context "
+        f"modes pooled. Ordered by mean recall. " + _SUMMARY_LEGEND,
+    )
+    return f'<h3>Self-correction {state}</h3>{strategy}{fixture}'
 
 
 def failure_accounting_table(records: list[RunRecord]) -> str:
