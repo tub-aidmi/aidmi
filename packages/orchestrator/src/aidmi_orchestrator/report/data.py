@@ -13,7 +13,9 @@ MODEL_LABELS = {
 class RunRecord:
     campaign: str; model: str; fixture: str; cell: str
     ctx: str | None; sc: bool | None; rep: int
+    dbt_success: bool
     materialized: bool
+    tables_materialized: float | None
     recall: float | None; precision: float | None; field_acc: float | None
     f1: float | None; recall_strict: float | None
     cost: float | None; secs: float | None
@@ -42,17 +44,22 @@ def _record(row: dict, fallback_campaign: str) -> RunRecord:
     cfg = row.get("strategy_config") or {}
     m = row.get("metrics") or {}
     per_table = m.get("gt_per_table") or {}
-    materialized = bool(m.get("dbt_success"))
+    dbt_success = bool(m.get("dbt_success"))
     status = m.get("strategy_status")
     tables_mat = m.get("gt_tables_materialized")
-    silent = status == "complete" and (m.get("gt_recall_overall") is None or not tables_mat)
+    materialized = bool(tables_mat and tables_mat > 0)
+    silent = status == "complete" and (
+        m.get("gt_recall_overall") is None or not tables_mat
+    )
     prov = row.get("provenance") or {}
     return RunRecord(
         campaign=prov.get("campaign_id") or fallback_campaign,
         model=_model_name(cfg),
         fixture=row["fixture_name"], cell=_cell(row, cfg),
         ctx=cfg.get("context_mode"), sc=cfg.get("enable_self_correction"),
-        rep=row.get("rep_index", 0), materialized=materialized,
+        rep=row.get("rep_index", 0),
+        dbt_success=dbt_success, materialized=materialized,
+        tables_materialized=tables_mat,
         recall=m.get("gt_recall_overall"), precision=m.get("gt_precision_overall"),
         field_acc=m.get("gt_field_accuracy_overall"), f1=m.get("gt_f1_overall"),
         recall_strict=m.get("gt_recall_strict"),

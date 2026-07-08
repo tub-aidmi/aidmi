@@ -4,7 +4,9 @@ from aidmi_orchestrator.report.data import RunRecord
 
 def _r(cell, recall, mat):
     return RunRecord(campaign="c", model="m", fixture="f", cell=cell, ctx="metadata_only",
-        sc=True, rep=0, materialized=mat, recall=recall, precision=None, field_acc=None,
+        sc=True, rep=0, dbt_success=mat, materialized=mat,
+        tables_materialized=1.0 if mat else 0.0,
+        recall=recall, precision=None, field_acc=None,
         f1=None, recall_strict=None, cost=None, secs=None, tokens_in=None, tokens_out=None,
         status="complete", silent_fail=False, tables_declared=5, cols_covered=None)
 

@@ -14,7 +14,9 @@ def _mk(cell, ctx, sc, model, *, recall=None, field_acc=None, cost=None,
         materialized=True, rep=0):
     return RunRecord(
         campaign="c", model=model, fixture="f", cell=cell, ctx=ctx, sc=sc, rep=rep,
-        materialized=materialized, recall=recall, precision=None, field_acc=field_acc,
+        dbt_success=materialized, materialized=materialized,
+        tables_materialized=1.0 if materialized else 0.0,
+        recall=recall, precision=None, field_acc=field_acc,
         f1=None, recall_strict=None, cost=cost, secs=None, tokens_in=None, tokens_out=None,
         status="complete", silent_fail=False, tables_declared=5, cols_covered=None,
     )
