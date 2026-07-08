@@ -128,12 +128,6 @@ _SUMMARY_LEGEND = (
 )
 
 
-def _sc_label(sc: bool | None) -> str:
-    """Self-correction lever label; the None group is plan_write_critique, whose
-    critique is a built-in structural stage rather than the on/off toggle."""
-    return "built-in" if sc is None else _fmt_sc(sc)
-
-
 def _zero_vals(recs: list[RunRecord], metric) -> list[float]:
     return [v if (v := metric(r)) is not None else 0.0 for r in recs]
 
@@ -184,8 +178,8 @@ def summary_overall_table(records: list[RunRecord]) -> str:
 
 
 def summary_by_sc_table(records: list[RunRecord]) -> str:
-    groups = [(_sc_label(sc), [r for r in records if r.sc is sc])
-              for sc in (True, None, False)]
+    groups = [(_fmt_sc(sc), [r for r in records if r.sc is sc])
+              for sc in (True, False)]
     return _summary_table(
         groups, caption="Split by self-correction. " + _SUMMARY_LEGEND)
 
@@ -203,11 +197,11 @@ def summary_by_ctx_table(records: list[RunRecord]) -> str:
 
 def summary_by_sc_ctx_table(records: list[RunRecord]) -> str:
     groups = []
-    for sc in (True, None, False):
+    for sc in (True, False):
         for ctx in _ctx_order(records):
             recs = [r for r in records if r.sc is sc and r.ctx == ctx]
             if recs:
-                groups.append((f"{_sc_label(sc)} · {ctx or 'n/a'}", recs))
+                groups.append((f"{_fmt_sc(sc)} · {ctx or 'n/a'}", recs))
     return _summary_table(
         groups, caption="Split by self-correction × context mode. " + _SUMMARY_LEGEND)
 

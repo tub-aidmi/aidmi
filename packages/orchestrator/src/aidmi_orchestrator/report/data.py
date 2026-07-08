@@ -26,6 +26,17 @@ class RunRecord:
     retries: int | None = None
     cache_hit_rate: float | None = None
 
+def _self_correction(cfg: dict) -> bool:
+    """The enable_self_correction toggle, normalized to a bool.
+
+    A strategy that omits the flag has no on/off toggle because its critique is a
+    built-in structural stage (e.g. plan_write_critique); those runs count as
+    self-correction on, so tables and lever plots treat them exactly like on.
+    """
+    value = cfg.get("enable_self_correction")
+    return True if value is None else bool(value)
+
+
 def _model_name(cfg: dict) -> str:
     for key in ("writer_model", "planner_model", "critic_model"):
         m = cfg.get(key)
@@ -56,7 +67,7 @@ def _record(row: dict, fallback_campaign: str) -> RunRecord:
         campaign=prov.get("campaign_id") or fallback_campaign,
         model=_model_name(cfg),
         fixture=row["fixture_name"], cell=_cell(row, cfg),
-        ctx=cfg.get("context_mode"), sc=cfg.get("enable_self_correction"),
+        ctx=cfg.get("context_mode"), sc=_self_correction(cfg),
         rep=row.get("rep_index", 0),
         dbt_success=dbt_success, materialized=materialized,
         tables_materialized=tables_mat,
