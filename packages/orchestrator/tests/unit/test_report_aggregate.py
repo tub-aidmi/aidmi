@@ -1,4 +1,9 @@
-from aidmi_orchestrator.report.aggregate import group_mean, pass_rate, rep_values
+from aidmi_orchestrator.report.aggregate import (
+    group_mean,
+    pass_rate,
+    rep_values,
+    summary_stats,
+)
 from aidmi_orchestrator.report.data import RunRecord
 
 
@@ -24,3 +29,18 @@ def test_pass_rate():
 def test_rep_values_collects_non_none():
     recs = [_r("a", 1.0, True), _r("a", None, True)]
     assert rep_values(recs, lambda r: r.cell, lambda r: r.recall)["a"] == [1.0]
+
+
+def test_summary_stats_empty_is_none():
+    assert summary_stats([]) is None
+
+
+def test_summary_stats_single_value_zero_sd():
+    assert summary_stats([0.5]) == (0.5, 0.5, 0.0)
+
+
+def test_summary_stats_mean_median_sd():
+    mean, median, sd = summary_stats([0.0, 0.0, 1.0, 1.0])
+    assert mean == 0.5
+    assert median == 0.5
+    assert sd == 0.5

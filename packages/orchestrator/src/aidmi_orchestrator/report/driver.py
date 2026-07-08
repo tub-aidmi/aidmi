@@ -26,6 +26,10 @@ from aidmi_orchestrator.report.tables import (
     best_config_table,
     failure_accounting_table,
     silent_failure_table,
+    summary_by_ctx_table,
+    summary_by_sc_ctx_table,
+    summary_by_sc_table,
+    summary_overall_table,
 )
 from aidmi_orchestrator.report.theme import apply_theme
 
@@ -80,6 +84,13 @@ def _build_sections(
     figs: dict[str, Path], per_model_heatmaps: list[Path], *, multi_model: bool
 ) -> list[Section]:
     sections = [
+        Section(
+            "summary", "Summary", [],
+            "Run totals with mean / median / sd for the headline metrics — overall, "
+            "then split by the two dominant levers (self-correction, context mode) "
+            "and their interaction.",
+            ("summary_overall", "summary_sc", "summary_ctx", "summary_scxctx"),
+        ),
         Section(
             "headline", "Headline", [figs["pareto"]],
             "Cost vs recall across every strategy config — the frontier shows which strategies dominate.",
@@ -151,6 +162,10 @@ def build_report(records: list[RunRecord], out_dir: Path) -> list[Path]:
     per_model_heatmaps = _build_per_model_heatmaps(records, figdir) if multi_model else []
 
     tables = {
+        "summary_overall": summary_overall_table(records),
+        "summary_sc": summary_by_sc_table(records),
+        "summary_ctx": summary_by_ctx_table(records),
+        "summary_scxctx": summary_by_sc_ctx_table(records),
         "best_config": best_config_table(records),
         "failure_accounting": failure_accounting_table(records),
         "silent_failure": silent_failure_table(records),

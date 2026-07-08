@@ -5,6 +5,10 @@ from aidmi_orchestrator.report.tables import (
     appendix_table,
     best_config_table,
     silent_failure_table,
+    summary_by_ctx_table,
+    summary_by_sc_ctx_table,
+    summary_by_sc_table,
+    summary_overall_table,
 )
 
 FIX = Path(__file__).parent / "fixtures" / "mini_results.jsonl"
@@ -142,3 +146,53 @@ def test_best_config_deterministic_under_tie():
     out1 = best_config_table([a, b])
     out2 = best_config_table([b, a])
     assert out1 == out2
+
+
+def test_summary_overall_returns_html_table():
+    recs = load_records([FIX])
+    out = summary_overall_table(recs)
+    assert out.startswith("<table")
+    assert out.rstrip().endswith("</table>")
+    # header + exactly one data row (All runs)
+    assert out.count("<tr") == 2
+    assert "All runs" in out
+
+
+def test_summary_overall_counts_failed_run_as_zero():
+    # one materialized run (recall 1.0) + one failed run (recall None -> 0)
+    recs = [
+        _mk("a", "metadata_only", True, "m", recall=1.0, materialized=True),
+        _mk("a", "metadata_only", True, "m", recall=None, materialized=False),
+    ]
+    out = summary_overall_table(recs)
+    assert ">2<" in out  # n counts both runs
+    assert "0.500 / 0.500 ±0.500" in out  # (1.0 + 0)/2 mean, median, sd
+
+
+def test_summary_by_sc_has_on_and_off_rows():
+    recs = [
+        _mk("a", "metadata_only", False, "m", recall=0.4, materialized=True),
+        _mk("a", "metadata_only", True, "m", recall=1.0, materialized=True),
+    ]
+    out = summary_by_sc_table(recs)
+    assert "<td>off</td>" in out
+    assert "<td>on</td>" in out
+
+
+def test_summary_by_ctx_warns_pooled():
+    recs = load_records([FIX])
+    out = summary_by_ctx_table(recs)
+    assert "pooled" in out
+    assert "metadata_only" in out
+
+
+def test_summary_by_sc_ctx_only_present_combos():
+    recs = [
+        _mk("a", "metadata_only", False, "m", recall=0.4, materialized=True),
+        _mk("a", "live_query_tool", True, "m", recall=1.0, materialized=True),
+    ]
+    out = summary_by_sc_ctx_table(recs)
+    assert "off · metadata_only" in out
+    assert "on · live_query_tool" in out
+    # header + 2 present combos only (not the 2 absent cross cells)
+    assert out.count("<tr") == 3

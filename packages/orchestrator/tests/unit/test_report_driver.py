@@ -7,11 +7,11 @@ from aidmi_orchestrator.report.data import load_records
 from aidmi_orchestrator.report.driver import build_report
 
 NAV_ORDER_SINGLE_MODEL = [
-    "headline", "metric_choice", "distribution", "levers", "strategy",
+    "summary", "headline", "metric_choice", "distribution", "levers", "strategy",
     "efficiency", "reliability", "fixtures", "appendix",
 ]
 NAV_ORDER_MULTI_MODEL = [
-    "headline", "metric_choice", "distribution", "levers", "strategy",
+    "summary", "headline", "metric_choice", "distribution", "levers", "strategy",
     "efficiency", "reliability", "fixtures", "cross_campaign", "appendix",
 ]
 

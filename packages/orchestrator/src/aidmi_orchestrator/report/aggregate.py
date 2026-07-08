@@ -1,4 +1,5 @@
 from __future__ import annotations
+import statistics
 from collections import defaultdict
 from typing import Callable, Hashable
 from aidmi_orchestrator.report.data import RunRecord
@@ -43,3 +44,13 @@ def rep_values(records, key, metric):
 
 def materialization_rate(records, key):
     return pass_rate(records, key, lambda r: r.materialized)
+
+def summary_stats(values):
+    """(mean, median, population sd) over values; None if empty. sd is 0 for a
+    single value. Population (not sample) sd matches _fmt_mean_sd elsewhere."""
+    if not values:
+        return None
+    mean = sum(values) / len(values)
+    median = statistics.median(values)
+    sd = statistics.pstdev(values) if len(values) > 1 else 0.0
+    return mean, median, sd

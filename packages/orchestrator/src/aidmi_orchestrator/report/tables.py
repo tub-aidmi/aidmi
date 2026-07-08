@@ -11,6 +11,7 @@ from aidmi_orchestrator.report.aggregate import (
     group_mean_zero,
     materialization_rate,
     rep_values,
+    summary_stats,
 )
 from aidmi_orchestrator.report.data import RunRecord
 
@@ -113,6 +114,92 @@ def best_config_table(records: list[RunRecord]) -> str:
         ]))
 
     return _table(header, rows)
+
+
+_SUMMARY_HEADER = [
+    "Group", "n", "Recall*", "f1*", "Field acc", "Mat%", "Cost $", "Secs",
+]
+_SUMMARY_LEGEND = (
+    "Cells: mean / median ±sd. * recall and f1 count a run that produced "
+    "nothing as 0; field acc, cost and secs are over evaluated runs only."
+)
+
+
+def _zero_vals(recs: list[RunRecord], metric) -> list[float]:
+    return [v if (v := metric(r)) is not None else 0.0 for r in recs]
+
+
+def _eval_vals(recs: list[RunRecord], metric) -> list[float]:
+    return [v for r in recs if (v := metric(r)) is not None]
+
+
+def _fmt_stats(values: list[float], *, prec: int = 3, prefix: str = "",
+               integer: bool = False) -> str:
+    stats = summary_stats(values)
+    if stats is None:
+        return "-"
+    mean, median, sd = stats
+    if integer:
+        return f"{prefix}{mean:.0f} / {median:.0f} ±{sd:.0f}"
+    return f"{prefix}{mean:.{prec}f} / {median:.{prec}f} ±{sd:.{prec}f}"
+
+
+def _summary_row(label: str, recs: list[RunRecord]) -> str:
+    mat = sum(1 for r in recs if r.materialized) / len(recs) if recs else 0.0
+    return _row([
+        _esc(label), _esc(len(recs)),
+        _fmt_stats(_zero_vals(recs, lambda r: r.recall)),
+        _fmt_stats(_zero_vals(recs, lambda r: r.f1)),
+        _fmt_stats(_eval_vals(recs, lambda r: r.field_acc)),
+        _fmt_pct(mat),
+        _fmt_stats(_eval_vals(recs, lambda r: r.cost), prec=4, prefix="$"),
+        _fmt_stats(_eval_vals(recs, lambda r: r.secs), integer=True),
+    ])
+
+
+def _summary_table(groups: list[tuple[str, list[RunRecord]]], caption: str) -> str:
+    rows = [_summary_row(label, recs) for label, recs in groups if recs]
+    return _table(_SUMMARY_HEADER, rows, caption=caption)
+
+
+def _ctx_order(records: list[RunRecord]) -> list[str | None]:
+    return sorted({r.ctx for r in records}, key=lambda c: (c is None, c or ""))
+
+
+def summary_overall_table(records: list[RunRecord]) -> str:
+    return _summary_table(
+        [("All runs", records)],
+        caption="Overall run totals across every config. " + _SUMMARY_LEGEND,
+    )
+
+
+def summary_by_sc_table(records: list[RunRecord]) -> str:
+    groups = [(_fmt_sc(sc), [r for r in records if r.sc is sc])
+              for sc in (False, True, None)]
+    return _summary_table(
+        groups, caption="Split by self-correction. " + _SUMMARY_LEGEND)
+
+
+def summary_by_ctx_table(records: list[RunRecord]) -> str:
+    groups = [((ctx or "n/a"), [r for r in records if r.ctx == ctx])
+              for ctx in _ctx_order(records)]
+    return _summary_table(
+        groups,
+        caption="Split by context mode — pooled and descriptive only; the effect "
+        "flips per strategy (see Levers), so no row is a universal winner. "
+        + _SUMMARY_LEGEND,
+    )
+
+
+def summary_by_sc_ctx_table(records: list[RunRecord]) -> str:
+    groups = []
+    for sc in (False, True, None):
+        for ctx in _ctx_order(records):
+            recs = [r for r in records if r.sc is sc and r.ctx == ctx]
+            if recs:
+                groups.append((f"{_fmt_sc(sc)} · {ctx or 'n/a'}", recs))
+    return _summary_table(
+        groups, caption="Split by self-correction × context mode. " + _SUMMARY_LEGEND)
 
 
 def failure_accounting_table(records: list[RunRecord]) -> str:
