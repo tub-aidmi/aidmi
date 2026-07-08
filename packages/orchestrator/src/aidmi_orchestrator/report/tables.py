@@ -213,6 +213,18 @@ def summary_by_strategy_table(records: list[RunRecord]) -> str:
     )
 
 
+def summary_by_fixture_table(records: list[RunRecord]) -> str:
+    on = [r for r in records if r.sc is True]
+    groups = [(fixture, [r for r in on if r.fixture == fixture])
+              for fixture in sorted({r.fixture for r in on})]
+    groups.sort(key=lambda g: (-_mean_recall(g[1]), g[0]))
+    return _summary_table(
+        groups,
+        caption="Per fixture — self-correction on only, strategies and both "
+        "context modes pooled. Ordered by mean recall. " + _SUMMARY_LEGEND,
+    )
+
+
 def failure_accounting_table(records: list[RunRecord]) -> str:
     """Per-strategy recall and f1 reported both ways: including and excluding
     failed runs.

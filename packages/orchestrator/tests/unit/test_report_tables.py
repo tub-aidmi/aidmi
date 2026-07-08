@@ -6,6 +6,7 @@ from aidmi_orchestrator.report.tables import (
     best_config_table,
     silent_failure_table,
     summary_by_ctx_table,
+    summary_by_fixture_table,
     summary_by_sc_table,
     summary_by_strategy_table,
     summary_overall_table,
@@ -15,9 +16,9 @@ FIX = Path(__file__).parent / "fixtures" / "mini_results.jsonl"
 
 
 def _mk(cell, ctx, sc, model, *, recall=None, field_acc=None, cost=None,
-        materialized=True, rep=0):
+        materialized=True, rep=0, fixture="f"):
     return RunRecord(
-        campaign="c", model=model, fixture="f", cell=cell, ctx=ctx, sc=sc, rep=rep,
+        campaign="c", model=model, fixture=fixture, cell=cell, ctx=ctx, sc=sc, rep=rep,
         dbt_success=materialized, materialized=materialized,
         tables_materialized=1.0 if materialized else 0.0,
         recall=recall, precision=None, field_acc=field_acc,
@@ -212,3 +213,19 @@ def test_summary_by_strategy_pools_both_context_modes():
     assert out.count("<tr") == 2  # header + one pooled alpha row
     assert ">2<" in out  # both context runs pooled
     assert "0.500 / 0.500 ±0.500" in out  # recall pooled across both modes
+
+
+def test_summary_by_fixture_only_sc_on_pooled_by_strategy():
+    recs = [
+        _mk("alpha", "metadata_only", True, "m", recall=1.0, fixture="fx1"),
+        _mk("beta", "live_query_tool", True, "m", recall=0.8, fixture="fx1"),
+        _mk("alpha", "metadata_only", True, "m", recall=0.2, fixture="fx2"),
+        _mk("alpha", "metadata_only", False, "m", recall=0.9, fixture="fx1"),
+    ]
+    out = summary_by_fixture_table(recs)
+    # one row per fixture with sc=on runs; sc=off excluded
+    assert out.count("<tr") == 3  # header + fx1 + fx2
+    assert "<td>fx1</td>" in out
+    assert "<td>fx2</td>" in out
+    # fx1 pools its two sc=on strategies (mean recall 0.9) above fx2 (0.2)
+    assert out.index("fx1") < out.index("fx2")
