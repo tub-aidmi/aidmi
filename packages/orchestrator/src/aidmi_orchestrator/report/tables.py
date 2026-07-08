@@ -117,14 +117,21 @@ def best_config_table(records: list[RunRecord]) -> str:
 
 
 _SUMMARY_HEADER = [
-    "Group", "n", "Recall", "f1", "Field acc", "Mat%", "Cost $", "Time (s)",
+    "Group", "n", "Recall", "Field acc", "Mat% (any)", "Mat% (all)",
+    "Cost $", "Time (s)",
 ]
 _SUMMARY_LEGEND = (
     "Cells: mean / median ±sd. Recall counts a run that produced nothing as a "
-    "genuine 0-of-N score; f1, field acc, cost and time are over runs that "
-    "produced output (f1 is undefined with no rows). Mat% is the share of runs "
-    "that materialized at least one target table."
+    "genuine 0-of-N score; field acc, cost and time are over runs that produced "
+    "output. Mat% (any) is the share of runs that materialized at least one "
+    "target table; Mat% (all) the share that materialized every target table."
 )
+
+
+def _sc_label(sc: bool | None) -> str:
+    """Self-correction lever label; the None group is plan_write_critique, whose
+    critique is a built-in structural stage rather than the on/off toggle."""
+    return "built-in" if sc is None else _fmt_sc(sc)
 
 
 def _zero_vals(recs: list[RunRecord], metric) -> list[float]:
@@ -147,13 +154,14 @@ def _fmt_stats(values: list[float], *, prec: int = 3, prefix: str = "",
 
 
 def _summary_row(label: str, recs: list[RunRecord]) -> str:
-    mat = sum(1 for r in recs if r.materialized) / len(recs) if recs else 0.0
+    n = len(recs)
+    mat_any = sum(1 for r in recs if r.materialized) / n if n else 0.0
+    mat_all = sum(1 for r in recs if r.tables_materialized == 1.0) / n if n else 0.0
     return _row([
-        _esc(label), _esc(len(recs)),
+        _esc(label), _esc(n),
         _fmt_stats(_zero_vals(recs, lambda r: r.recall)),
-        _fmt_stats(_eval_vals(recs, lambda r: r.f1)),
         _fmt_stats(_eval_vals(recs, lambda r: r.field_acc)),
-        _fmt_pct(mat),
+        _fmt_pct(mat_any), _fmt_pct(mat_all),
         _fmt_stats(_eval_vals(recs, lambda r: r.cost), prec=4, prefix="$"),
         _fmt_stats(_eval_vals(recs, lambda r: r.secs), integer=True),
     ])
@@ -176,7 +184,7 @@ def summary_overall_table(records: list[RunRecord]) -> str:
 
 
 def summary_by_sc_table(records: list[RunRecord]) -> str:
-    groups = [(_fmt_sc(sc), [r for r in records if r.sc is sc])
+    groups = [(_sc_label(sc), [r for r in records if r.sc is sc])
               for sc in (False, True, None)]
     return _summary_table(
         groups, caption="Split by self-correction. " + _SUMMARY_LEGEND)
@@ -199,7 +207,7 @@ def summary_by_sc_ctx_table(records: list[RunRecord]) -> str:
         for ctx in _ctx_order(records):
             recs = [r for r in records if r.sc is sc and r.ctx == ctx]
             if recs:
-                groups.append((f"{_fmt_sc(sc)} · {ctx or 'n/a'}", recs))
+                groups.append((f"{_sc_label(sc)} · {ctx or 'n/a'}", recs))
     return _summary_table(
         groups, caption="Split by self-correction × context mode. " + _SUMMARY_LEGEND)
 
