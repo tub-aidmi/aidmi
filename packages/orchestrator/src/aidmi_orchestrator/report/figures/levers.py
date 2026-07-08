@@ -107,8 +107,8 @@ def _legend(fig, cells):
     )
     leg = fig.legend(
         handles=handles, title="Strategy (cell)", loc="center left",
-        bbox_to_anchor=(0.795, 0.5), labelcolor=_INK, alignment="left",
-        frameon=False, fontsize=9.5,
+        bbox_to_anchor=(0.6, 0.5), labelcolor=_INK, alignment="left",
+        frameon=False, fontsize=8.5,
     )
     leg.get_title().set_color(_INK)
 
@@ -147,7 +147,7 @@ def _slope_figure(
 
     fig, axes = plt.subplots(
         nrows=len(metrics), ncols=n_cols, sharex=True, squeeze=False,
-        figsize=(6.5 * n_cols + 0.6, 8.6),
+        figsize=(5.5 * n_cols + 6.5, 8.6),
     )
 
     for j, model in enumerate(models):
@@ -171,7 +171,7 @@ def _slope_figure(
 
     _legend(fig, cells)
     fig.subplots_adjust(
-        left=0.13, right=0.78, top=0.9, bottom=0.08, hspace=0.18,
+        left=0.09, right=0.56, top=0.9, bottom=0.08, hspace=0.18,
     )
 
     out = out_dir / filename
