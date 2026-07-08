@@ -447,7 +447,9 @@ def write_destination_pg(data: dict[str, list[dict[str, Any]]], golden_schema: s
     account_rows: list[tuple[Any, ...]] = []
     for a in data["accounts"]:
         if a["is_dup"]:
-            truth("Account", survivor(a)["did"], "source_account", a["legacy"], a["notes"])
+            truth(
+                "Account", survivor(a)["legacy"], "source_account", a["legacy"], a["notes"]
+            )
             continue
         account_rows.append((
             a["did"],

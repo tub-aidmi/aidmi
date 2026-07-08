@@ -13,6 +13,7 @@ from aidmi_orchestrator.evaluator.ground_truth_field_accuracy import (
 )
 from aidmi_orchestrator.evaluator.ground_truth_notes import GroundTruthNotesEvaluator
 from aidmi_orchestrator.evaluator.ground_truth_recall import GroundTruthRecallEvaluator
+from aidmi_orchestrator.evaluator._ground_truth_utils import ground_truth_row_matched
 
 GOLDEN = "gt_golden"
 OUT = "gt_out"
@@ -58,7 +59,8 @@ def seeded_db(staging_db_url):
                 f"(target_table, target_id, source_table, source_id, notes) VALUES "
                 f"('Account', '001A', 'source_account', 'CUST-1', NULL), "
                 f"('Account', '001B', 'source_account', 'CUST-2', 'orphan_nulled'), "
-                f"('Account', '001A', 'source_account', 'CUST-1_DUP', 'duplicate_account')"
+                f"('Account', 'CUST-1', 'source_account', 'CUST-1_DUP', 'duplicate_account'), "
+                f"('Account', 'CUST-2', 'source_account', 'CUST-2_DUP', 'duplicate_account')"
             )
     return staging_db_url
 
@@ -89,6 +91,62 @@ def _artifacts(db_url: str, *, written: list[str] | None = None) -> RunArtifacts
     )
 
 
+def _dup_gt(survivor_legacy: str, dup_legacy: str) -> dict[str, str]:
+    return {
+        "target_table": "Account",
+        "target_id": survivor_legacy,
+        "source_table": "source_account",
+        "source_id": dup_legacy,
+        "notes": "duplicate_account",
+    }
+
+
+def test_duplicate_matched_when_folded_into_survivor():
+    """Correct dedup: survivor legacy present, duplicate legacy folded away."""
+    produced_by_legacy = {"CUST-1": {"Id": "x"}}
+    assert ground_truth_row_matched(
+        _dup_gt("CUST-1", "CUST-1_DUP"),
+        produced_by_legacy=produced_by_legacy,
+        produced_by_id={},
+    )
+
+
+def test_duplicate_not_matched_when_duplicate_row_survives():
+    """Failure to dedup: the duplicate's own legacy id still emitted as a row."""
+    produced_by_legacy = {"CUST-1": {"Id": "x"}, "CUST-1_DUP": {"Id": "y"}}
+    assert not ground_truth_row_matched(
+        _dup_gt("CUST-1", "CUST-1_DUP"),
+        produced_by_legacy=produced_by_legacy,
+        produced_by_id={},
+    )
+
+
+def test_duplicate_not_matched_when_survivor_absent():
+    """Dropping the whole identity is not a correct merge."""
+    produced_by_legacy = {"CUST-99": {"Id": "x"}}
+    assert not ground_truth_row_matched(
+        _dup_gt("CUST-1", "CUST-1_DUP"),
+        produced_by_legacy=produced_by_legacy,
+        produced_by_id={},
+    )
+
+
+def test_normal_row_matches_on_legacy_id():
+    gt = {
+        "target_table": "Account",
+        "target_id": "001A",
+        "source_table": "source_account",
+        "source_id": "CUST-1",
+        "notes": None,
+    }
+    assert ground_truth_row_matched(
+        gt, produced_by_legacy={"CUST-1": {}}, produced_by_id={}
+    )
+    assert not ground_truth_row_matched(
+        gt, produced_by_legacy={"CUST-9": {}}, produced_by_id={}
+    )
+
+
 def test_recall_evaluator_does_not_apply_without_golden_schema():
     artifacts = _artifacts("postgresql://x")
     artifacts.fixture.golden_schema = None
@@ -115,9 +173,11 @@ def test_notes_evaluator_by_category(seeded_db):
     assert by_cat["orphan_nulled"]["expected"] == 1
     assert by_cat["orphan_nulled"]["matched"] == 0
     assert by_cat["orphan_nulled"]["recall"] == pytest.approx(0.0)
-    assert by_cat["duplicate_account"]["expected"] == 1
+    # CUST-1 folded (survivor present, dup absent) -> matched; CUST-2 survivor
+    # never produced -> not matched.
+    assert by_cat["duplicate_account"]["expected"] == 2
     assert by_cat["duplicate_account"]["matched"] == 1
-    assert by_cat["duplicate_account"]["recall"] == pytest.approx(1.0)
+    assert by_cat["duplicate_account"]["recall"] == pytest.approx(0.5)
 
 
 def test_field_accuracy_evaluator(seeded_db):

@@ -112,7 +112,15 @@ def ground_truth_row_matched(
 
     tags = parse_note_tags(notes)
     if "duplicate_account" in tags:
-        return str(target_id) in produced_by_id
+        # Correct dedup folds the duplicate into its survivor: the survivor's
+        # legacy id (target_id) must be produced and the duplicate's own legacy
+        # id (source_id) must be absent. Keyed on legacy ids the strategy
+        # actually carries through, not the golden dest id it never sees.
+        return (
+            target_id is not None
+            and str(target_id) in produced_by_legacy
+            and str(source_id) not in produced_by_legacy
+        )
 
     return str(source_id) in produced_by_legacy
 
