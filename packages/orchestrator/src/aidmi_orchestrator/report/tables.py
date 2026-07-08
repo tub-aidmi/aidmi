@@ -185,7 +185,7 @@ def summary_overall_table(records: list[RunRecord]) -> str:
 
 def summary_by_sc_table(records: list[RunRecord]) -> str:
     groups = [(_sc_label(sc), [r for r in records if r.sc is sc])
-              for sc in (False, True, None)]
+              for sc in (True, None, False)]
     return _summary_table(
         groups, caption="Split by self-correction. " + _SUMMARY_LEGEND)
 
@@ -203,7 +203,7 @@ def summary_by_ctx_table(records: list[RunRecord]) -> str:
 
 def summary_by_sc_ctx_table(records: list[RunRecord]) -> str:
     groups = []
-    for sc in (False, True, None):
+    for sc in (True, None, False):
         for ctx in _ctx_order(records):
             recs = [r for r in records if r.sc is sc and r.ctx == ctx]
             if recs:
