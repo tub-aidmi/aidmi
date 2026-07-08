@@ -93,11 +93,6 @@ def _build_sections(
              "summary_sc_on", "summary_sc_off"),
         ),
         Section(
-            "headline", "Headline", [figs["pareto"]],
-            "Cost vs recall across every strategy config — the frontier shows which strategies dominate.",
-            ("best_config",),
-        ),
-        Section(
             "metric_choice", "Metric choice", [figs["prec_recall"]],
             "Precision saturates near 1.0, so recall and materialization — not f1 — are the discriminating quality axes. "
             "The table reports recall and f1 both ways: evaluated-only means silently drop runs that produced nothing, "
@@ -124,11 +119,6 @@ def _build_sections(
             "Resource per unit of quality (cost/f1, tokens/f1), the reasoning-token tax, and the retry/cache drivers behind cost.",
         ),
         Section(
-            "reliability", "Reliability", [figs["rep_spread"], figs["rep_range"]],
-            "Many configs are non-unanimous across identical reps; silent failures produce nothing despite reporting complete.",
-            ("silent_failure",),
-        ),
-        Section(
             "fixtures", "Fixtures",
             [figs["heatmap_materialized"], figs["heatmap_field_acc"], figs["heatmap_f1_std"]],
             "Materialization and field accuracy decouple across fixtures; the std heatmap flags cells whose mean you shouldn't trust.",
@@ -141,13 +131,6 @@ def _build_sections(
                 "Per-model fixture materialization; the figures above are already faceted by model.",
             )
         )
-    sections.append(
-        Section(
-            "appendix", "Appendix", [],
-            "Full per-config table with coverage columns (tables declared, columns covered).",
-            ("appendix",),
-        )
-    )
     return sections
 
 

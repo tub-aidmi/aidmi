@@ -7,12 +7,12 @@ from aidmi_orchestrator.report.data import load_records
 from aidmi_orchestrator.report.driver import build_report
 
 NAV_ORDER_SINGLE_MODEL = [
-    "summary", "headline", "metric_choice", "distribution", "levers", "strategy",
-    "efficiency", "reliability", "fixtures", "appendix",
+    "summary", "metric_choice", "distribution", "levers", "strategy",
+    "efficiency", "fixtures",
 ]
 NAV_ORDER_MULTI_MODEL = [
-    "summary", "headline", "metric_choice", "distribution", "levers", "strategy",
-    "efficiency", "reliability", "fixtures", "cross_campaign", "appendix",
+    "summary", "metric_choice", "distribution", "levers", "strategy",
+    "efficiency", "fixtures", "cross_campaign",
 ]
 
 FIX = Path(__file__).parent / "fixtures" / "mini_results.jsonl"
