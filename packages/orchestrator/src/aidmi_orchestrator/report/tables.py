@@ -10,7 +10,6 @@ from aidmi_orchestrator.report.aggregate import (
     group_mean,
     group_mean_zero,
     materialization_rate,
-    pass_rate,
     rep_values,
     summary_stats,
 )
@@ -110,7 +109,7 @@ def best_config_table(records: list[RunRecord]) -> str:
     if mat_by_config:
         (cell, ctx, sc, model), value = _best(mat_by_config, largest=True)
         rows.append(_row([
-            "Highest materialization pass-rate", _esc(cell), _esc(ctx), _fmt_sc(sc), _esc(model),
+            "Highest mean materialization rate", _esc(cell), _esc(ctx), _fmt_sc(sc), _esc(model),
             _fmt_pct(value),
         ]))
 
@@ -212,7 +211,7 @@ def summary_best_config_table(records: list[RunRecord]) -> str:
     recall = group_mean(records, _config_key, lambda r: r.recall)
     field = group_mean(records, _config_key, lambda r: r.field_acc)
     cost = group_mean(records, _config_key, lambda r: r.cost)
-    mat_all = pass_rate(records, _config_key, lambda r: r.tables_materialized == 1.0)
+    mat = materialization_rate(records, _config_key)
 
     objectives: list[tuple[str, tuple]] = []
     if recall:
@@ -221,9 +220,9 @@ def summary_best_config_table(records: list[RunRecord]) -> str:
         objectives.append(("Highest mean field acc", _best(field, largest=True)[0]))
     if cost:
         objectives.append(("Lowest mean cost", _best(cost, largest=False)[0]))
-    if mat_all:
+    if mat:
         objectives.append(
-            ("Highest full-materialization rate", _best(mat_all, largest=True)[0]))
+            ("Highest mean materialization rate", _best(mat, largest=True)[0]))
 
     header = ["Objective", "Winning config"] + _SUMMARY_HEADER[1:]
     rows = [

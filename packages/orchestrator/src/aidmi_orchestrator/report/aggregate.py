@@ -43,7 +43,10 @@ def rep_values(records, key, metric):
     return dict(acc)
 
 def materialization_rate(records, key):
-    return pass_rate(records, key, lambda r: r.materialized)
+    """Mean fraction of target tables materialized per run (a run that produced
+    nothing counts as 0). Not a pass-rate: partial materialization contributes
+    its actual fraction rather than a binary success."""
+    return group_mean_zero(records, key, lambda r: r.tables_materialized)
 
 def summary_stats(values):
     """(mean, median, population sd) over values; None if empty. sd is 0 for a

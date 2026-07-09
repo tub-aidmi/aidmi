@@ -54,7 +54,7 @@ def test_summary_best_config_has_all_four_objectives():
     assert "Highest mean recall" in out
     assert "Highest mean field acc" in out
     assert "Lowest mean cost" in out
-    assert "Highest full-materialization rate" in out
+    assert "Highest mean materialization rate" in out
     assert "Objective" in out and "Winning config" in out
     # no separate value column
     assert "Value" not in out
@@ -74,9 +74,10 @@ def test_summary_best_config_picks_distinct_winners():
     assert "cheap / metadata_only / sc on" in out
 
 
-def test_summary_best_config_materialization_uses_all_not_any():
-    # both configs materialize at least one table (mat-any ties at 100%),
-    # but only "full" materializes every table -> it must win.
+def test_summary_best_config_materialization_uses_mean_rate():
+    # both configs materialize at least one table (a binary pass-rate would tie),
+    # but "full" materializes every table (1.0) vs "partial" (0.5), so the mean
+    # materialization rate must pick "full".
     full = _mk("full", "metadata_only", True, "m", recall=0.1, materialized=True)
     partial = RunRecord(
         campaign="c", model="m", fixture="f", cell="partial", ctx="metadata_only",
@@ -87,7 +88,7 @@ def test_summary_best_config_materialization_uses_all_not_any():
         tables_declared=5, cols_covered=None,
     )
     out = summary_best_config_table([full, partial])
-    mat_line = [ln for ln in out.split("<tr") if "full-materialization" in ln][0]
+    mat_line = [ln for ln in out.split("<tr") if "Highest mean materialization rate" in ln][0]
     assert "full / metadata_only / sc on" in mat_line
     assert "partial" not in mat_line
 
