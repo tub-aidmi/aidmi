@@ -40,6 +40,10 @@ class Section:
     figures: list[Path]
     caption: str
     table_keys: tuple[str, ...] = field(default_factory=tuple)
+    # When True, figures stack one per row at full width instead of flowing
+    # side-by-side in the capped-width grid. Use for wide, detail-dense figures
+    # that need the whole column to be legible.
+    stacked: bool = False
 
 
 def _esc(value: str) -> str:
@@ -68,11 +72,12 @@ def _render_section(section: Section, tables: dict[str, str]) -> str:
     tables_html = "".join(
         tables[key] for key in section.table_keys if key in tables
     )
+    figures_class = "figures figures--stacked" if section.stacked else "figures"
     return (
         "<section>"
         f'<h2 id="{_esc(section.id)}">{title}</h2>'
         f'<p class="caption">{caption}</p>'
-        f'<div class="figures">{figures_html}</div>'
+        f'<div class="{figures_class}">{figures_html}</div>'
         f"{tables_html}"
         "</section>"
     )
@@ -100,6 +105,8 @@ h2 { margin-top: 2.5rem; padding-top: 0.5rem; border-top: 1px solid #ddd; }
 h3 { margin: 1.5rem 0 0.5rem; font-size: 1.05rem; }
 .caption { color: #444; font-style: italic; margin-top: 0; }
 .figures { display: flex; flex-wrap: wrap; gap: 1rem; margin: 1rem 0; }
+.figures--stacked { flex-direction: column; flex-wrap: nowrap; }
+.figures--stacked figure { max-width: 100%; }
 figure { margin: 0; max-width: 520px; }
 figure img { max-width: 100%; height: auto; border: 1px solid #ddd; }
 figcaption { font-size: 0.85rem; color: #555; margin-top: 0.25rem; }

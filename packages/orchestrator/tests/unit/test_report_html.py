@@ -145,6 +145,20 @@ def test_figure_src_is_relative_to_figures_dir_using_basename():
     assert 'src="figures/lever_sc.svg"' in html
 
 
+def test_stacked_section_uses_stacked_figures_class():
+    default_sec = Section(id="grid", title="Grid", figures=[Path("a.svg")],
+                          caption="side by side")
+    stacked_sec = Section(id="stack", title="Stack", figures=[Path("b.svg")],
+                          caption="stacked", stacked=True)
+    html = render_gallery(
+        title="t", sections=[default_sec, stacked_sec], tables={},
+        multi_model=False,
+    )
+    assert '<div class="figures figures--stacked">' in html
+    # the non-stacked section keeps the plain grid class
+    assert '<div class="figures">' in html
+
+
 def test_section_title_and_caption_are_escaped():
     secs = _sections(with_cross_campaign=False)
     secs[0] = Section(

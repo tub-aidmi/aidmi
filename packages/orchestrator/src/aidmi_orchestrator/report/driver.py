@@ -111,6 +111,7 @@ def _build_sections(
             "Self-correction-on runs only. The box + raw dots expose the spread a "
             "mean bar hides — recall, field accuracy, materialization rate, token "
             "spend, and time, broken out by strategy and by fixture.",
+            stacked=True,
         ),
         Section(
             "strategy", "Strategy",
