@@ -6,6 +6,7 @@ from pathlib import Path
 from aidmi_orchestrator.report.data import load_records
 from aidmi_orchestrator.report.figures.correlation import (
     fig_recall_field_acc,
+    fig_recall_mat_rate,
     fig_tokens_vs_field_acc,
     fig_tokens_vs_mat_rate,
     fig_tokens_vs_recall,
@@ -26,6 +27,13 @@ def test_recall_field_acc_writes_svg(tmp_path):
     recs = load_records([FIX])
     out = fig_recall_field_acc(recs, tmp_path)
     assert out.name == "recall_field_acc.svg"
+    assert out.exists() and out.suffix == ".svg" and out.stat().st_size > 0
+
+
+def test_recall_mat_rate_writes_svg(tmp_path):
+    recs = load_records([FIX])
+    out = fig_recall_mat_rate(recs, tmp_path)
+    assert out.name == "recall_mat_rate.svg"
     assert out.exists() and out.suffix == ".svg" and out.stat().st_size > 0
 
 

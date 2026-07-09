@@ -22,6 +22,7 @@ CORE_FIGURES = [
     "pareto.svg",
     "prec_recall.svg",
     "recall_field_acc.svg",
+    "recall_mat_rate.svg",
     "corr_tokens_recall.svg",
     "corr_tokens_field_acc.svg",
     "corr_tokens_mat_rate.svg",

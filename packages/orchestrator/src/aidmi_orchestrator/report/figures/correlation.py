@@ -18,15 +18,18 @@ def _sort_key(k):
     return tuple(str(part) for part in k)
 
 
-def _total_tokens(r):
+def _total_tokens_k(r):
+    """Total tokens in thousands -- the raw counts (hundreds of thousands) are
+    too large to share an axis legibly, and dividing by 1000 leaves the
+    correlation and fit unchanged."""
     if r.tokens_in is None and r.tokens_out is None:
         return None
-    return (r.tokens_in or 0) + (r.tokens_out or 0)
+    return ((r.tokens_in or 0) + (r.tokens_out or 0)) / 1000.0
 
 
 def _correlation_scatter(
     records, out_dir, *, filename, salt, x_getter, y_getter, x_label, y_label,
-    title, x_unit, identity=False,
+    title, x_unit, y_unit, identity=False,
 ):
     """Per-run scatter of two metrics with a least-squares fit line and the
     Pearson correlation stated on the plot. Points are coloured by strategy
@@ -112,7 +115,10 @@ def _correlation_scatter(
         ax.set_xlim(-0.03, 1.03)
     else:
         ax.set_xlim(left=0)
-    ax.set_ylim(-0.03, 1.03)
+    if y_unit:
+        ax.set_ylim(-0.03, 1.03)
+    else:
+        ax.set_ylim(bottom=0)
     ax.set_xlabel(x_label)
     ax.set_ylabel(y_label)
     ax.set_title(title, color=_INK, fontsize=12, loc="left")
@@ -142,39 +148,52 @@ def fig_recall_field_acc(records, out_dir) -> Path:
         x_getter=lambda r: r.recall, y_getter=lambda r: r.field_acc,
         x_label="Recall", y_label="Field accuracy",
         title="Recall vs field accuracy",
-        x_unit=True, identity=True,
+        x_unit=True, y_unit=True, identity=True,
     )
 
 
-def _tokens_vs(records, out_dir, *, filename, salt, y_getter, y_label, title):
+def fig_recall_mat_rate(records, out_dir) -> Path:
+    """Recall vs materialization rate per run: does recovering more of the
+    golden tables track building more of the target tables?"""
+    return _correlation_scatter(
+        records, out_dir,
+        filename="recall_mat_rate.svg", salt="aidmi-recall-mat-rate",
+        x_getter=lambda r: r.recall, y_getter=lambda r: r.tables_materialized,
+        x_label="Recall", y_label="Materialization rate",
+        title="Recall vs materialization rate",
+        x_unit=True, y_unit=True, identity=True,
+    )
+
+
+def _vs_tokens(records, out_dir, *, filename, salt, x_getter, x_label, title):
     on = [r for r in records if r.sc is True]
     return _correlation_scatter(
         on, out_dir, filename=filename, salt=salt,
-        x_getter=_total_tokens, y_getter=y_getter,
-        x_label="Total tokens (in+out)", y_label=y_label, title=title,
-        x_unit=False,
+        x_getter=x_getter, y_getter=_total_tokens_k,
+        x_label=x_label, y_label="Total tokens (in+out, thousands)",
+        title=title, x_unit=True, y_unit=False,
     )
 
 
 def fig_tokens_vs_recall(records, out_dir) -> Path:
-    return _tokens_vs(
+    return _vs_tokens(
         records, out_dir, filename="corr_tokens_recall.svg",
-        salt="aidmi-corr-tokens-recall", y_getter=lambda r: r.recall,
-        y_label="Recall", title="Total tokens vs recall",
+        salt="aidmi-corr-tokens-recall", x_getter=lambda r: r.recall,
+        x_label="Recall", title="Recall vs total tokens",
     )
 
 
 def fig_tokens_vs_field_acc(records, out_dir) -> Path:
-    return _tokens_vs(
+    return _vs_tokens(
         records, out_dir, filename="corr_tokens_field_acc.svg",
-        salt="aidmi-corr-tokens-field-acc", y_getter=lambda r: r.field_acc,
-        y_label="Field accuracy", title="Total tokens vs field accuracy",
+        salt="aidmi-corr-tokens-field-acc", x_getter=lambda r: r.field_acc,
+        x_label="Field accuracy", title="Field accuracy vs total tokens",
     )
 
 
 def fig_tokens_vs_mat_rate(records, out_dir) -> Path:
-    return _tokens_vs(
+    return _vs_tokens(
         records, out_dir, filename="corr_tokens_mat_rate.svg",
-        salt="aidmi-corr-tokens-mat-rate", y_getter=lambda r: r.tables_materialized,
-        y_label="Materialization rate", title="Total tokens vs materialization rate",
+        salt="aidmi-corr-tokens-mat-rate", x_getter=lambda r: r.tables_materialized,
+        x_label="Materialization rate", title="Materialization rate vs total tokens",
     )
