@@ -7,12 +7,12 @@ from aidmi_orchestrator.report.data import load_records
 from aidmi_orchestrator.report.driver import build_report
 
 NAV_ORDER_SINGLE_MODEL = [
-    "summary", "levers", "correlation", "distribution",
-    "strategy_by_fixture", "fixture_by_strategy", "efficiency", "fixtures",
+    "summary", "levers", "correlation", "heatmaps", "distribution",
+    "strategy_by_fixture", "fixture_by_strategy", "efficiency",
 ]
 NAV_ORDER_MULTI_MODEL = [
-    "summary", "levers", "correlation", "distribution",
-    "strategy_by_fixture", "fixture_by_strategy", "efficiency", "fixtures",
+    "summary", "levers", "correlation", "heatmaps", "distribution",
+    "strategy_by_fixture", "fixture_by_strategy", "efficiency",
     "cross_campaign",
 ]
 
@@ -35,9 +35,12 @@ CORE_FIGURES = [
     "cost_drivers.svg",
     "rep_spread.svg",
     "rep_range.svg",
-    "heatmap_f1_std.svg",
-    "heatmap_materialized.svg",
-    "heatmap_field_acc.svg",
+    "heatmap_sc_on_recall.svg",
+    "heatmap_sc_on_field_acc.svg",
+    "heatmap_sc_on_mat_rate.svg",
+    "heatmap_sc_on_cost.svg",
+    "heatmap_sc_on_tokens.svg",
+    "heatmap_sc_on_time.svg",
 ]
 
 

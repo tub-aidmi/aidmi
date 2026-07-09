@@ -4,9 +4,21 @@ matplotlib.use("Agg")
 from pathlib import Path
 
 from aidmi_orchestrator.report.data import load_records
-from aidmi_orchestrator.report.figures.heatmap import fig_heatmap, fig_std_heatmap
+from aidmi_orchestrator.report.figures.heatmap import (
+    fig_heatmap,
+    fig_metric_heatmap,
+    fig_std_heatmap,
+)
 
 FIX = Path(__file__).parent / "fixtures" / "mini_results.jsonl"
+
+
+def test_metric_heatmap_writes_svg_for_every_metric(tmp_path):
+    recs = load_records([FIX])
+    for key in ("recall", "field_acc", "mat_rate", "cost", "tokens", "time"):
+        out = fig_metric_heatmap(recs, tmp_path, key=key)
+        assert out.name == f"heatmap_sc_on_{key}.svg"
+        assert out.exists() and out.suffix == ".svg" and out.stat().st_size > 0
 
 
 def test_heatmap_materialized_writes_svg(tmp_path):

@@ -16,7 +16,7 @@ from aidmi_orchestrator.report.figures.efficiency import (
     fig_cost_drivers,
     fig_efficiency,
 )
-from aidmi_orchestrator.report.figures.heatmap import fig_heatmap, fig_std_heatmap
+from aidmi_orchestrator.report.figures.heatmap import fig_heatmap, fig_metric_heatmap
 from aidmi_orchestrator.report.figures.levers import (
     fig_lever_ctx,
     fig_lever_ctx_sc_on,
@@ -61,17 +61,12 @@ def _build_core_figures(records: list[RunRecord], figdir: Path) -> dict[str, Pat
         "cost_drivers": fig_cost_drivers(records, figdir),
         "rep_spread": fig_rep_spread(records, figdir),
         "rep_range": fig_rep_range(records, figdir),
-        "heatmap_f1_std": fig_std_heatmap(records, figdir),
-        "heatmap_materialized": fig_heatmap(
-            records, figdir,
-            metric="materialized", filename="heatmap_materialized.svg",
-            title="Materialization % by strategy × fixture",
-        ),
-        "heatmap_field_acc": fig_heatmap(
-            records, figdir,
-            metric="field_acc", filename="heatmap_field_acc.svg",
-            title="Field accuracy by strategy × fixture",
-        ),
+        **{
+            f"heatmap_{key}": fig_metric_heatmap(
+                [r for r in records if r.sc is True], figdir, key=key
+            )
+            for key in ("recall", "field_acc", "mat_rate", "cost", "tokens", "time")
+        },
     }
 
 
@@ -132,6 +127,15 @@ def _build_sections(
             "correlation", "Correlation", [figs["recall_field_acc"]], "",
         ),
         Section(
+            "heatmaps", "Heatmaps",
+            # Row-major 2-column flow: quality (recall, field acc, mat rate) down
+            # the left, cost/effort (cost, tokens, time) down the right.
+            [figs["heatmap_recall"], figs["heatmap_cost"],
+             figs["heatmap_field_acc"], figs["heatmap_tokens"],
+             figs["heatmap_mat_rate"], figs["heatmap_time"]],
+            "",
+        ),
+        Section(
             "distribution", "Distribution",
             [figs["dist_by_strategy"], figs["dist_by_fixture"]],
             "",
@@ -148,11 +152,6 @@ def _build_sections(
         Section(
             "efficiency", "Efficiency",
             [figs["efficiency"], figs["thinking_tokens"], figs["cost_drivers"]],
-            "",
-        ),
-        Section(
-            "fixtures", "Fixtures",
-            [figs["heatmap_materialized"], figs["heatmap_field_acc"], figs["heatmap_f1_std"]],
             "",
         ),
     ]
