@@ -10,6 +10,7 @@ from aidmi_orchestrator.report.aggregate import (
     group_mean,
     group_mean_zero,
     materialization_rate,
+    pass_rate,
     rep_values,
     summary_stats,
 )
@@ -147,18 +148,22 @@ def _fmt_stats(values: list[float], *, prec: int = 3, prefix: str = "",
     return f"{prefix}{mean:.{prec}f} / {median:.{prec}f} ±{sd:.{prec}f}"
 
 
-def _summary_row(label: str, recs: list[RunRecord]) -> str:
+def _summary_metric_cells(recs: list[RunRecord]) -> list[str]:
     n = len(recs)
     mat_any = sum(1 for r in recs if r.materialized) / n if n else 0.0
     mat_all = sum(1 for r in recs if r.tables_materialized == 1.0) / n if n else 0.0
-    return _row([
-        _esc(label), _esc(n),
+    return [
+        _esc(n),
         _fmt_stats(_zero_vals(recs, lambda r: r.recall)),
         _fmt_stats(_eval_vals(recs, lambda r: r.field_acc)),
         _fmt_pct(mat_any), _fmt_pct(mat_all),
         _fmt_stats(_eval_vals(recs, lambda r: r.cost), prec=4, prefix="$"),
         _fmt_stats(_eval_vals(recs, lambda r: r.secs), integer=True),
-    ])
+    ]
+
+
+def _summary_row(label: str, recs: list[RunRecord]) -> str:
+    return _row([_esc(label)] + _summary_metric_cells(recs))
 
 
 def _summary_table(groups: list[tuple[str, list[RunRecord]]], caption: str) -> str:
@@ -193,6 +198,48 @@ def summary_by_ctx_table(records: list[RunRecord]) -> str:
         "flips per strategy (see Levers), so no row is a universal winner. "
         + _SUMMARY_LEGEND,
     )
+
+
+def _config_label(key: tuple[str, str, bool | None, str]) -> str:
+    cell, ctx, sc, _model = key
+    return f"{_esc(cell)} / {_esc(ctx)} / sc {_fmt_sc(sc)}"
+
+
+def summary_best_config_table(records: list[RunRecord]) -> str:
+    """One winning config per objective, rendered with the same run-total stats
+    as the other summary tables. The winning metric is already covered by its
+    stat column, so there is no separate value column."""
+    configs: dict[tuple, list[RunRecord]] = {}
+    for r in records:
+        configs.setdefault(_config_key(r), []).append(r)
+
+    recall = group_mean(records, _config_key, lambda r: r.recall)
+    field = group_mean(records, _config_key, lambda r: r.field_acc)
+    cost = group_mean(records, _config_key, lambda r: r.cost)
+    mat_all = pass_rate(records, _config_key, lambda r: r.tables_materialized == 1.0)
+
+    objectives: list[tuple[str, tuple]] = []
+    if recall:
+        objectives.append(("Highest mean recall", _best(recall, largest=True)[0]))
+    if field:
+        objectives.append(("Highest mean field acc", _best(field, largest=True)[0]))
+    if cost:
+        objectives.append(("Lowest mean cost", _best(cost, largest=False)[0]))
+    if mat_all:
+        objectives.append(
+            ("Highest full-materialization rate", _best(mat_all, largest=True)[0]))
+
+    header = ["Objective", "Winning config"] + _SUMMARY_HEADER[1:]
+    rows = [
+        _row([_esc(obj), _config_label(key)] + _summary_metric_cells(configs[key]))
+        for obj, key in objectives
+    ]
+    caption = (
+        "Best config per objective, with its full run totals. The winning metric "
+        "is the one named in the objective; its value shows in the matching "
+        "column. " + _SUMMARY_LEGEND
+    )
+    return _table(header, rows, caption=caption)
 
 
 def _mean_recall(recs: list[RunRecord]) -> float:

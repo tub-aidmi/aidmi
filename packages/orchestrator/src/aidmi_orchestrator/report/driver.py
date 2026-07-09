@@ -26,6 +26,7 @@ from aidmi_orchestrator.report.tables import (
     best_config_table,
     failure_accounting_table,
     silent_failure_table,
+    summary_best_config_table,
     summary_by_ctx_table,
     summary_by_sc_table,
     summary_overall_table,
@@ -90,7 +91,7 @@ def _build_sections(
             "split by the two dominant levers (self-correction, context mode), then "
             "per-strategy and per-fixture breakdowns within each self-correction setting.",
             ("summary_overall", "summary_sc", "summary_ctx",
-             "summary_sc_on", "summary_sc_off"),
+             "summary_best_config", "summary_sc_on", "summary_sc_off"),
         ),
         Section(
             "levers", "Levers",
@@ -142,6 +143,7 @@ def build_report(records: list[RunRecord], out_dir: Path) -> list[Path]:
         "summary_overall": summary_overall_table(records),
         "summary_sc": summary_by_sc_table(records),
         "summary_ctx": summary_by_ctx_table(records),
+        "summary_best_config": summary_best_config_table(records),
         "summary_sc_on": summary_sc_block(records, sc=True),
         "summary_sc_off": summary_sc_block(records, sc=False),
         "best_config": best_config_table(records),
