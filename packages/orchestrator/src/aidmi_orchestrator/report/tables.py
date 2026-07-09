@@ -118,14 +118,13 @@ def best_config_table(records: list[RunRecord]) -> str:
 
 
 _SUMMARY_HEADER = [
-    "Group", "n", "Recall", "Field acc", "Mat% (any)", "Mat% (all)",
-    "Cost $", "Time (s)",
+    "Group", "n", "Recall", "Field acc", "Mat rate", "Cost $", "Time (s)",
 ]
 _SUMMARY_LEGEND = (
-    "Cells: mean / median ±sd. Recall counts a run that produced nothing as a "
-    "genuine 0-of-N score; field acc, cost and time are over runs that produced "
-    "output. Mat% (any) is the share of runs that materialized at least one "
-    "target table; Mat% (all) the share that materialized every target table."
+    "Cells: mean / median ±sd. Recall and materialization rate count a run that "
+    "produced nothing as 0; field acc, cost and time are over runs that produced "
+    "output. Materialization rate is the fraction of target tables a run "
+    "materialized."
 )
 
 
@@ -149,14 +148,11 @@ def _fmt_stats(values: list[float], *, prec: int = 3, prefix: str = "",
 
 
 def _summary_metric_cells(recs: list[RunRecord]) -> list[str]:
-    n = len(recs)
-    mat_any = sum(1 for r in recs if r.materialized) / n if n else 0.0
-    mat_all = sum(1 for r in recs if r.tables_materialized == 1.0) / n if n else 0.0
     return [
-        _esc(n),
+        _esc(len(recs)),
         _fmt_stats(_zero_vals(recs, lambda r: r.recall)),
         _fmt_stats(_eval_vals(recs, lambda r: r.field_acc)),
-        _fmt_pct(mat_any), _fmt_pct(mat_all),
+        _fmt_stats(_zero_vals(recs, lambda r: r.tables_materialized)),
         _fmt_stats(_eval_vals(recs, lambda r: r.cost), prec=4, prefix="$"),
         _fmt_stats(_eval_vals(recs, lambda r: r.secs), integer=True),
     ]
