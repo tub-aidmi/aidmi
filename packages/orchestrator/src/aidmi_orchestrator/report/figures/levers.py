@@ -87,20 +87,11 @@ def _draw_panel(ax, cells, model, mat_or_rec, overall, x_order, *, is_rate,
 
 
 _LEGEND_FONTSIZE = 8.5
-# Rough width of one DejaVu Sans glyph at the legend font size, in inches
-# (measured: a 30-char label spans ~2.1in at 8.5px). Used to size the legend
-# gutter to the longest label instead of a hand-tuned constant.
-_LEGEND_CHAR_IN = 0.07
-_LEGEND_PAD_IN = 0.8  # marker + gap before the text + right breathing room
 
 
-def _legend_width_in(cells) -> float:
-    longest = max((len(str(c)) for c in cells), default=12)
-    longest = max(longest, len("overall mean"))
-    return _LEGEND_PAD_IN + longest * _LEGEND_CHAR_IN
-
-
-def _legend(fig, cells, anchor_x):
+def _legend(fig, cells, *, y, ncol):
+    """Horizontal legend along the bottom of the figure, so the panels keep the
+    full width instead of surrendering a right-hand gutter to it."""
     from matplotlib.lines import Line2D
 
     handles = [
@@ -120,9 +111,9 @@ def _legend(fig, cells, anchor_x):
         )
     )
     leg = fig.legend(
-        handles=handles, title="Strategy (cell)", loc="center left",
-        bbox_to_anchor=(anchor_x, 0.5), labelcolor=_INK, alignment="left",
-        frameon=False, fontsize=_LEGEND_FONTSIZE,
+        handles=handles, title="Strategy (cell)", loc="lower center",
+        bbox_to_anchor=(0.5, y), ncol=ncol, labelcolor=_INK, frameon=False,
+        fontsize=_LEGEND_FONTSIZE, columnspacing=1.6, handletextpad=0.5,
     )
     leg.get_title().set_color(_INK)
 
@@ -143,15 +134,17 @@ def _slope_figure(
     key = _row_key(attr)
     model_x_key = lambda r: (r.model, getattr(r, attr))  # noqa: E731
 
-    # Three stacked metric rows sharing the lever x-axis: materialization and
-    # recall on a [0,1] axis, tokens on an absolute axis.
+    # Four stacked metric rows sharing the lever x-axis. Recall, field accuracy
+    # and materialization rate sit on a [0,1] axis; tokens on an absolute axis.
     metrics = [
-        ("Materialization rate", materialization_rate(filtered, key),
-         materialization_rate(filtered, model_x_key), True, True),
         ("Recall", group_mean(filtered, key, lambda r: r.recall),
-         group_mean(filtered, model_x_key, lambda r: r.recall), False, True),
+         group_mean(filtered, model_x_key, lambda r: r.recall), True),
+        ("Field acc", group_mean(filtered, key, lambda r: r.field_acc),
+         group_mean(filtered, model_x_key, lambda r: r.field_acc), True),
+        ("Mat rate", materialization_rate(filtered, key),
+         materialization_rate(filtered, model_x_key), True),
         ("Mean tokens/run (in+out)", group_mean(filtered, key, _total_tokens),
-         group_mean(filtered, model_x_key, _total_tokens), False, False),
+         group_mean(filtered, model_x_key, _total_tokens), False),
     ]
 
     models = sorted({r.model for r in filtered})
@@ -159,13 +152,15 @@ def _slope_figure(
     cost_by_model = cost_by_model or {}
     n_cols = max(len(models), 1)
 
-    # Lay the figure out in inches: a fixed y-label gutter, generously sized
-    # plot columns (so the panels stay large once the page scales the SVG to a
-    # fixed width), and a legend gutter sized to the longest strategy label.
-    left_in, plot_in, gap_in = 0.85, 5.4, 0.2
-    legend_in = _legend_width_in(cells)
-    fig_w = left_in + plot_in * n_cols + gap_in + legend_in
-    fig_h = 9.2
+    # Lay the figure out in inches. The legend sits along the bottom (not a right
+    # gutter), so the panels keep the full width and render large once the page
+    # scales the SVG. Height carries the four rows plus a bottom legend band.
+    left_in, plot_in, right_in = 0.9, 6.0, 0.3
+    top_in, row_in = 0.7, 2.1
+    legend_rows = -(-(len(cells) + 1) // 2)  # entries over 2 columns, rounded up
+    legend_in = 0.6 + 0.2 * legend_rows
+    fig_w = left_in + plot_in * n_cols + right_in
+    fig_h = top_in + row_in * len(metrics) + legend_in
 
     fig, axes = plt.subplots(
         nrows=len(metrics), ncols=n_cols, sharex=True, squeeze=False,
@@ -173,10 +168,10 @@ def _slope_figure(
     )
 
     for j, model in enumerate(models):
-        for i, (ylabel, values, overall, is_rate, unit_axis) in enumerate(metrics):
+        for i, (ylabel, values, overall, unit_axis) in enumerate(metrics):
             ax = axes[i][j]
             _draw_panel(ax, cells, model, values, overall, x_order,
-                        is_rate=is_rate, unit_axis=unit_axis)
+                        is_rate=False, unit_axis=unit_axis)
             ax.set_ylabel(ylabel)
         top = axes[0][j]
         # Model header (multi-model only); the ctx cost delta is scoped to THIS
@@ -191,11 +186,10 @@ def _slope_figure(
 
     fig.suptitle(title, color=_INK, fontsize=13, x=0.05, y=0.99, ha="left")
 
-    plot_right = left_in + plot_in * n_cols
-    _legend(fig, cells, anchor_x=(plot_right + gap_in) / fig_w)
+    _legend(fig, cells, y=0.005, ncol=2)
     fig.subplots_adjust(
-        left=left_in / fig_w, right=plot_right / fig_w,
-        top=0.9, bottom=0.07, hspace=0.18,
+        left=left_in / fig_w, right=(left_in + plot_in * n_cols) / fig_w,
+        top=1 - top_in / fig_h, bottom=legend_in / fig_h, hspace=0.2,
     )
 
     out = out_dir / filename
