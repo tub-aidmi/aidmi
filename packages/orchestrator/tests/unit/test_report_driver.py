@@ -20,6 +20,7 @@ FIX = Path(__file__).parent / "fixtures" / "mini_results.jsonl"
 CORE_FIGURES = [
     "pareto.svg",
     "prec_recall.svg",
+    "recall_field_acc.svg",
     "metric_distribution.svg",
     "score_histogram.svg",
     "lever_sc.svg",

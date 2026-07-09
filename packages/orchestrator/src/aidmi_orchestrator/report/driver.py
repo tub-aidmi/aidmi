@@ -5,6 +5,7 @@ from pathlib import Path
 
 from aidmi_orchestrator.report.data import RunRecord, write_tidy_csv
 from aidmi_orchestrator.report.figures.context import fig_ctx_comparison
+from aidmi_orchestrator.report.figures.correlation import fig_recall_field_acc
 from aidmi_orchestrator.report.figures.distribution import (
     fig_metric_distribution,
     fig_score_histogram,
@@ -44,6 +45,7 @@ def _build_core_figures(records: list[RunRecord], figdir: Path) -> dict[str, Pat
     return {
         "pareto": fig_pareto(records, figdir),
         "prec_recall": fig_prec_recall(records, figdir),
+        "recall_field_acc": fig_recall_field_acc(records, figdir),
         "metric_distribution": fig_metric_distribution(records, figdir),
         "score_histogram": fig_score_histogram(records, figdir),
         "lever_sc": fig_lever_sc(records, figdir),
@@ -109,8 +111,11 @@ def _build_sections(
             "Scores are bimodal — runs pile at 0 and 1, not the mean. The box + raw dots expose the spread a mean bar hides.",
         ),
         Section(
-            "strategy", "Strategy", [figs["scorecard"], figs["cost_latency"]],
-            "Per-strategy materialization, recall, field accuracy, and their cost/latency trade-offs.",
+            "strategy", "Strategy",
+            [figs["scorecard"], figs["cost_latency"], figs["recall_field_acc"]],
+            "Per-strategy materialization, recall, field accuracy, and their "
+            "cost/latency trade-offs; the scatter shows whether recovering more "
+            "tables (recall) tracks getting their cells right (field accuracy).",
         ),
         Section(
             "efficiency", "Efficiency",
