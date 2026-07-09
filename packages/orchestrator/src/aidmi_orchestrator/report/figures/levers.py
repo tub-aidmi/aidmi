@@ -86,7 +86,21 @@ def _draw_panel(ax, cells, model, mat_or_rec, overall, x_order, *, is_rate,
         ax.set_ylim(bottom=0)
 
 
-def _legend(fig, cells):
+_LEGEND_FONTSIZE = 8.5
+# Rough width of one DejaVu Sans glyph at the legend font size, in inches
+# (measured: a 30-char label spans ~2.1in at 8.5px). Used to size the legend
+# gutter to the longest label instead of a hand-tuned constant.
+_LEGEND_CHAR_IN = 0.07
+_LEGEND_PAD_IN = 0.8  # marker + gap before the text + right breathing room
+
+
+def _legend_width_in(cells) -> float:
+    longest = max((len(str(c)) for c in cells), default=12)
+    longest = max(longest, len("overall mean"))
+    return _LEGEND_PAD_IN + longest * _LEGEND_CHAR_IN
+
+
+def _legend(fig, cells, anchor_x):
     from matplotlib.lines import Line2D
 
     handles = [
@@ -107,8 +121,8 @@ def _legend(fig, cells):
     )
     leg = fig.legend(
         handles=handles, title="Strategy (cell)", loc="center left",
-        bbox_to_anchor=(0.6, 0.5), labelcolor=_INK, alignment="left",
-        frameon=False, fontsize=8.5,
+        bbox_to_anchor=(anchor_x, 0.5), labelcolor=_INK, alignment="left",
+        frameon=False, fontsize=_LEGEND_FONTSIZE,
     )
     leg.get_title().set_color(_INK)
 
@@ -145,9 +159,17 @@ def _slope_figure(
     cost_by_model = cost_by_model or {}
     n_cols = max(len(models), 1)
 
+    # Lay the figure out in inches: a fixed y-label gutter, generously sized
+    # plot columns (so the panels stay large once the page scales the SVG to a
+    # fixed width), and a legend gutter sized to the longest strategy label.
+    left_in, plot_in, gap_in = 0.85, 5.4, 0.2
+    legend_in = _legend_width_in(cells)
+    fig_w = left_in + plot_in * n_cols + gap_in + legend_in
+    fig_h = 9.2
+
     fig, axes = plt.subplots(
         nrows=len(metrics), ncols=n_cols, sharex=True, squeeze=False,
-        figsize=(5.5 * n_cols + 6.5, 8.6),
+        figsize=(fig_w, fig_h),
     )
 
     for j, model in enumerate(models):
@@ -169,9 +191,11 @@ def _slope_figure(
 
     fig.suptitle(title, color=_INK, fontsize=13, x=0.05, y=0.99, ha="left")
 
-    _legend(fig, cells)
+    plot_right = left_in + plot_in * n_cols
+    _legend(fig, cells, anchor_x=(plot_right + gap_in) / fig_w)
     fig.subplots_adjust(
-        left=0.09, right=0.56, top=0.9, bottom=0.08, hspace=0.18,
+        left=left_in / fig_w, right=plot_right / fig_w,
+        top=0.9, bottom=0.07, hspace=0.18,
     )
 
     out = out_dir / filename
