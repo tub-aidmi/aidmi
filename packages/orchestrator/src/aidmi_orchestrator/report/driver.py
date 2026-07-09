@@ -99,7 +99,7 @@ def _build_sections(
         ),
         Section(
             "levers", "Levers",
-            [figs["lever_sc"], figs["lever_ctx"], figs["lever_ctx_sc_on"]],
+            [figs["lever_ctx"], figs["lever_ctx_sc_on"], figs["lever_sc"]],
             "",
         ),
         Section(
