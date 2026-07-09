@@ -206,7 +206,7 @@ def fig_lever_sc(records, out_dir) -> Path:
     )
 
 
-def fig_lever_ctx(records, out_dir) -> Path:
+def _ctx_slope(records, out_dir, filename, salt, title) -> Path:
     filtered = _filter_valid(records, "ctx", _CTX_ORDER)
     cost = group_mean(filtered, lambda r: (r.model, r.ctx), lambda r: r.cost)
     cost_by_model = {}
@@ -222,8 +222,25 @@ def fig_lever_ctx(records, out_dir) -> Path:
             f"live-query ${live:.3f} (Δ {sign}${abs(delta):.3f})"
         )
     return _slope_figure(
-        records, out_dir, "lever_ctx.svg", "aidmi-lever-ctx",
+        records, out_dir, filename, salt,
         attr="ctx", x_order=_CTX_ORDER, x_labels=_CTX_LABELS,
-        title="Lever: context mode (metadata-only -> live-query)",
-        cost_by_model=cost_by_model,
+        title=title, cost_by_model=cost_by_model,
+    )
+
+
+def fig_lever_ctx(records, out_dir) -> Path:
+    return _ctx_slope(
+        records, out_dir, "lever_ctx.svg", "aidmi-lever-ctx",
+        "Lever: context mode (metadata-only -> live-query)",
+    )
+
+
+def fig_lever_ctx_sc_on(records, out_dir) -> Path:
+    """The context-mode lever restricted to self-correction on, where the
+    strategies actually work — isolating the context effect from the dominant
+    self-correction lever."""
+    on = [r for r in records if r.sc is True]
+    return _ctx_slope(
+        on, out_dir, "lever_ctx_sc_on.svg", "aidmi-lever-ctx-sc-on",
+        "Lever: context mode, self-correction on (metadata-only -> live-query)",
     )

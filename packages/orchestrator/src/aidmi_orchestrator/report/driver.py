@@ -14,7 +14,11 @@ from aidmi_orchestrator.report.figures.efficiency import (
     fig_efficiency,
 )
 from aidmi_orchestrator.report.figures.heatmap import fig_heatmap, fig_std_heatmap
-from aidmi_orchestrator.report.figures.levers import fig_lever_ctx, fig_lever_sc
+from aidmi_orchestrator.report.figures.levers import (
+    fig_lever_ctx,
+    fig_lever_ctx_sc_on,
+    fig_lever_sc,
+)
 from aidmi_orchestrator.report.figures.metric import fig_prec_recall
 from aidmi_orchestrator.report.figures.pareto import fig_pareto
 from aidmi_orchestrator.report.figures.reliability import fig_rep_range, fig_rep_spread
@@ -44,6 +48,7 @@ def _build_core_figures(records: list[RunRecord], figdir: Path) -> dict[str, Pat
         "score_histogram": fig_score_histogram(records, figdir),
         "lever_sc": fig_lever_sc(records, figdir),
         "lever_ctx": fig_lever_ctx(records, figdir),
+        "lever_ctx_sc_on": fig_lever_ctx_sc_on(records, figdir),
         "ctx_comparison": fig_ctx_comparison(records, figdir),
         "scorecard": fig_scorecard(records, figdir),
         "cost_latency": fig_cost_latency(records, figdir),
@@ -95,8 +100,8 @@ def _build_sections(
         ),
         Section(
             "levers", "Levers",
-            [figs["lever_sc"], figs["lever_ctx"]],
-            "Self-correction is the dominant lever; live_query_tool spends ~2.5× the input tokens of metadata_only for a fraction of a point of f1. Each figure stacks materialization, recall, and token spend against the lever.",
+            [figs["lever_sc"], figs["lever_ctx"], figs["lever_ctx_sc_on"]],
+            "Self-correction is the dominant lever; live_query_tool spends ~2.5× the input tokens of metadata_only for a fraction of a point of f1. Each figure stacks recall, field accuracy, materialization rate, and token spend against the lever; the last isolates the context effect with self-correction on.",
         ),
         Section(
             "distribution", "Distribution",
