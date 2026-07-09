@@ -10,32 +10,42 @@ from aidmi_orchestrator.report.theme import apply_theme, color_for_cell
 _INK = "#0b0b0b"
 _MUTED = "#898781"
 _SURFACE = "#fcfcfb"
-_MEAN_COLOR = "#52514e"
 
-# f1, recall and field_acc are all continuous [0,1] quality axes. The scorecard
-# already shows their *means*; this figure exists to show the spread the mean
-# hides -- a strategy averaging 0.6 could be a tight cluster or a 0/1 coin flip,
-# and only the box + raw dots tell them apart.
-#
+# Fixtures have no fixed palette (unlike strategies), so colour them by position
+# from a categorical ramp -- the colour only separates boxes, it carries no
+# meaning of its own.
+_FIXTURE_PALETTE = [
+    "#4C78A8", "#F58518", "#54A24B", "#B279A2",
+    "#E45756", "#72B7B2", "#EECA3B", "#9D755D",
+]
+
+
 # A run that materialized nothing (or silently produced an empty schema) has a
-# null score. That is not missing data -- it is a zero-quality *outcome*, and
-# it is the left mode of the distribution. Dropping it (as group_mean does) is
-# exactly the averaging-away this figure exists to undo, so nulls are zero-filled.
+# null recall/field-acc/mat-rate. That is not missing data -- it is a
+# zero-quality *outcome*, the left mode of the distribution, so nulls on the
+# quality axes are zero-filled. Tokens and time are absolute-scale instrument
+# readings; a null there is genuinely missing (not "0 tokens"), so it drops out.
 def _outcome(getter):
     return lambda r: (v if (v := getter(r)) is not None else 0.0)
 
 
-_METRICS = [
-    ("f1", "F1", _outcome(lambda r: r.f1)),
-    ("recall", "Recall", _outcome(lambda r: r.recall)),
-    ("field_acc", "Field accuracy", _outcome(lambda r: r.field_acc)),
+def _total_tokens(r):
+    if r.tokens_in is None and r.tokens_out is None:
+        return None
+    return (r.tokens_in or 0) + (r.tokens_out or 0)
+
+
+# Top-to-bottom: recall, field accuracy, materialization rate on the [0,1]
+# quality axis; combined tokens and wall-clock time on absolute axes.
+_DIST_METRICS = [
+    ("Recall", _outcome(lambda r: r.recall), True),
+    ("Field acc", _outcome(lambda r: r.field_acc), True),
+    ("Mat rate", _outcome(lambda r: r.tables_materialized), True),
+    ("Tokens (in+out)", _total_tokens, False),
+    ("Time (s)", lambda r: r.secs, False),
 ]
 
 _JITTER_HALF_WIDTH = 0.28
-
-
-def _cell_key(r):
-    return r.cell
 
 
 def _jitter(n):
@@ -45,21 +55,21 @@ def _jitter(n):
     return [-_JITTER_HALF_WIDTH + step * j for j in range(n)]
 
 
-def _ranked_cells(records):
-    """Cells ordered by median f1 (nulls as 0) descending."""
-    f1 = rep_values(records, _cell_key, _outcome(lambda r: r.f1))
-    all_cells = sorted({r.cell for r in records})
+def _ranked_groups(records, key):
+    """Groups ordered by median recall (nulls as 0) descending, then name."""
+    recall = rep_values(records, key, _outcome(lambda r: r.recall))
+    all_groups = sorted({key(r) for r in records})
     ranked = sorted(
-        (c for c in all_cells if f1.get(c)),
-        key=lambda c: (-statistics.median(f1[c]), c),
+        (g for g in all_groups if recall.get(g)),
+        key=lambda g: (-statistics.median(recall[g]), g),
     )
-    unranked = sorted(c for c in all_cells if not f1.get(c))
+    unranked = sorted(g for g in all_groups if not recall.get(g))
     return ranked + unranked
 
 
-def _draw_panel(ax, cells, values, label):
-    data = [values.get(c, []) for c in cells]
-    positions = list(range(len(cells)))
+def _draw_panel(ax, groups, colors, values, label, *, unit_axis):
+    data = [values.get(g, []) for g in groups]
+    positions = list(range(len(groups)))
     non_empty = [(p, d) for p, d in zip(positions, data) if d]
     if non_empty:
         bp = ax.boxplot(
@@ -69,98 +79,72 @@ def _draw_panel(ax, cells, values, label):
             whiskerprops=dict(color=_MUTED), capprops=dict(color=_MUTED),
         )
         for (p, _), box in zip(non_empty, bp["boxes"]):
-            box.set(facecolor=color_for_cell(cells[p]), alpha=0.25, edgecolor=_MUTED)
+            box.set(facecolor=colors[p], alpha=0.25, edgecolor=_MUTED)
     for p, d in zip(positions, data):
         if not d:
             continue
         xs = [p + off for off in _jitter(len(d))]
         ax.scatter(
-            xs, d, s=14, color=color_for_cell(cells[p]), alpha=0.7,
+            xs, d, s=14, color=colors[p], alpha=0.7,
             edgecolors=_SURFACE, linewidths=0.3, zorder=3,
         )
-    ax.set_xlim(-0.6, len(cells) - 0.4)
-    ax.set_ylim(-0.05, 1.08)
+    ax.set_xlim(-0.6, len(groups) - 0.4)
+    if unit_axis:
+        ax.set_ylim(-0.05, 1.08)
+    else:
+        ax.set_ylim(bottom=0)
     ax.set_ylabel(label, color=_INK)
 
 
-def fig_metric_distribution(records, out_dir) -> Path:
+def _dist_figure(records, out_dir, filename, salt, key, colors_for, title) -> Path:
     import matplotlib as mpl
     import matplotlib.pyplot as plt
 
     apply_theme()
-    mpl.rcParams["svg.hashsalt"] = "aidmi-metric-dist"
+    mpl.rcParams["svg.hashsalt"] = salt
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    cells = _ranked_cells(records)
+    groups = _ranked_groups(records, key)
+    colors = colors_for(groups)
     fig, axes = plt.subplots(
-        nrows=len(_METRICS), ncols=1, squeeze=False, sharex=True,
-        figsize=(max(9.0, 1.2 * len(cells) + 3.0), 3.0 * len(_METRICS) + 0.6),
+        nrows=len(_DIST_METRICS), ncols=1, squeeze=False, sharex=True,
+        figsize=(max(9.0, 1.2 * len(groups) + 3.0), 2.6 * len(_DIST_METRICS) + 0.6),
     )
-    for i, (_, label, getter) in enumerate(_METRICS):
+    for i, (label, getter, unit_axis) in enumerate(_DIST_METRICS):
         ax = axes[i][0]
-        _draw_panel(ax, cells, rep_values(records, _cell_key, getter), label)
+        _draw_panel(ax, groups, colors, rep_values(records, key, getter), label,
+                    unit_axis=unit_axis)
 
     bottom = axes[-1][0]
-    bottom.set_xticks(range(len(cells)))
-    bottom.set_xticklabels(cells, rotation=25, ha="right", fontsize=9, color=_INK)
+    bottom.set_xticks(range(len(groups)))
+    bottom.set_xticklabels(groups, rotation=25, ha="right", fontsize=9, color=_INK)
 
-    fig.suptitle(
-        "Per-strategy score distribution — box (IQR + median) over every run",
-        color=_INK, fontsize=12, x=0.02, ha="left",
-    )
-    fig.subplots_adjust(left=0.09, right=0.98, top=0.93, bottom=0.16, hspace=0.15)
+    fig.suptitle(title, color=_INK, fontsize=12, x=0.02, ha="left")
+    fig.subplots_adjust(left=0.10, right=0.98, top=0.95, bottom=0.13, hspace=0.15)
 
-    out = out_dir / "metric_distribution.svg"
+    out = out_dir / filename
     fig.savefig(out, format="svg", metadata={"Date": None})
     plt.close(fig)
     return out
 
 
-def fig_score_histogram(records, out_dir) -> Path:
-    import matplotlib as mpl
-    import matplotlib.pyplot as plt
-
-    apply_theme()
-    mpl.rcParams["svg.hashsalt"] = "aidmi-score-hist"
-    out_dir = Path(out_dir)
-    out_dir.mkdir(parents=True, exist_ok=True)
-
-    # Null score = materialized nothing = a zero outcome (the left mode). Count
-    # it, don't drop it, or the figure would erase the very failures it exists
-    # to show alongside the perfect runs.
-    vals = [r.f1 if r.f1 is not None else 0.0 for r in records]
-    fails = sum(1 for r in records if r.f1 is None)
-    fig, ax = plt.subplots(figsize=(7.2, 4.4))
-
-    if vals:
-        ax.hist(
-            vals, bins=[i / 10 for i in range(11)], color="#2a78d6",
-            edgecolor=_SURFACE, linewidth=0.6, zorder=3,
-        )
-        mean = statistics.fmean(vals)
-        median = statistics.median(vals)
-        ax.axvline(mean, color=_MEAN_COLOR, linestyle="--", lw=1.4, zorder=4)
-        ax.axvline(median, color="#E45756", linestyle="-", lw=1.4, zorder=4)
-        top = ax.get_ylim()[1]
-        ax.text(mean, top * 0.98, f" mean {mean:.2f}", color=_MEAN_COLOR,
-                fontsize=9, ha="left", va="top")
-        ax.text(median, top * 0.88, f" median {median:.2f}", color="#E45756",
-                fontsize=9, ha="left", va="top")
-        if fails:
-            ax.text(0.02, top * 0.98, f"{fails} runs scored nothing (→0)",
-                    color=_MUTED, fontsize=8.5, ha="left", va="top")
-
-    ax.set_xlim(0, 1)
-    ax.set_xlabel("F1 (null score = 0 outcome)", color=_INK)
-    ax.set_ylabel("Runs", color=_INK)
-    ax.set_title(
-        "F1 distribution across all runs — mass piles at 0 and 1, not the mean",
-        color=_INK, fontsize=12, loc="left",
+def fig_dist_by_strategy(records, out_dir) -> Path:
+    on = [r for r in records if r.sc is True]
+    return _dist_figure(
+        on, out_dir, "dist_by_strategy.svg", "aidmi-dist-strategy",
+        lambda r: r.cell,
+        lambda groups: [color_for_cell(g) for g in groups],
+        "Per-strategy distribution (self-correction on) — box (IQR + median) over every run",
     )
-    fig.tight_layout()
 
-    out = out_dir / "score_histogram.svg"
-    fig.savefig(out, format="svg", metadata={"Date": None})
-    plt.close(fig)
-    return out
+
+def fig_dist_by_fixture(records, out_dir) -> Path:
+    on = [r for r in records if r.sc is True]
+    return _dist_figure(
+        on, out_dir, "dist_by_fixture.svg", "aidmi-dist-fixture",
+        lambda r: r.fixture,
+        lambda groups: [_FIXTURE_PALETTE[i % len(_FIXTURE_PALETTE)]
+                        for i in range(len(groups))],
+        "Per-fixture distribution (self-correction on) — box (IQR + median) over every run",
+    )
