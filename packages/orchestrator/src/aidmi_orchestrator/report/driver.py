@@ -93,49 +93,39 @@ def _build_sections(
 ) -> list[Section]:
     sections = [
         Section(
-            "summary", "Summary", [],
-            "Run totals with mean / median / sd for the headline metrics — overall, "
-            "split by the two dominant levers (self-correction, context mode), then "
-            "per-strategy and per-fixture breakdowns within each self-correction setting.",
+            "summary", "Summary", [], "",
             ("summary_overall", "summary_sc", "summary_ctx",
              "summary_best_config", "summary_sc_on", "summary_sc_off"),
         ),
         Section(
             "levers", "Levers",
             [figs["lever_sc"], figs["lever_ctx"], figs["lever_ctx_sc_on"]],
-            "Self-correction is the dominant lever; live_query_tool spends ~2.5× the input tokens of metadata_only for a fraction of a point of f1. Each figure stacks recall, field accuracy, materialization rate, and token spend against the lever; the last isolates the context effect with self-correction on.",
+            "",
+        ),
+        Section(
+            "correlation", "Correlation", [figs["recall_field_acc"]], "",
         ),
         Section(
             "distribution", "Distribution",
             [figs["dist_by_strategy"], figs["dist_by_fixture"]],
-            "Self-correction-on runs only. The box + raw dots expose the spread a "
-            "mean bar hides — recall, field accuracy, materialization rate, token "
-            "spend, and time, broken out by strategy and by fixture.",
+            "",
             stacked=True,
-        ),
-        Section(
-            "strategy", "Strategy",
-            [figs["scorecard"], figs["cost_latency"], figs["recall_field_acc"]],
-            "Per-strategy materialization, recall, field accuracy, and their "
-            "cost/latency trade-offs; the scatter shows whether recovering more "
-            "tables (recall) tracks getting their cells right (field accuracy).",
         ),
         Section(
             "efficiency", "Efficiency",
             [figs["efficiency"], figs["thinking_tokens"], figs["cost_drivers"]],
-            "Resource per unit of quality (cost/f1, tokens/f1), the reasoning-token tax, and the retry/cache drivers behind cost.",
+            "",
         ),
         Section(
             "fixtures", "Fixtures",
             [figs["heatmap_materialized"], figs["heatmap_field_acc"], figs["heatmap_f1_std"]],
-            "Materialization and field accuracy decouple across fixtures; the std heatmap flags cells whose mean you shouldn't trust.",
+            "",
         ),
     ]
     if multi_model:
         sections.append(
             Section(
-                "cross_campaign", "Cross-campaign", per_model_heatmaps,
-                "Per-model fixture materialization; the figures above are already faceted by model.",
+                "cross_campaign", "Cross-campaign", per_model_heatmaps, "",
             )
         )
     return sections

@@ -73,10 +73,11 @@ def _render_section(section: Section, tables: dict[str, str]) -> str:
         tables[key] for key in section.table_keys if key in tables
     )
     figures_class = "figures figures--stacked" if section.stacked else "figures"
+    caption_html = f'<p class="caption">{caption}</p>' if section.caption else ""
     return (
         "<section>"
         f'<h2 id="{_esc(section.id)}">{title}</h2>'
-        f'<p class="caption">{caption}</p>'
+        f"{caption_html}"
         f'<div class="{figures_class}">{figures_html}</div>'
         f"{tables_html}"
         "</section>"
