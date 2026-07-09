@@ -5,7 +5,12 @@ from pathlib import Path
 
 from aidmi_orchestrator.report.data import RunRecord, write_tidy_csv
 from aidmi_orchestrator.report.figures.context import fig_ctx_comparison
-from aidmi_orchestrator.report.figures.correlation import fig_recall_field_acc
+from aidmi_orchestrator.report.figures.correlation import (
+    fig_recall_field_acc,
+    fig_tokens_vs_field_acc,
+    fig_tokens_vs_mat_rate,
+    fig_tokens_vs_recall,
+)
 from aidmi_orchestrator.report.figures.distribution import (
     fig_dist_by_fixture,
     fig_dist_by_fixture_for_strategy,
@@ -48,6 +53,9 @@ def _build_core_figures(records: list[RunRecord], figdir: Path) -> dict[str, Pat
         "pareto": fig_pareto(records, figdir),
         "prec_recall": fig_prec_recall(records, figdir),
         "recall_field_acc": fig_recall_field_acc(records, figdir),
+        "corr_tokens_recall": fig_tokens_vs_recall(records, figdir),
+        "corr_tokens_field_acc": fig_tokens_vs_field_acc(records, figdir),
+        "corr_tokens_mat_rate": fig_tokens_vs_mat_rate(records, figdir),
         "dist_by_strategy": fig_dist_by_strategy(records, figdir),
         "dist_by_fixture": fig_dist_by_fixture(records, figdir),
         "lever_sc": fig_lever_sc(records, figdir),
@@ -125,6 +133,13 @@ def _build_sections(
         ),
         Section(
             "correlation", "Correlation", [figs["recall_field_acc"]], "",
+            subsections=(
+                Subsection(
+                    "Correlation with total token usage (self-correction on)",
+                    [figs["corr_tokens_recall"], figs["corr_tokens_field_acc"],
+                     figs["corr_tokens_mat_rate"]],
+                ),
+            ),
         ),
         Section(
             "heatmaps", "Heatmaps",

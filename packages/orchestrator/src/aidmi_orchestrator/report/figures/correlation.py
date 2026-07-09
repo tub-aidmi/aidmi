@@ -9,6 +9,7 @@ from aidmi_orchestrator.report.theme import apply_theme, color_for_cell, marker_
 _INK = "#0b0b0b"
 _MUTED = "#898781"
 _SURFACE = "#fcfcfb"
+_FIT = "#2a78d6"
 
 _DEFAULT_MARKER = "o"
 
@@ -17,28 +18,32 @@ def _sort_key(k):
     return tuple(str(part) for part in k)
 
 
-def fig_recall_field_acc(records, out_dir) -> Path:
-    """Recall-vs-field-accuracy scatter, one point per evaluated run.
+def _total_tokens(r):
+    if r.tokens_in is None and r.tokens_out is None:
+        return None
+    return (r.tokens_in or 0) + (r.tokens_out or 0)
 
-    Recall counts how many golden tables were recovered; field accuracy scores
-    the cells within the rows that matched. They answer different questions, so
-    a run can score high on one and low on the other -- this figure shows how
-    tightly (or loosely) the two quality axes actually move together, with the
-    Pearson r spelled out.
-    """
+
+def _correlation_scatter(
+    records, out_dir, *, filename, salt, x_getter, y_getter, x_label, y_label,
+    title, x_unit, identity=False,
+):
+    """Per-run scatter of two metrics with a least-squares fit line and the
+    Pearson correlation stated on the plot. Points are coloured by strategy
+    (and shaped by model when several are present)."""
     import matplotlib as mpl
     import matplotlib.pyplot as plt
     from matplotlib.lines import Line2D
 
     apply_theme()
-    mpl.rcParams["svg.hashsalt"] = "aidmi-recall-field-acc"
+    mpl.rcParams["svg.hashsalt"] = salt
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
 
     points = [
-        (r.recall, r.field_acc, r.cell, r.model)
+        (x, y, r.cell, r.model)
         for r in records
-        if r.recall is not None and r.field_acc is not None
+        if (x := x_getter(r)) is not None and (y := y_getter(r)) is not None
     ]
     multi_model = len({p[3] for p in points}) > 1
     group_key = (lambda p: (p[2], p[3])) if multi_model else (lambda p: (p[2],))
@@ -52,28 +57,22 @@ def fig_recall_field_acc(records, out_dir) -> Path:
         pts = groups[gk]
         cell = pts[0][2]
         model = pts[0][3]
-        xs = [p[0] for p in pts]
-        ys = [p[1] for p in pts]
         marker = marker_for_model(model) if multi_model else _DEFAULT_MARKER
         ax.scatter(
-            xs, ys, marker=marker, s=55, color=color_for_cell(cell),
-            alpha=0.55, edgecolors=_SURFACE, linewidths=0.6, zorder=3,
+            [p[0] for p in pts], [p[1] for p in pts], marker=marker, s=55,
+            color=color_for_cell(cell), alpha=0.55, edgecolors=_SURFACE,
+            linewidths=0.6, zorder=3,
         )
 
-    ax.plot([0, 1], [0, 1], color=_MUTED, linestyle="--", lw=1.2, zorder=2, alpha=0.7)
+    xs = [p[0] for p in points]
+    ys = [p[1] for p in points]
 
-    ax.set_xlim(-0.03, 1.03)
-    ax.set_ylim(-0.03, 1.03)
-    ax.set_xlabel("Recall")
-    ax.set_ylabel("Field accuracy")
-
-    cells = sorted({p[2] for p in points})
     handles = [
         Line2D(
             [], [], marker=_DEFAULT_MARKER, linestyle="none", markersize=9,
             markerfacecolor=color_for_cell(c), markeredgecolor=_SURFACE, label=c,
         )
-        for c in cells
+        for c in sorted({p[2] for p in points})
     ]
     if multi_model:
         for model in sorted({p[3] for p in points}):
@@ -84,9 +83,40 @@ def fig_recall_field_acc(records, out_dir) -> Path:
                     markeredgecolor=_SURFACE, label=model,
                 )
             )
-    handles.append(
-        Line2D([], [], color=_MUTED, lw=1.2, linestyle="--", label="recall = field acc")
+
+    if identity:
+        ax.plot([0, 1], [0, 1], color=_MUTED, linestyle="--", lw=1.2, zorder=2,
+                alpha=0.7)
+        handles.append(
+            Line2D([], [], color=_MUTED, lw=1.2, linestyle="--",
+                   label=f"{x_label.lower()} = {y_label.lower()}")
+        )
+
+    have_fit = (
+        len(points) >= 2
+        and statistics.pstdev(xs) > 0
+        and statistics.pstdev(ys) > 0
     )
+    if have_fit:
+        r = statistics.correlation(xs, ys)
+        slope, intercept = statistics.linear_regression(xs, ys)
+        x0, x1 = min(xs), max(xs)
+        ax.plot([x0, x1], [slope * x0 + intercept, slope * x1 + intercept],
+                color=_FIT, lw=2.0, zorder=4)
+        handles.append(
+            Line2D([], [], color=_FIT, lw=2.0,
+                   label=f"least-squares fit (r = {r:+.2f}, n = {len(points)})")
+        )
+
+    if x_unit:
+        ax.set_xlim(-0.03, 1.03)
+    else:
+        ax.set_xlim(left=0)
+    ax.set_ylim(-0.03, 1.03)
+    ax.set_xlabel(x_label)
+    ax.set_ylabel(y_label)
+    ax.set_title(title, color=_INK, fontsize=12, loc="left")
+
     if handles:
         leg = ax.legend(
             handles=handles, loc="upper left", bbox_to_anchor=(1.02, 1.0),
@@ -95,21 +125,56 @@ def fig_recall_field_acc(records, out_dir) -> Path:
         if leg.get_title():
             leg.get_title().set_color(_INK)
 
-    xs = [p[0] for p in points]
-    ys = [p[1] for p in points]
-    if len(points) >= 2 and statistics.pstdev(xs) > 0 and statistics.pstdev(ys) > 0:
-        r = statistics.correlation(xs, ys)
-        fig.text(
-            0.07, 0.02,
-            f"Pearson r = {r:+.2f} over {len(points)} evaluated runs — "
-            "recovering more tables and getting their cells right are "
-            f"{'related' if abs(r) >= 0.3 else 'largely independent'}",
-            fontsize=9, color=_MUTED, ha="left", va="bottom",
-        )
+    fig.subplots_adjust(left=0.08, right=0.62, top=0.92, bottom=0.12)
 
-    fig.subplots_adjust(left=0.08, right=0.62, top=0.95, bottom=0.17)
-
-    out = out_dir / "recall_field_acc.svg"
+    out = out_dir / filename
     fig.savefig(out, format="svg", metadata={"Date": None})
     plt.close(fig)
     return out
+
+
+def fig_recall_field_acc(records, out_dir) -> Path:
+    """Recall vs field accuracy per evaluated run: do recovering more tables and
+    getting their cells right move together?"""
+    return _correlation_scatter(
+        records, out_dir,
+        filename="recall_field_acc.svg", salt="aidmi-recall-field-acc",
+        x_getter=lambda r: r.recall, y_getter=lambda r: r.field_acc,
+        x_label="Recall", y_label="Field accuracy",
+        title="Recall vs field accuracy",
+        x_unit=True, identity=True,
+    )
+
+
+def _tokens_vs(records, out_dir, *, filename, salt, y_getter, y_label, title):
+    on = [r for r in records if r.sc is True]
+    return _correlation_scatter(
+        on, out_dir, filename=filename, salt=salt,
+        x_getter=_total_tokens, y_getter=y_getter,
+        x_label="Total tokens (in+out)", y_label=y_label, title=title,
+        x_unit=False,
+    )
+
+
+def fig_tokens_vs_recall(records, out_dir) -> Path:
+    return _tokens_vs(
+        records, out_dir, filename="corr_tokens_recall.svg",
+        salt="aidmi-corr-tokens-recall", y_getter=lambda r: r.recall,
+        y_label="Recall", title="Total tokens vs recall",
+    )
+
+
+def fig_tokens_vs_field_acc(records, out_dir) -> Path:
+    return _tokens_vs(
+        records, out_dir, filename="corr_tokens_field_acc.svg",
+        salt="aidmi-corr-tokens-field-acc", y_getter=lambda r: r.field_acc,
+        y_label="Field accuracy", title="Total tokens vs field accuracy",
+    )
+
+
+def fig_tokens_vs_mat_rate(records, out_dir) -> Path:
+    return _tokens_vs(
+        records, out_dir, filename="corr_tokens_mat_rate.svg",
+        salt="aidmi-corr-tokens-mat-rate", y_getter=lambda r: r.tables_materialized,
+        y_label="Materialization rate", title="Total tokens vs materialization rate",
+    )
