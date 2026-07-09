@@ -8,11 +8,11 @@ from aidmi_orchestrator.report.driver import build_report
 
 NAV_ORDER_SINGLE_MODEL = [
     "summary", "levers", "correlation", "heatmaps", "distribution",
-    "strategy_by_fixture", "fixture_by_strategy", "efficiency",
+    "strategy_by_fixture", "fixture_by_strategy", "wip",
 ]
 NAV_ORDER_MULTI_MODEL = [
     "summary", "levers", "correlation", "heatmaps", "distribution",
-    "strategy_by_fixture", "fixture_by_strategy", "efficiency",
+    "strategy_by_fixture", "fixture_by_strategy", "wip",
     "cross_campaign",
 ]
 
@@ -35,8 +35,6 @@ CORE_FIGURES = [
     "scorecard.svg",
     "cost_latency.svg",
     "thinking_tokens.svg",
-    "efficiency.svg",
-    "cost_drivers.svg",
     "rep_spread.svg",
     "rep_range.svg",
     "heatmap_sc_on_recall.svg",

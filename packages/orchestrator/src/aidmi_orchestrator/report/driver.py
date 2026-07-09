@@ -18,10 +18,6 @@ from aidmi_orchestrator.report.figures.distribution import (
     fig_dist_by_strategy,
     fig_dist_by_strategy_for_fixture,
 )
-from aidmi_orchestrator.report.figures.efficiency import (
-    fig_cost_drivers,
-    fig_efficiency,
-)
 from aidmi_orchestrator.report.figures.heatmap import fig_heatmap, fig_metric_heatmap
 from aidmi_orchestrator.report.figures.levers import (
     fig_lever_ctx,
@@ -66,9 +62,9 @@ def _build_core_figures(records: list[RunRecord], figdir: Path) -> dict[str, Pat
         "ctx_comparison": fig_ctx_comparison(records, figdir),
         "scorecard": fig_scorecard(records, figdir),
         "cost_latency": fig_cost_latency(records, figdir),
-        "thinking_tokens": fig_thinking_tokens(records, figdir),
-        "efficiency": fig_efficiency(records, figdir),
-        "cost_drivers": fig_cost_drivers(records, figdir),
+        "thinking_tokens": fig_thinking_tokens(
+            [r for r in records if r.sc is True], figdir
+        ),
         "rep_spread": fig_rep_spread(records, figdir),
         "rep_range": fig_rep_range(records, figdir),
         **{
@@ -168,9 +164,7 @@ def _build_sections(
             stacked=True, subsections=tuple(fixture_by_strategy),
         ),
         Section(
-            "efficiency", "Efficiency",
-            [figs["efficiency"], figs["thinking_tokens"], figs["cost_drivers"]],
-            "",
+            "wip", "WIP", [figs["thinking_tokens"]], "",
         ),
     ]
     if multi_model:
