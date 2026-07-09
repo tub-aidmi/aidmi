@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from aidmi_orchestrator.report.html import Section, render_gallery
+from aidmi_orchestrator.report.html import Section, Subsection, render_gallery
 
 
 def _sections(*, with_cross_campaign: bool) -> list[Section]:
@@ -157,6 +157,25 @@ def test_stacked_section_uses_stacked_figures_class():
     assert '<div class="figures figures--stacked">' in html
     # the non-stacked section keeps the plain grid class
     assert '<div class="figures">' in html
+
+
+def test_subsections_render_h3_headings_and_own_figures_div():
+    sec = Section(
+        id="strategy_by_fixture", title="Strategy by fixture", figures=[],
+        caption="", stacked=True,
+        subsections=(
+            Subsection("fixture_a", [Path("dist_strategy__fixture_a.svg")]),
+            Subsection("fixture_b", [Path("dist_strategy__fixture_b.svg")]),
+        ),
+    )
+    html = render_gallery(title="t", sections=[sec], tables={}, multi_model=False)
+    assert "<h3>fixture_a</h3>" in html
+    assert "<h3>fixture_b</h3>" in html
+    assert 'src="figures/dist_strategy__fixture_a.svg"' in html
+    # stacked layout propagates to each subsection's figures div
+    assert html.count('class="figures figures--stacked"') == 2
+    # no empty flat figures div when the section itself carries no figures
+    assert '<div class="figures">' not in html
 
 
 def test_section_title_and_caption_are_escaped():

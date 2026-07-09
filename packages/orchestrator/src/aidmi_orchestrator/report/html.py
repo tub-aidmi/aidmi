@@ -34,6 +34,12 @@ _CROSS_CAMPAIGN_ID = "cross_campaign"
 
 
 @dataclass(frozen=True)
+class Subsection:
+    title: str
+    figures: list[Path]
+
+
+@dataclass(frozen=True)
 class Section:
     id: str
     title: str
@@ -44,6 +50,9 @@ class Section:
     # side-by-side in the capped-width grid. Use for wide, detail-dense figures
     # that need the whole column to be legible.
     stacked: bool = False
+    # Optional h3-titled figure groups rendered after the flat figures; each
+    # renders its own figures div. Honours the section's `stacked` layout.
+    subsections: tuple[Subsection, ...] = field(default_factory=tuple)
 
 
 def _esc(value: str) -> str:
@@ -74,11 +83,22 @@ def _render_section(section: Section, tables: dict[str, str]) -> str:
     )
     figures_class = "figures figures--stacked" if section.stacked else "figures"
     caption_html = f'<p class="caption">{caption}</p>' if section.caption else ""
+    flat_figures_html = (
+        f'<div class="{figures_class}">{figures_html}</div>' if section.figures else ""
+    )
+    subsections_html = "".join(
+        f'<h3>{_esc(sub.title)}</h3>'
+        f'<div class="{figures_class}">'
+        + "".join(_render_figure(f, alt=title) for f in sub.figures)
+        + "</div>"
+        for sub in section.subsections
+    )
     return (
         "<section>"
         f'<h2 id="{_esc(section.id)}">{title}</h2>'
         f"{caption_html}"
-        f'<div class="{figures_class}">{figures_html}</div>'
+        f"{flat_figures_html}"
+        f"{subsections_html}"
         f"{tables_html}"
         "</section>"
     )

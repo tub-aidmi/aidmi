@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 import statistics
 from pathlib import Path
 
@@ -138,12 +139,23 @@ def _dist_figure(records, out_dir, filename, salt, key, colors_for, title) -> Pa
     return out
 
 
+def _slug(value: str) -> str:
+    return re.sub(r"[^0-9a-zA-Z]+", "_", str(value)).strip("_").lower()
+
+
+def _strategy_colors(groups):
+    return [color_for_cell(g) for g in groups]
+
+
+def _fixture_colors(groups):
+    return [_FIXTURE_PALETTE[i % len(_FIXTURE_PALETTE)] for i in range(len(groups))]
+
+
 def fig_dist_by_strategy(records, out_dir) -> Path:
     on = [r for r in records if r.sc is True]
     return _dist_figure(
         on, out_dir, "dist_by_strategy.svg", "aidmi-dist-strategy",
-        lambda r: r.cell,
-        lambda groups: [color_for_cell(g) for g in groups],
+        lambda r: r.cell, _strategy_colors,
         "Per-strategy distribution (self-correction on) — box (IQR + median) over every run",
     )
 
@@ -152,8 +164,26 @@ def fig_dist_by_fixture(records, out_dir) -> Path:
     on = [r for r in records if r.sc is True]
     return _dist_figure(
         on, out_dir, "dist_by_fixture.svg", "aidmi-dist-fixture",
-        lambda r: r.fixture,
-        lambda groups: [_FIXTURE_PALETTE[i % len(_FIXTURE_PALETTE)]
-                        for i in range(len(groups))],
+        lambda r: r.fixture, _fixture_colors,
+        "Per-fixture distribution (self-correction on) — box (IQR + median) over every run",
+    )
+
+
+def fig_dist_by_strategy_for_fixture(records, out_dir, fixture) -> Path:
+    on = [r for r in records if r.sc is True and r.fixture == fixture]
+    slug = _slug(fixture)
+    return _dist_figure(
+        on, out_dir, f"dist_strategy__{slug}.svg", f"aidmi-dist-strategy-{slug}",
+        lambda r: r.cell, _strategy_colors,
+        "Per-strategy distribution (self-correction on) — box (IQR + median) over every run",
+    )
+
+
+def fig_dist_by_fixture_for_strategy(records, out_dir, cell) -> Path:
+    on = [r for r in records if r.sc is True and r.cell == cell]
+    slug = _slug(cell)
+    return _dist_figure(
+        on, out_dir, f"dist_fixture__{slug}.svg", f"aidmi-dist-fixture-{slug}",
+        lambda r: r.fixture, _fixture_colors,
         "Per-fixture distribution (self-correction on) — box (IQR + median) over every run",
     )
