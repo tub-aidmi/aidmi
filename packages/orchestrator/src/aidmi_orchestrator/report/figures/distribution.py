@@ -35,14 +35,18 @@ def _total_tokens(r):
     return (r.tokens_in or 0) + (r.tokens_out or 0)
 
 
-# Top-to-bottom: recall, field accuracy, materialization rate on the [0,1]
-# quality axis; combined tokens and wall-clock time on absolute axes.
-_DIST_METRICS = [
-    ("Recall", _outcome(lambda r: r.recall), True),
-    ("Field acc", _outcome(lambda r: r.field_acc), True),
-    ("Mat rate", _outcome(lambda r: r.tables_materialized), True),
-    ("Tokens (in+out)", _total_tokens, False),
-    ("Time (s)", lambda r: r.secs, False),
+# Two columns of three panels each. Left column is the [0,1] quality axis
+# (recall, field accuracy, materialization rate); right column is the
+# absolute-scale cost/effort axis (dollars, combined tokens, wall-clock time).
+_LEFT_METRICS = [
+    ("Recall", _outcome(lambda r: r.recall)),
+    ("Field acc", _outcome(lambda r: r.field_acc)),
+    ("Mat rate", _outcome(lambda r: r.tables_materialized)),
+]
+_RIGHT_METRICS = [
+    ("Cost $", lambda r: r.cost),
+    ("Tokens (in+out)", _total_tokens),
+    ("Time (s)", lambda r: r.secs),
 ]
 
 _JITTER_HALF_WIDTH = 0.28
@@ -107,21 +111,26 @@ def _dist_figure(records, out_dir, filename, salt, key, colors_for, title) -> Pa
 
     groups = _ranked_groups(records, key)
     colors = colors_for(groups)
+    nrows = max(len(_LEFT_METRICS), len(_RIGHT_METRICS))
+    col_w = max(4.5, 0.9 * len(groups) + 2.0)
     fig, axes = plt.subplots(
-        nrows=len(_DIST_METRICS), ncols=1, squeeze=False, sharex=True,
-        figsize=(max(9.0, 1.2 * len(groups) + 3.0), 2.6 * len(_DIST_METRICS) + 0.6),
+        nrows=nrows, ncols=2, squeeze=False, sharex="col",
+        figsize=(2 * col_w, 2.6 * nrows + 0.6),
     )
-    for i, (label, getter, unit_axis) in enumerate(_DIST_METRICS):
-        ax = axes[i][0]
-        _draw_panel(ax, groups, colors, rep_values(records, key, getter), label,
-                    unit_axis=unit_axis)
-
-    bottom = axes[-1][0]
-    bottom.set_xticks(range(len(groups)))
-    bottom.set_xticklabels(groups, rotation=25, ha="right", fontsize=9, color=_INK)
+    columns = [(0, _LEFT_METRICS, True), (1, _RIGHT_METRICS, False)]
+    for col, metrics, unit_axis in columns:
+        for i, (label, getter) in enumerate(metrics):
+            ax = axes[i][col]
+            _draw_panel(ax, groups, colors, rep_values(records, key, getter),
+                        label, unit_axis=unit_axis)
+        bottom = axes[len(metrics) - 1][col]
+        bottom.set_xticks(range(len(groups)))
+        bottom.set_xticklabels(groups, rotation=25, ha="right", fontsize=9,
+                               color=_INK)
 
     fig.suptitle(title, color=_INK, fontsize=12, x=0.02, ha="left")
-    fig.subplots_adjust(left=0.10, right=0.98, top=0.95, bottom=0.13, hspace=0.15)
+    fig.subplots_adjust(left=0.07, right=0.98, top=0.94, bottom=0.13,
+                        wspace=0.16, hspace=0.15)
 
     out = out_dir / filename
     fig.savefig(out, format="svg", metadata={"Date": None})
