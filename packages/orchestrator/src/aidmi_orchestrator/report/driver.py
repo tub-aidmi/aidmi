@@ -4,6 +4,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from aidmi_orchestrator.report.data import RunRecord, write_tidy_csv
+from aidmi_orchestrator.report.figures.bars import build_bar_figures
 from aidmi_orchestrator.report.figures.context import fig_ctx_comparison
 from aidmi_orchestrator.report.figures.correlation import (
     fig_recall_field_acc,
@@ -112,6 +113,7 @@ def _build_per_model_heatmaps(records: list[RunRecord], figdir: Path) -> list[Pa
 
 def _build_sections(
     figs: dict[str, Path],
+    bar_figs: dict[str, list[Path]],
     per_model_heatmaps: list[Path],
     strategy_by_fixture: list[Subsection],
     fixture_by_strategy: list[Subsection],
@@ -128,6 +130,13 @@ def _build_sections(
             "levers", "Levers",
             [figs["lever_ctx"], figs["lever_ctx_sc_on"], figs["lever_sc"]],
             "",
+        ),
+        Section(
+            "bar_plots", "Bar plots", [], "",
+            subsections=(
+                Subsection("Mean", bar_figs["mean"]),
+                Subsection("Median (with IQR whiskers)", bar_figs["median"]),
+            ),
         ),
         Section(
             "correlation", "Correlation",
@@ -185,6 +194,7 @@ def build_report(records: list[RunRecord], out_dir: Path) -> list[Path]:
     multi_model = len({r.model for r in records}) > 1
 
     figs = _build_core_figures(records, figdir)
+    bar_figs = build_bar_figures(records, figdir)
     per_model_heatmaps = _build_per_model_heatmaps(records, figdir) if multi_model else []
     strategy_by_fixture, fixture_by_strategy = _build_dist_facets(records, figdir)
 
@@ -202,7 +212,7 @@ def build_report(records: list[RunRecord], out_dir: Path) -> list[Path]:
     }
 
     sections = _build_sections(
-        figs, per_model_heatmaps, strategy_by_fixture, fixture_by_strategy,
+        figs, bar_figs, per_model_heatmaps, strategy_by_fixture, fixture_by_strategy,
         multi_model=multi_model,
     )
 
@@ -219,8 +229,9 @@ def build_report(records: list[RunRecord], out_dir: Path) -> list[Path]:
     facet_paths = [
         f for sub in (*strategy_by_fixture, *fixture_by_strategy) for f in sub.figures
     ]
+    bar_paths = [p for paths in bar_figs.values() for p in paths]
     written = (
-        list(figs.values()) + per_model_heatmaps + facet_paths
+        list(figs.values()) + bar_paths + per_model_heatmaps + facet_paths
         + [index_path, tidy_path]
     )
     return written
