@@ -23,7 +23,7 @@ _MUTED = "#898781"
 _SURFACE = "#fcfcfb"
 
 _METRIC_LABELS = {
-    "materialized": "Materialization rate",
+    "materialized": "Mat. rate",
     "field_acc": "Field accuracy",
 }
 
@@ -122,7 +122,7 @@ _HEATMAP_METRICS = {
                lambda v: f"{v * 100:.0f}%"),
     "field_acc": ("Field accuracy", "Field accuracy", lambda r: r.field_acc,
                   False, True, lambda v: f"{v * 100:.0f}%"),
-    "mat_rate": ("Materialization rate", "Materialization rate",
+    "mat_rate": ("Materialization rate", "Mat. rate",
                  lambda r: r.tables_materialized, True, True,
                  lambda v: f"{v * 100:.0f}%"),
     "cost": ("Cost", "Mean cost/run ($)", lambda r: r.cost, False, False,

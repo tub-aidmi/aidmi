@@ -159,7 +159,7 @@ def fig_recall_mat_rate(records, out_dir) -> Path:
         records, out_dir,
         filename="recall_mat_rate.svg", salt="aidmi-recall-mat-rate",
         x_getter=lambda r: r.recall, y_getter=lambda r: r.tables_materialized,
-        x_label="Recall", y_label="Materialization rate",
+        x_label="Recall", y_label="Mat. rate",
         title="Recall vs materialization rate",
         x_unit=True, y_unit=True, identity=True,
     )
@@ -195,5 +195,5 @@ def fig_tokens_vs_mat_rate(records, out_dir) -> Path:
     return _vs_tokens(
         records, out_dir, filename="corr_tokens_mat_rate.svg",
         salt="aidmi-corr-tokens-mat-rate", x_getter=lambda r: r.tables_materialized,
-        x_label="Materialization rate", title="Materialization rate vs total tokens",
+        x_label="Mat. rate", title="Materialization rate vs total tokens",
     )

@@ -139,9 +139,9 @@ def _slope_figure(
     metrics = [
         ("Recall", group_mean(filtered, key, lambda r: r.recall),
          group_mean(filtered, model_x_key, lambda r: r.recall), True),
-        ("Field acc", group_mean(filtered, key, lambda r: r.field_acc),
+        ("Field accuracy", group_mean(filtered, key, lambda r: r.field_acc),
          group_mean(filtered, model_x_key, lambda r: r.field_acc), True),
-        ("Mat rate", materialization_rate(filtered, key),
+        ("Mat. rate", materialization_rate(filtered, key),
          materialization_rate(filtered, model_x_key), True),
         ("Mean tokens/run (in+out)", group_mean(filtered, key, _total_tokens),
          group_mean(filtered, model_x_key, _total_tokens), False),

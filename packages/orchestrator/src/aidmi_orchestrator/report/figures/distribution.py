@@ -41,8 +41,8 @@ def _total_tokens(r):
 # absolute-scale cost/effort axis (dollars, combined tokens, wall-clock time).
 _LEFT_METRICS = [
     ("Recall", _outcome(lambda r: r.recall)),
-    ("Field acc", _outcome(lambda r: r.field_acc)),
-    ("Mat rate", _outcome(lambda r: r.tables_materialized)),
+    ("Field accuracy", _outcome(lambda r: r.field_acc)),
+    ("Mat. rate", _outcome(lambda r: r.tables_materialized)),
 ]
 _RIGHT_METRICS = [
     ("Cost $", lambda r: r.cost),
