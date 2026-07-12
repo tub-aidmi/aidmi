@@ -46,4 +46,6 @@ def apply_theme():
         "axes.spines.top": False, "axes.spines.right": False,
         "axes.grid": True, "grid.alpha": 0.3, "axes.axisbelow": True,
         "legend.frameon": False,
+        "figure.facecolor": "none", "axes.facecolor": "none",
+        "savefig.facecolor": "none", "savefig.edgecolor": "none",
     })
