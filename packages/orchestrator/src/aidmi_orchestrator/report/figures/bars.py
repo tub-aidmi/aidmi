@@ -54,22 +54,33 @@ def _grouped_values(records, attr, state_order, getter, zero_fill):
 
 
 def _mean_bar(values):
-    """(height, yerr_low, yerr_high) — mean, no whiskers."""
-    return sum(values) / len(values), 0.0, 0.0
+    """(height, yerr_low, yerr_high, std) — mean; std is annotated as text (no
+    whiskers), 0 for a single value."""
+    mean = sum(values) / len(values)
+    std = statistics.pstdev(values) if len(values) > 1 else 0.0
+    return mean, 0.0, 0.0, std
 
 
 def _median_bar(values):
-    """(height, yerr_low, yerr_high) — median with IQR (25th-75th) whiskers.
-    IQR pairs with the median: both are percentiles, always inside the data
-    range. A single value gets no whisker."""
+    """(height, yerr_low, yerr_high, None) — median with IQR (25th-75th)
+    whiskers. IQR pairs with the median: both are percentiles, always inside the
+    data range. A single value gets no whisker."""
     med = statistics.median(values)
     if len(values) < 2:
-        return med, 0.0, 0.0
+        return med, 0.0, 0.0, None
     q1, _, q3 = statistics.quantiles(values, n=4)
     # quantiles() (exclusive) and median() are different estimators, so on tiny
     # samples q1/q3 can land on the far side of the median; clamp to keep the
     # whisker non-negative (a no-op once there are enough reps).
-    return med, max(0.0, med - q1), max(0.0, q3 - med)
+    return med, max(0.0, med - q1), max(0.0, q3 - med), None
+
+
+def _fmt_std(v, unit_axis):
+    if unit_axis:
+        return f"±{v:.2f}"
+    if v >= 1000:
+        return f"±{v / 1000:.0f}k"
+    return f"±{v:.0f}"
 
 
 def _bar_figure(records, out_dir, *, filename, salt, title, attr, state_order,
@@ -89,6 +100,8 @@ def _bar_figure(records, out_dir, *, filename, salt, title, attr, state_order,
     fig, ax = plt.subplots(figsize=(7.5, 4.5))
     n_states = len(state_order)
     width = 0.8 / n_states
+    max_h = 0.0
+    annotations = []  # (x, height, std) for mean bars
     for si, state in enumerate(state_order):
         offset = (si - (n_states - 1) / 2) * width
         xs, heights, lo, hi, colors = [], [], [], [], []
@@ -96,12 +109,15 @@ def _bar_figure(records, out_dir, *, filename, salt, title, attr, state_order,
             vals = grouped.get((cell, state))
             if not vals:
                 continue
-            h, el, eh = summarise(vals)
+            h, el, eh, std = summarise(vals)
             xs.append(ci + offset)
             heights.append(h)
             lo.append(el)
             hi.append(eh)
             colors.append(color_for_cell(cell))
+            max_h = max(max_h, h + eh)
+            if std is not None:
+                annotations.append((ci + offset, h, std))
         if not xs:
             continue
         has_err = any(el or eh for el, eh in zip(lo, hi))
@@ -112,13 +128,22 @@ def _bar_figure(records, out_dir, *, filename, salt, title, attr, state_order,
             error_kw=dict(ecolor=_ERR, elinewidth=1.0, capsize=3, zorder=4),
         )
 
+    # Std shown as a small label above each mean bar rather than as whiskers.
+    for x, h, std in annotations:
+        ax.annotate(
+            _fmt_std(std, unit_axis), (x, h), textcoords="offset points",
+            xytext=(0, 2), ha="center", va="bottom", fontsize=7, color=_MUTED,
+        )
+
     ax.set_xticks(range(len(cells)))
     ax.set_xticklabels(cells, rotation=25, ha="right", fontsize=9, color=_INK)
     ax.set_ylabel(y_label, color=_INK)
+    # Headroom so the top annotation is not clipped by the axis.
+    head = 1.15 if annotations else 1.05
     if unit_axis:
-        ax.set_ylim(0, 1.05)
+        ax.set_ylim(0, head)
     else:
-        ax.set_ylim(bottom=0)
+        ax.set_ylim(0, max_h * head if max_h else None)
     ax.set_title(title, color=_INK, fontsize=12, loc="left")
 
     state_handles = [
