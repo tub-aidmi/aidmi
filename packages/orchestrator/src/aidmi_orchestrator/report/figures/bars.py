@@ -24,14 +24,29 @@ def _total_tokens(r):
     return (r.tokens_in or 0) + (r.tokens_out or 0)
 
 
-# (key, y label, per-run getter, zero-fill missing as 0, unit [0,1] axis). Mirrors
-# the lever figures: recall/field-accuracy/tokens average only evaluable runs,
-# materialization zero-fills a run that produced nothing.
+# ±std annotation formatters, one per value scale.
+def _std_unit(v):
+    return f"±{v:.2f}"
+
+
+def _std_cost(v):
+    return f"±${v:.2f}"
+
+
+def _std_tokens(v):
+    return f"±{v / 1000:.0f}k" if v >= 1000 else f"±{v:.0f}"
+
+
+# (key, y label, per-run getter, zero-fill missing as 0, unit [0,1] axis, ±std
+# formatter). Mirrors the lever figures: recall/field-accuracy/tokens/cost
+# average only evaluable runs, materialization zero-fills a run that produced
+# nothing.
 _METRICS = [
-    ("recall", "Recall", lambda r: r.recall, False, True),
-    ("field_acc", "Field accuracy", lambda r: r.field_acc, False, True),
-    ("mat_rate", "Mat. rate", lambda r: r.tables_materialized, True, True),
-    ("tokens", "Tokens/run (in+out)", _total_tokens, False, False),
+    ("recall", "Recall", lambda r: r.recall, False, True, _std_unit),
+    ("field_acc", "Field accuracy", lambda r: r.field_acc, False, True, _std_unit),
+    ("mat_rate", "Mat. rate", lambda r: r.tables_materialized, True, True, _std_unit),
+    ("cost", "Cost/run ($)", lambda r: r.cost, False, False, _std_cost),
+    ("tokens", "Tokens/run (in+out)", _total_tokens, False, False, _std_tokens),
 ]
 
 # (key, title fragment, attribute, state order, state labels).
@@ -79,14 +94,6 @@ def _median_bar(values):
     return med, max(0.0, med - q1), max(0.0, q3 - med), None
 
 
-def _fmt_std(v, unit_axis):
-    if unit_axis:
-        return f"±{v:.2f}"
-    if v >= 1000:
-        return f"±{v / 1000:.0f}k"
-    return f"±{v:.0f}"
-
-
 def _runs_subtitle(stat_label, counts):
     """'<stat> per bar · n=<k>/bar · N=<total> runs', a range for n when bars
     differ — mirrors the heatmap subtitle. States mean vs median in-figure."""
@@ -100,7 +107,7 @@ def _runs_subtitle(stat_label, counts):
 
 def _bar_figure(records, out_dir, *, filename, salt, title, attr, state_order,
                 state_labels, getter, y_label, zero_fill, unit_axis, summarise,
-                stat_label):
+                stat_label, fmt_std):
     import matplotlib as mpl
     import matplotlib.pyplot as plt
     from matplotlib.patches import Patch
@@ -153,7 +160,7 @@ def _bar_figure(records, out_dir, *, filename, salt, title, attr, state_order,
     # Std shown as a small label above each mean bar rather than as whiskers.
     for x, h, std in annotations:
         ax.annotate(
-            _fmt_std(std, unit_axis), (x, h), textcoords="offset points",
+            fmt_std(std), (x, h), textcoords="offset points",
             xytext=(0, 2), ha="center", va="bottom", fontsize=7, color=_MUTED,
         )
 
@@ -206,7 +213,7 @@ def build_bar_figures(records, out_dir) -> dict[str, list[Path]]:
     out: dict[str, list[Path]] = {"mean": [], "median": []}
     for stat, summarise in _SUMMARISERS.items():
         for lever_key, frag, attr, state_order, state_labels in _LEVERS:
-            for metric_key, y_label, getter, zero_fill, unit_axis in _METRICS:
+            for metric_key, y_label, getter, zero_fill, unit_axis, fmt_std in _METRICS:
                 path = _bar_figure(
                     records, out_dir,
                     filename=f"bar_{stat}_{lever_key}_{metric_key}.svg",
@@ -215,6 +222,7 @@ def build_bar_figures(records, out_dir) -> dict[str, list[Path]]:
                     attr=attr, state_order=state_order, state_labels=state_labels,
                     getter=getter, y_label=y_label, zero_fill=zero_fill,
                     unit_axis=unit_axis, summarise=summarise, stat_label=stat,
+                    fmt_std=fmt_std,
                 )
                 out[stat].append(path)
     return out
