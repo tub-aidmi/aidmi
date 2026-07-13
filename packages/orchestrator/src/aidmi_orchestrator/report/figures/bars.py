@@ -9,9 +9,13 @@ from aidmi_orchestrator.report.theme import apply_theme, color_for_cell, ordered
 _INK = "#0b0b0b"
 _MUTED = "#898781"
 _SURFACE = "#fcfcfb"
-_ERR = "#52514e"
+_ERR = "#898781"
 
-_HATCH = "///"  # second state; first state is solid
+# Second state: dense white diagonal over the bar's own fill, no bar outline.
+# First state is a flat solid fill.
+_HATCH = "///"
+_HATCH_LW = 0.5
+_HATCH_COLOR = "#ffffff"
 
 
 def _total_tokens(r):
@@ -91,6 +95,7 @@ def _bar_figure(records, out_dir, *, filename, salt, title, attr, state_order,
 
     apply_theme()
     mpl.rcParams["svg.hashsalt"] = salt
+    mpl.rcParams["hatch.linewidth"] = _HATCH_LW
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
 
@@ -121,11 +126,13 @@ def _bar_figure(records, out_dir, *, filename, salt, title, attr, state_order,
         if not xs:
             continue
         has_err = any(el or eh for el, eh in zip(lo, hi))
+        textured = si > 0
         ax.bar(
-            xs, heights, width, color=colors, edgecolor=_INK, linewidth=0.6,
-            hatch=(_HATCH if si else None), zorder=3,
+            xs, heights, width, color=colors, linewidth=0,
+            edgecolor=(_HATCH_COLOR if textured else "none"),
+            hatch=(_HATCH if textured else None), zorder=3,
             yerr=([lo, hi] if has_err else None),
-            error_kw=dict(ecolor=_ERR, elinewidth=1.0, capsize=3, zorder=4),
+            error_kw=dict(ecolor=_ERR, elinewidth=0.9, capsize=2, zorder=4),
         )
 
     # Std shown as a small label above each mean bar rather than as whiskers.
@@ -135,8 +142,15 @@ def _bar_figure(records, out_dir, *, filename, salt, title, attr, state_order,
             xytext=(0, 2), ha="center", va="bottom", fontsize=7, color=_MUTED,
         )
 
+    # Strip chrome: faint horizontal reference lines only, no vertical grid, no
+    # left spine -- the bars carry the data, not a boxed lattice.
+    ax.grid(False)
+    ax.grid(True, axis="y", color=_MUTED, alpha=0.18, linewidth=0.6)
+    ax.set_axisbelow(True)
+    ax.tick_params(length=0)
+
     ax.set_xticks(range(len(cells)))
-    ax.set_xticklabels(cells, rotation=25, ha="right", fontsize=9, color=_INK)
+    ax.set_xticklabels(cells, rotation=25, ha="right", fontsize=9, color=_MUTED)
     ax.set_ylabel(y_label, color=_INK)
     # Headroom so the top annotation is not clipped by the axis.
     head = 1.15 if annotations else 1.05
@@ -147,8 +161,9 @@ def _bar_figure(records, out_dir, *, filename, salt, title, attr, state_order,
     ax.set_title(title, color=_INK, fontsize=12, loc="left")
 
     state_handles = [
-        Patch(facecolor=_MUTED, edgecolor=_INK, label=state_labels[0]),
-        Patch(facecolor=_MUTED, edgecolor=_INK, hatch=_HATCH, label=state_labels[1]),
+        Patch(facecolor=_MUTED, edgecolor="none", label=state_labels[0]),
+        Patch(facecolor=_MUTED, edgecolor=_HATCH_COLOR, hatch=_HATCH,
+              linewidth=0, label=state_labels[1]),
     ]
     leg = ax.legend(
         handles=state_handles, loc="best", frameon=False, fontsize=9,
