@@ -1,43 +1,62 @@
 from __future__ import annotations
 import matplotlib as mpl
 
-CELL_COLORS = {
-    "write_tools_freeform": "#4C78A8",
-    "write_tools_freeform_inlinedbt": "#72B7B2",
-    "ensemble_vote": "#F58518",
-    "plan_write_critique": "#E45756",
-    "plan_then_execute": "#B279A2",
-    "write_then_critique": "#EECA3B",
-    "structured_per_table": "#54A24B",
+# Single source of truth for strategy identity: this list fixes BOTH the
+# left-to-right / top-to-bottom order strategies appear in on every plot that
+# is not explicitly performance-ranked, AND (paired with STRATEGY_COLORS) their
+# color. Reorder here to reorder everywhere; recolor in STRATEGY_COLORS.
+STRATEGY_ORDER = [
+    "ensemble_vote",
+    "plan_then_execute",
+    "write_then_critique",
+    "plan_write_critique",
+    "structured_per_table",
+    "write_tools_freeform",
+    "write_tools_freeform_inlinedbt",
+]
+
+# Brand palette. ensemble_vote (top performer) carries the primary brand red,
+# plan_then_execute (best trade-off) the secondary orange. write_tools_freeform
+# and its inlinedbt sibling share a cool blue family, set apart from the warm
+# brand cluster. Middle three take distinct hues for clean 7-way separation.
+STRATEGY_COLORS = {
+    "ensemble_vote": "#c40d1e",
+    "plan_then_execute": "#ff6c00",
+    "write_then_critique": "#e8a800",
+    "plan_write_critique": "#4f9d2e",
+    "structured_per_table": "#b5297a",
+    "write_tools_freeform": "#2f6fb0",
+    "write_tools_freeform_inlinedbt": "#7fb0dd",
 }
+
 MODEL_MARKERS = {"gemini25flash": "o", "qwen35b": "s", "mistral128b": "^"}
 _FALLBACK_C = "#888888"; _FALLBACK_M = "D"
 
-# Sequential (magnitude) blue ramp, light->dark, steps 100-700 from the
-# dataviz reference palette. One hue for "how much" encodings (heatmaps).
-SEQUENTIAL_BLUE = [
-    "#cde2fb", "#b7d3f6", "#9ec5f4", "#86b6ef", "#6da7ec", "#5598e7",
-    "#3987e5", "#2a78d6", "#256abf", "#1c5cab", "#184f95", "#104281", "#0d366b",
+# Single brand sequential ramp (near-white -> orange -> red -> deep maroon),
+# used by every heatmap regardless of metric. Both brand colors sit inside it
+# (#ff6c00 mid, #c40d1e upper).
+BRAND_ORRD = [
+    "#fff7f2", "#fddccb", "#fcbfa0", "#fb9d6b", "#ff7a1f",
+    "#ff6c00", "#e8471a", "#c40d1e", "#9c0a17", "#6f040d",
 ]
 
-# Sequential red ramp for "risk" magnitude encodings (variance/std): darker =
-# more spread = less trustworthy. Distinct hue from the blue "how good" ramp so
-# a std heatmap never reads as a quality heatmap.
-SEQUENTIAL_RED = [
-    "#fddfd6", "#fbc9ba", "#f8b09c", "#f4977f", "#ee7c62", "#e5604a",
-    "#d9463a", "#c5342f", "#ac2827", "#8f1f21", "#71181b",
-]
 
-def color_for_cell(cell): return CELL_COLORS.get(cell, _FALLBACK_C)
+def color_for_cell(cell): return STRATEGY_COLORS.get(cell, _FALLBACK_C)
 def marker_for_model(model): return MODEL_MARKERS.get(model, _FALLBACK_M)
+
+
+def ordered_cells(cells):
+    """Strategies in canonical STRATEGY_ORDER; any unknown cell trails, sorted."""
+    present = set(cells)
+    ranked = [c for c in STRATEGY_ORDER if c in present]
+    extra = sorted(present - set(STRATEGY_ORDER))
+    return ranked + extra
+
 
 def sequential_cmap():
     from matplotlib.colors import LinearSegmentedColormap
-    return LinearSegmentedColormap.from_list("aidmi_seq_blue", SEQUENTIAL_BLUE)
+    return LinearSegmentedColormap.from_list("aidmi_brand_orrd", BRAND_ORRD)
 
-def sequential_cmap_red():
-    from matplotlib.colors import LinearSegmentedColormap
-    return LinearSegmentedColormap.from_list("aidmi_seq_red", SEQUENTIAL_RED)
 
 def apply_theme():
     mpl.rcParams.update({

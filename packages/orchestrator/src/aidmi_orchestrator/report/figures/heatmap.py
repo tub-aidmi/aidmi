@@ -13,8 +13,8 @@ from aidmi_orchestrator.report.aggregate import (
 )
 from aidmi_orchestrator.report.theme import (
     apply_theme,
+    ordered_cells,
     sequential_cmap,
-    sequential_cmap_red,
 )
 
 # Same tokens as pareto.py/levers.py: text stays ink/muted, color carries data.
@@ -59,7 +59,7 @@ def fig_heatmap(records, out_dir, *, metric: str, filename: str, title: str) -> 
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    cells = sorted({r.cell for r in records})
+    cells = ordered_cells({r.cell for r in records})
     fixtures = sorted({r.fixture for r in records})
     matrix = _matrix_for_metric(records, metric, cells, fixtures)
 
@@ -148,7 +148,7 @@ def fig_metric_heatmap(records, out_dir, *, key: str) -> Path:
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    cells = sorted({r.cell for r in records})
+    cells = ordered_cells({r.cell for r in records})
     fixtures = sorted({r.fixture for r in records})
     agg = group_mean_zero if zero_fill else group_mean
     values = agg(records, _cell_fixture_key, getter)
@@ -241,14 +241,14 @@ def fig_std_heatmap(records, out_dir, *, filename="heatmap_f1_std.svg",
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    cells = sorted({r.cell for r in records})
+    cells = ordered_cells({r.cell for r in records})
     fixtures = sorted({r.fixture for r in records})
     matrix = _f1_std_matrix(records, cells, fixtures)
 
     finite = matrix[np.isfinite(matrix)]
     vmax = max(0.1, float(finite.max())) if finite.size else 0.5
 
-    cmap = sequential_cmap_red().copy()
+    cmap = sequential_cmap().copy()
     cmap.set_bad(color=_SURFACE)
 
     fig, ax = plt.subplots(

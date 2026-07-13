@@ -2,7 +2,9 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from aidmi_orchestrator.report.theme import apply_theme, color_for_cell, marker_for_model
+from aidmi_orchestrator.report.theme import (
+    apply_theme, color_for_cell, marker_for_model, ordered_cells,
+)
 
 # Same tokens as pareto.py/levers.py: text stays ink/muted, data color on marks.
 _INK = "#0b0b0b"
@@ -65,7 +67,7 @@ def fig_prec_recall(records, out_dir) -> Path:
     ax.set_xlabel("Precision")
     ax.set_ylabel("Recall")
 
-    cells = sorted({p[2] for p in points})
+    cells = ordered_cells({p[2] for p in points})
     cell_handles = [
         Line2D(
             [], [], marker=_DEFAULT_MARKER, linestyle="none", markersize=9,

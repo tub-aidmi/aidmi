@@ -4,7 +4,7 @@ import statistics
 from collections import defaultdict
 from pathlib import Path
 
-from aidmi_orchestrator.report.theme import apply_theme, color_for_cell
+from aidmi_orchestrator.report.theme import apply_theme, color_for_cell, ordered_cells
 
 _INK = "#0b0b0b"
 _MUTED = "#898781"
@@ -95,7 +95,7 @@ def _bar_figure(records, out_dir, *, filename, salt, title, attr, state_order,
     out_dir.mkdir(parents=True, exist_ok=True)
 
     grouped = _grouped_values(records, attr, state_order, getter, zero_fill)
-    cells = sorted({c for c, _ in grouped})
+    cells = ordered_cells({c for c, _ in grouped})
 
     fig, ax = plt.subplots(figsize=(7.5, 4.5))
     n_states = len(state_order)

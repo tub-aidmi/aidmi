@@ -7,6 +7,7 @@ from aidmi_orchestrator.report.theme import (
     apply_theme,
     color_for_cell,
     marker_for_model,
+    ordered_cells,
 )
 
 # Chrome/ink tokens (dataviz reference palette, light surface). Text and the
@@ -132,7 +133,7 @@ def _format_cost_axis(ax):
 
 def _add_legends(fig, ax, keys, multi_model, Line2D):
     # Cell (color) legend: identity channel, one entry per cell present.
-    cells = sorted({k[0] for k in keys})
+    cells = ordered_cells({k[0] for k in keys})
     cell_handles = [
         Line2D(
             [], [], marker=_DEFAULT_MARKER, linestyle="none", markersize=9,

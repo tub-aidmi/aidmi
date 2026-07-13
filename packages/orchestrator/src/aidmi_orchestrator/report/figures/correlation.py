@@ -3,7 +3,9 @@ from __future__ import annotations
 import statistics
 from pathlib import Path
 
-from aidmi_orchestrator.report.theme import apply_theme, color_for_cell, marker_for_model
+from aidmi_orchestrator.report.theme import (
+    apply_theme, color_for_cell, marker_for_model, ordered_cells,
+)
 
 # Same tokens as the other figures: text stays ink/muted, data color on marks.
 _INK = "#0b0b0b"
@@ -75,7 +77,7 @@ def _correlation_scatter(
             [], [], marker=_DEFAULT_MARKER, linestyle="none", markersize=9,
             markerfacecolor=color_for_cell(c), markeredgecolor=_SURFACE, label=c,
         )
-        for c in sorted({p[2] for p in points})
+        for c in ordered_cells({p[2] for p in points})
     ]
     if multi_model:
         for model in sorted({p[3] for p in points}):
