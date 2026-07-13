@@ -87,8 +87,23 @@ def _fmt_std(v, unit_axis):
     return f"±{v:.0f}"
 
 
+def _text_on(color):
+    """Ink on light fills, white on dark ones, so the base-of-bar n stays legible
+    whatever the strategy hue. Threshold high enough that saturated yellows read
+    white too."""
+    from matplotlib.colors import to_rgb
+    r, g, b = to_rgb(color)
+    return _INK if (0.299 * r + 0.587 * g + 0.114 * b) > 0.75 else "#ffffff"
+
+
+def _runs_subtitle(stat_label, counts):
+    """'<stat> per bar · N=<total> runs' — states mean vs median in-figure."""
+    return f"{stat_label} per bar · N={sum(counts)} runs"
+
+
 def _bar_figure(records, out_dir, *, filename, salt, title, attr, state_order,
-                state_labels, getter, y_label, zero_fill, unit_axis, summarise):
+                state_labels, getter, y_label, zero_fill, unit_axis, summarise,
+                stat_label):
     import matplotlib as mpl
     import matplotlib.pyplot as plt
     from matplotlib.patches import Patch
@@ -107,6 +122,7 @@ def _bar_figure(records, out_dir, *, filename, salt, title, attr, state_order,
     width = 0.8 / n_states
     max_h = 0.0
     annotations = []  # (x, height, std) for mean bars
+    bar_ns = []  # (x, n, text_color) for the per-bar run count
     for si, state in enumerate(state_order):
         offset = (si - (n_states - 1) / 2) * width
         xs, heights, lo, hi, colors = [], [], [], [], []
@@ -119,8 +135,10 @@ def _bar_figure(records, out_dir, *, filename, salt, title, attr, state_order,
             heights.append(h)
             lo.append(el)
             hi.append(eh)
-            colors.append(color_for_cell(cell))
+            color = color_for_cell(cell)
+            colors.append(color)
             max_h = max(max_h, h + eh)
+            bar_ns.append((ci + offset, len(vals), _text_on(color)))
             if std is not None:
                 annotations.append((ci + offset, h, std))
         if not xs:
@@ -142,6 +160,13 @@ def _bar_figure(records, out_dir, *, filename, salt, title, attr, state_order,
             xytext=(0, 2), ha="center", va="bottom", fontsize=7, color=_MUTED,
         )
 
+    # Per-bar run count at the base of each bar.
+    for x, n, tcolor in bar_ns:
+        ax.annotate(
+            f"n={n}", (x, 0), textcoords="offset points", xytext=(0, 3),
+            ha="center", va="bottom", fontsize=6.5, color=tcolor, zorder=5,
+        )
+
     # Strip chrome: faint horizontal reference lines only, no vertical grid, no
     # left spine -- the bars carry the data, not a boxed lattice.
     ax.grid(False)
@@ -158,7 +183,10 @@ def _bar_figure(records, out_dir, *, filename, salt, title, attr, state_order,
         ax.set_ylim(0, head)
     else:
         ax.set_ylim(0, max_h * head if max_h else None)
-    ax.set_title(title, color=_INK, fontsize=12, loc="left")
+    ax.set_title(title, color=_INK, fontsize=12, loc="left", pad=20)
+    ax.text(0.0, 1.015, _runs_subtitle(stat_label, [n for _, n, _ in bar_ns]),
+            transform=ax.transAxes, ha="left", va="bottom", fontsize=9,
+            color=_MUTED)
 
     state_handles = [
         Patch(facecolor=_MUTED, edgecolor="none", label=state_labels[0]),
@@ -196,7 +224,7 @@ def build_bar_figures(records, out_dir) -> dict[str, list[Path]]:
                     title=f"{y_label} by strategy — {frag}",
                     attr=attr, state_order=state_order, state_labels=state_labels,
                     getter=getter, y_label=y_label, zero_fill=zero_fill,
-                    unit_axis=unit_axis, summarise=summarise,
+                    unit_axis=unit_axis, summarise=summarise, stat_label=stat,
                 )
                 out[stat].append(path)
     return out
