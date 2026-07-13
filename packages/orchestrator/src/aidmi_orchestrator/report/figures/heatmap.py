@@ -13,6 +13,7 @@ from aidmi_orchestrator.report.aggregate import (
 from aidmi_orchestrator.report.theme import (
     apply_theme,
     ordered_cells,
+    ordered_fixtures,
     sequential_cmap,
     strip_common_version,
 )
@@ -76,7 +77,7 @@ def fig_heatmap(records, out_dir, *, metric: str, filename: str, title: str) -> 
     out_dir.mkdir(parents=True, exist_ok=True)
 
     cells = ordered_cells({r.cell for r in records})
-    fixtures = sorted({r.fixture for r in records})
+    fixtures = ordered_fixtures({r.fixture for r in records})
     matrix = _matrix_for_metric(records, metric, cells, fixtures)
 
     cmap = sequential_cmap().copy()
@@ -149,6 +150,8 @@ _HEATMAP_METRICS = {
                False, lambda v: f"{v / 1000:.0f}k" if v >= 1000 else f"{v:.0f}"),
     "time": ("Time", "Mean time/run (s)", lambda r: r.secs, False, False,
              lambda v: f"{v:.0f}s"),
+    "retries": ("LLM retries", "Mean LLM retries/run", lambda r: r.retries,
+                True, False, lambda v: f"{v:.1f}"),
 }
 
 
@@ -200,7 +203,7 @@ def fig_metric_heatmap(records, out_dir, *, key: str) -> Path:
     out_dir.mkdir(parents=True, exist_ok=True)
 
     cells = ordered_cells({r.cell for r in records})
-    fixtures = sorted({r.fixture for r in records})
+    fixtures = ordered_fixtures({r.fixture for r in records})
     stats = _cell_stats(records, getter, zero_fill)
 
     matrix = np.full((len(cells), len(fixtures)), np.nan)
@@ -308,7 +311,7 @@ def fig_std_heatmap(records, out_dir, *, filename="heatmap_f1_std.svg",
     out_dir.mkdir(parents=True, exist_ok=True)
 
     cells = ordered_cells({r.cell for r in records})
-    fixtures = sorted({r.fixture for r in records})
+    fixtures = ordered_fixtures({r.fixture for r in records})
     matrix = _f1_std_matrix(records, cells, fixtures)
 
     finite = matrix[np.isfinite(matrix)]

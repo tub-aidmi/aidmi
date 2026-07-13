@@ -33,6 +33,18 @@ STRATEGY_COLORS = {
     "write_tools_freeform_inlinedbt": "#7fb0dd",
 }
 
+# Canonical fixture order, hardest -> easiest, matched version-agnostically
+# (master_v2 ranks as master). Ranking rationale: master is the coverage floor
+# (lowest recall/mat rate), missing_relations the correctness floor (lowest
+# field accuracy), then messy_data, then wrong_field_names (top on every axis).
+# Unknown fixtures trail, sorted by name.
+FIXTURE_ORDER = [
+    "master",
+    "missing_relations",
+    "messy_data",
+    "wrong_field_names",
+]
+
 # Strategies dropped from the whole report (every figure/table/order derives
 # from the filtered record set). Comment a line out to bring one back; the CLI
 # --exclude flag adds to this set for one-off runs.
@@ -76,6 +88,21 @@ def ordered_cells(cells):
     ranked = [c for c in STRATEGY_ORDER if c in present]
     extra = sorted(present - set(STRATEGY_ORDER))
     return ranked + extra
+
+
+def _fixture_base(fixture):
+    m = _VERSION_RE.match(fixture)
+    return m.group("base") if m else fixture
+
+
+def ordered_fixtures(fixtures):
+    """Fixtures in canonical FIXTURE_ORDER (matched on the version-stripped base
+    name); any unknown fixture trails, sorted. Order preserved for ties."""
+    rank = {name: i for i, name in enumerate(FIXTURE_ORDER)}
+    return sorted(
+        set(fixtures),
+        key=lambda f: (rank.get(_fixture_base(f), len(FIXTURE_ORDER)), f),
+    )
 
 
 def sequential_cmap():

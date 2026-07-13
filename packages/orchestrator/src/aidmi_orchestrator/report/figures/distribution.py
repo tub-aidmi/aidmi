@@ -8,6 +8,7 @@ from aidmi_orchestrator.report.aggregate import rep_values
 from aidmi_orchestrator.report.theme import (
     apply_theme,
     color_for_cell,
+    ordered_fixtures,
     strip_common_version,
 )
 
@@ -105,7 +106,8 @@ def _draw_panel(ax, groups, colors, values, label, *, unit_axis):
     ax.set_ylabel(label, color=_INK)
 
 
-def _dist_figure(records, out_dir, filename, salt, key, colors_for, title) -> Path:
+def _dist_figure(records, out_dir, filename, salt, key, colors_for, title,
+                 order_groups=None) -> Path:
     import matplotlib as mpl
     import matplotlib.pyplot as plt
 
@@ -114,7 +116,7 @@ def _dist_figure(records, out_dir, filename, salt, key, colors_for, title) -> Pa
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    groups = _ranked_groups(records, key)
+    groups = order_groups(records) if order_groups else _ranked_groups(records, key)
     colors = colors_for(groups)
     nrows = max(len(_LEFT_METRICS), len(_RIGHT_METRICS))
     col_w = max(4.5, 0.9 * len(groups) + 2.0)
@@ -155,6 +157,10 @@ def _fixture_colors(groups):
     return [_FIXTURE_PALETTE[i % len(_FIXTURE_PALETTE)] for i in range(len(groups))]
 
 
+def _fixture_order(records):
+    return ordered_fixtures({r.fixture for r in records})
+
+
 def fig_dist_by_strategy(records, out_dir) -> Path:
     on = [r for r in records if r.sc is True]
     return _dist_figure(
@@ -170,6 +176,7 @@ def fig_dist_by_fixture(records, out_dir) -> Path:
         on, out_dir, "dist_by_fixture.svg", "aidmi-dist-fixture",
         lambda r: r.fixture, _fixture_colors,
         "Per-fixture distribution (self-correction on) — box (IQR + median) over every run",
+        order_groups=_fixture_order,
     )
 
 
@@ -190,4 +197,5 @@ def fig_dist_by_fixture_for_strategy(records, out_dir, cell) -> Path:
         on, out_dir, f"dist_fixture__{slug}.svg", f"aidmi-dist-fixture-{slug}",
         lambda r: r.fixture, _fixture_colors,
         "Per-fixture distribution (self-correction on) — box (IQR + median) over every run",
+        order_groups=_fixture_order,
     )

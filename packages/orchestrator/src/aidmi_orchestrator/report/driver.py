@@ -46,6 +46,7 @@ from aidmi_orchestrator.report.theme import (
     EXCLUDED_STRATEGIES,
     apply_theme,
     ordered_cells,
+    ordered_fixtures,
     strip_common_version,
 )
 
@@ -77,7 +78,7 @@ def _build_core_figures(records: list[RunRecord], figdir: Path) -> dict[str, Pat
             f"heatmap_{key}": fig_metric_heatmap(
                 [r for r in records if r.sc is True], figdir, key=key
             )
-            for key in ("recall", "field_acc", "mat_rate", "cost", "tokens", "time")
+            for key in ("recall", "field_acc", "mat_rate", "cost", "tokens", "time", "retries")
         },
     }
 
@@ -88,7 +89,7 @@ def _build_dist_facets(
     """Per-fixture strategy distributions and per-strategy fixture distributions,
     each restricted to self-correction-on runs, keyed by the facet value."""
     on = [r for r in records if r.sc is True]
-    fixtures = sorted({r.fixture for r in on})
+    fixtures = ordered_fixtures({r.fixture for r in on})
     cells = ordered_cells({r.cell for r in on})
     fixture_titles = dict(zip(fixtures, strip_common_version(fixtures)))
     by_fixture = [
@@ -162,7 +163,8 @@ def _build_sections(
             # the left, cost/effort (cost, tokens, time) down the right.
             [figs["heatmap_recall"], figs["heatmap_cost"],
              figs["heatmap_field_acc"], figs["heatmap_tokens"],
-             figs["heatmap_mat_rate"], figs["heatmap_time"]],
+             figs["heatmap_mat_rate"], figs["heatmap_time"],
+             figs["heatmap_retries"]],
             "",
         ),
         Section(
