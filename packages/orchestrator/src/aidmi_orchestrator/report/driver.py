@@ -42,7 +42,12 @@ from aidmi_orchestrator.report.tables import (
     summary_overall_table,
     summary_sc_block,
 )
-from aidmi_orchestrator.report.theme import EXCLUDED_STRATEGIES, apply_theme
+from aidmi_orchestrator.report.theme import (
+    EXCLUDED_STRATEGIES,
+    apply_theme,
+    ordered_cells,
+    strip_common_version,
+)
 
 
 def _build_core_figures(records: list[RunRecord], figdir: Path) -> dict[str, Path]:
@@ -84,9 +89,11 @@ def _build_dist_facets(
     each restricted to self-correction-on runs, keyed by the facet value."""
     on = [r for r in records if r.sc is True]
     fixtures = sorted({r.fixture for r in on})
-    cells = sorted({r.cell for r in on})
+    cells = ordered_cells({r.cell for r in on})
+    fixture_titles = dict(zip(fixtures, strip_common_version(fixtures)))
     by_fixture = [
-        Subsection(fx, [fig_dist_by_strategy_for_fixture(records, figdir, fx)])
+        Subsection(fixture_titles[fx],
+                   [fig_dist_by_strategy_for_fixture(records, figdir, fx)])
         for fx in fixtures
     ]
     by_strategy = [

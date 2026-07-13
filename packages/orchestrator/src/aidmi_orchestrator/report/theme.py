@@ -1,5 +1,9 @@
 from __future__ import annotations
+import re
+
 import matplotlib as mpl
+
+_VERSION_RE = re.compile(r"^(?P<base>.+?)(?P<ver>_v\d+)$")
 
 # Single source of truth for strategy identity: this list fixes BOTH the
 # left-to-right / top-to-bottom order strategies appear in on every plot that
@@ -47,6 +51,19 @@ BRAND_ORRD = [
     "#fff7f2", "#fddccb", "#fcbfa0", "#fb9d6b", "#ff7a1f",
     "#ff6c00", "#e8471a", "#c40d1e", "#9c0a17", "#6f040d",
 ]
+
+
+def strip_common_version(labels):
+    """Drop a trailing _v<N> suffix from labels only when every label carries
+    the same one (e.g. all *_v2 -> bare names); otherwise leave them untouched.
+    Order preserved. Non-versioned labels (strategy cells) pass through."""
+    labels = list(labels)
+    matches = [_VERSION_RE.match(l) for l in labels]
+    if labels and all(matches):
+        versions = {m.group("ver") for m in matches}
+        if len(versions) == 1:
+            return [m.group("base") for m in matches]
+    return labels
 
 
 def color_for_cell(cell): return STRATEGY_COLORS.get(cell, _FALLBACK_C)

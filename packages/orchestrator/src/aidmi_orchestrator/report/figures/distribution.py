@@ -5,7 +5,11 @@ import statistics
 from pathlib import Path
 
 from aidmi_orchestrator.report.aggregate import rep_values
-from aidmi_orchestrator.report.theme import apply_theme, color_for_cell
+from aidmi_orchestrator.report.theme import (
+    apply_theme,
+    color_for_cell,
+    strip_common_version,
+)
 
 # Same tokens as the other figures: text stays ink/muted, data color on marks.
 _INK = "#0b0b0b"
@@ -126,8 +130,8 @@ def _dist_figure(records, out_dir, filename, salt, key, colors_for, title) -> Pa
                         label, unit_axis=unit_axis)
         bottom = axes[len(metrics) - 1][col]
         bottom.set_xticks(range(len(groups)))
-        bottom.set_xticklabels(groups, rotation=25, ha="right", fontsize=9,
-                               color=_INK)
+        bottom.set_xticklabels(strip_common_version(groups), rotation=25,
+                               ha="right", fontsize=9, color=_INK)
 
     fig.suptitle(title, color=_INK, fontsize=12, x=0.02, ha="left")
     fig.subplots_adjust(left=0.07, right=0.98, top=0.94, bottom=0.13,
