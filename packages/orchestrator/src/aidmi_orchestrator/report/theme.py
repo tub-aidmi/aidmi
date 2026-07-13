@@ -29,6 +29,14 @@ STRATEGY_COLORS = {
     "write_tools_freeform_inlinedbt": "#7fb0dd",
 }
 
+# Strategies dropped from the whole report (every figure/table/order derives
+# from the filtered record set). Comment a line out to bring one back; the CLI
+# --exclude flag adds to this set for one-off runs.
+EXCLUDED_STRATEGIES = {
+    "plan_write_critique",
+    "write_tools_freeform_inlinedbt",
+}
+
 MODEL_MARKERS = {"gemini25flash": "o", "qwen35b": "s", "mistral128b": "^"}
 _FALLBACK_C = "#888888"; _FALLBACK_M = "D"
 

@@ -42,7 +42,7 @@ from aidmi_orchestrator.report.tables import (
     summary_overall_table,
     summary_sc_block,
 )
-from aidmi_orchestrator.report.theme import apply_theme
+from aidmi_orchestrator.report.theme import EXCLUDED_STRATEGIES, apply_theme
 
 
 def _build_core_figures(records: list[RunRecord], figdir: Path) -> dict[str, Path]:
@@ -185,11 +185,18 @@ def _build_sections(
     return sections
 
 
-def build_report(records: list[RunRecord], out_dir: Path) -> list[Path]:
+def build_report(
+    records: list[RunRecord], out_dir: Path, *, exclude: set[str] | None = None
+) -> list[Path]:
     apply_theme()
     out_dir = Path(out_dir)
     figdir = out_dir / "figures"
     figdir.mkdir(parents=True, exist_ok=True)
+
+    # Drop excluded strategies once, at the source: every figure, table and
+    # ordering below derives from `records`, so this is the only filter needed.
+    dropped = EXCLUDED_STRATEGIES | (exclude or set())
+    records = [r for r in records if r.cell not in dropped]
 
     multi_model = len({r.model for r in records}) > 1
 

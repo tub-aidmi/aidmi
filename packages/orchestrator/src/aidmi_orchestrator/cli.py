@@ -353,6 +353,10 @@ def evaluate(
 def report(
     results: Annotated[list[Path], typer.Argument(help="campaign dirs or results.jsonl files")],
     out: Annotated[Path, typer.Option(help="report output directory")] = Path("./report"),
+    exclude: Annotated[
+        list[str] | None,
+        typer.Option(help="strategy (cell) to drop, on top of EXCLUDED_STRATEGIES; repeatable"),
+    ] = None,
 ):
     """Render benchmark campaign(s) into an SVG figure gallery."""
     from aidmi_orchestrator.report.data import load_records
@@ -362,7 +366,7 @@ def report(
     if not records:
         raise typer.BadParameter("no result rows found in the given paths")
     out.mkdir(parents=True, exist_ok=True)
-    written = build_report(records, out)
+    written = build_report(records, out, exclude=set(exclude or []))
     typer.echo(f"report over {len(records)} runs -> {out}: {len(written)} files")
 
 
