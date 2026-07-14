@@ -267,19 +267,26 @@ def fig_recall_violin_sc(records, out_dir) -> Path:
 
     fig, ax = plt.subplots(figsize=(5.0, 4.2))
     positions = list(range(len(states)))
-    parts = ax.violinplot(data, positions=positions, showextrema=False, widths=0.8)
+
+    # Violin carries the density; a slim white boxplot inside carries the summary
+    # (IQR box, median, whiskers, outliers) -- ggplot geom_violin + geom_boxplot.
+    parts = ax.violinplot(data, positions=positions, showextrema=False, widths=0.85)
     for body, (_, _, color) in zip(parts["bodies"], states):
-        body.set(facecolor=color, alpha=0.35, edgecolor=_MUTED, linewidth=1.0)
-    for p, values, (_, _, color) in zip(positions, data, states):
-        if not values:
-            continue
-        ax.scatter(
-            [p + off for off in _jitter(len(values))], values,
-            s=12, color=color, alpha=0.6, edgecolors=_SURFACE, linewidths=0.3,
-            zorder=3,
+        body.set(facecolor=color, alpha=0.75, edgecolor=_INK, linewidth=1.1)
+
+    non_empty = [(p, d) for p, d in zip(positions, data) if d]
+    if non_empty:
+        ax.boxplot(
+            [d for _, d in non_empty], positions=[p for p, _ in non_empty],
+            widths=0.08, patch_artist=True, showfliers=True,
+            boxprops=dict(facecolor=_SURFACE, edgecolor=_INK, linewidth=1.0),
+            medianprops=dict(color=_INK, linewidth=1.4),
+            whiskerprops=dict(color=_INK, linewidth=1.0),
+            capprops=dict(color=_INK, linewidth=1.0),
+            flierprops=dict(marker="o", markersize=3, markerfacecolor=_INK,
+                            markeredgecolor=_INK),
+            zorder=4,
         )
-        ax.hlines(statistics.median(values), p - 0.4, p + 0.4,
-                  color=_INK, linewidth=1.6, zorder=4)
 
     ax.set_xlim(-0.6, len(states) - 0.4)
     ax.set_ylim(-0.05, 1.08)
