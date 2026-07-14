@@ -4,7 +4,19 @@ from __future__ import annotations
 from typing import Any
 
 import psycopg2
+from psycopg2.extensions import new_type, register_type
 from psycopg2.extras import RealDictCursor
+
+# Return date/time columns as raw strings rather than Python datetimes. Produced
+# tables can hold malformed dates (e.g. year 0 or negative) that crash datetime
+# construction; comparison is string-based anyway, so text is both safe and
+# equivalent. OIDs: DATE, TIME, TIMESTAMP, TIMESTAMPTZ, TIMETZ. Scoped to the
+# fetch cursor so it never perturbs date handling elsewhere in the process.
+_DATETIME_AS_TEXT = new_type(
+    (1082, 1083, 1114, 1184, 1266),
+    "DATETIME_AS_TEXT",
+    lambda value, cur: value,
+)
 
 LEGACY_ID_COLUMNS: dict[str, str] = {
     "Account": "Legacy_Customer_ID__c",
@@ -57,6 +69,7 @@ def safe_rate(numerator: int, denominator: int) -> float | None:
 
 def fetch_table_rows(conn, schema: str, table: str) -> list[dict[str, Any]]:
     with conn.cursor(cursor_factory=RealDictCursor) as cur:
+        register_type(_DATETIME_AS_TEXT, cur)
         cur.execute(f'SELECT * FROM "{schema}"."{table}"')
         return [dict(row) for row in cur.fetchall()]
 
