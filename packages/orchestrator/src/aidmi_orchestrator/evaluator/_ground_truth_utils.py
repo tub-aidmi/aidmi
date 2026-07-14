@@ -16,9 +16,31 @@ LEGACY_ID_COLUMNS: dict[str, str] = {
 
 TARGET_TABLES: tuple[str, ...] = tuple(LEGACY_ID_COLUMNS.keys())
 
+# Foreign-key columns and the parent table each references. FK cells hold the
+# parent's surrogate Id, which differs between the golden and produced id spaces;
+# they are compared by resolving through the parent's legacy id, not raw.
+FK_COLUMNS: dict[str, dict[str, str]] = {
+    "Contact": {"AccountId": "Account"},
+    "Opportunity": {"AccountId": "Account"},
+    "Project__c": {"Account__c": "Account", "Opportunity__c": "Opportunity"},
+    "Installed_Asset__c": {"Account__c": "Account", "Project__c": "Project__c"},
+}
+
+FK_COLUMN_NAMES: frozenset[str] = frozenset(
+    col for cols in FK_COLUMNS.values() for col in cols
+)
+
+# resolve_fk returns this when an FK value points at a row absent from the
+# referenced table (a dangling reference — broken relationship).
+DANGLING = object()
+
 
 def legacy_id_column(table_name: str) -> str | None:
     return LEGACY_ID_COLUMNS.get(table_name)
+
+
+def fk_columns(table_name: str) -> dict[str, str]:
+    return FK_COLUMNS.get(table_name, {})
 
 
 def harmonic_mean_f1(recall: float, precision: float) -> float:
@@ -125,6 +147,29 @@ def ground_truth_row_matched(
     return str(source_id) in produced_by_legacy
 
 
+def index_by_id(rows: list[dict[str, Any]], legacy_col: str) -> dict[str, str]:
+    """Map each row's surrogate Id to its legacy id, for FK resolution."""
+    out: dict[str, str] = {}
+    for row in rows:
+        row_id = row.get("Id")
+        legacy = row.get(legacy_col)
+        if row_id is not None and legacy is not None:
+            out[str(row_id)] = str(legacy)
+    return out
+
+
+def resolve_fk(fk_value: Any, id_to_legacy: dict[str, str]) -> Any:
+    """Resolve an FK surrogate Id to its parent's legacy id.
+
+    None -> None (no reference). A value present in the index -> its legacy id.
+    A value absent from the index -> DANGLING (points at a nonexistent row).
+    """
+    if fk_value is None:
+        return None
+    resolved = id_to_legacy.get(str(fk_value))
+    return resolved if resolved is not None else DANGLING
+
+
 def values_equal(produced: Any, golden: Any) -> bool:
     if produced is None and golden is None:
         return True
@@ -141,9 +186,14 @@ def compare_matched_rows(
     *,
     skip_columns: frozenset[str] = frozenset({"Id", "CreatedDate", "LastModifiedDate", "IsDeleted"}),
 ) -> dict[str, bool]:
+    """Compare attribute columns of a matched row pair.
+
+    FK columns are excluded: they hold surrogate Ids from disjoint id spaces and
+    are scored separately by the fk_integrity evaluator via legacy resolution.
+    """
     results: dict[str, bool] = {}
     for col, golden_val in golden_row.items():
-        if col in skip_columns:
+        if col in skip_columns or col in FK_COLUMN_NAMES:
             continue
         if col not in produced_row:
             continue
