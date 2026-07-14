@@ -9,6 +9,7 @@ from aidmi_orchestrator.report.theme import (
     apply_theme,
     cells_covering_states,
     color_for_cell,
+    ordered_cells,
     ordered_fixtures,
     strip_common_version,
 )
@@ -66,16 +67,9 @@ def _jitter(n):
     return [-_JITTER_HALF_WIDTH + step * j for j in range(n)]
 
 
-def _ranked_groups(records, key):
-    """Groups ordered by median recall (nulls as 0) descending, then name."""
-    recall = rep_values(records, key, _outcome(lambda r: r.recall))
-    all_groups = sorted({key(r) for r in records})
-    ranked = sorted(
-        (g for g in all_groups if recall.get(g)),
-        key=lambda g: (-statistics.median(recall[g]), g),
-    )
-    unranked = sorted(g for g in all_groups if not recall.get(g))
-    return ranked + unranked
+def _strategy_order(records):
+    """Strategies in the canonical STRATEGY_ORDER, shared with the bar section."""
+    return ordered_cells({r.cell for r in records})
 
 
 def _draw_panel(ax, groups, colors, values, label, *, unit_axis):
@@ -154,7 +148,7 @@ def _dist_figure(records, out_dir, filename, salt, key, colors_for, title,
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    groups = order_groups(records) if order_groups else _ranked_groups(records, key)
+    groups = order_groups(records) if order_groups else _strategy_order(records)
     colors = colors_for(groups)
     nrows = max(len(_LEFT_METRICS), len(_RIGHT_METRICS))
     col_w = max(4.5, 0.9 * len(groups) + 2.0)
@@ -240,10 +234,8 @@ def _fk_iqr_figure(records, out_dir, filename, salt, key, colors_for, title,
     out_dir.mkdir(parents=True, exist_ok=True)
 
     values = _fk_values_by(records, key)
-    if order_groups:
-        groups = [g for g in order_groups(records) if g in values]
-    else:
-        groups = sorted(values, key=lambda g: (-statistics.median(values[g]), g))
+    order = order_groups(records) if order_groups else _strategy_order(records)
+    groups = [g for g in order if g in values]
     colors = colors_for(groups)
 
     col_w = max(4.5, 0.9 * len(groups) + 2.0)
@@ -329,12 +321,14 @@ def fig_recall_violin_sc(records, out_dir) -> Path:
 
     # Violin carries the density; a slim white boxplot inside carries the summary
     # (IQR box, median, whiskers, outliers) -- ggplot geom_violin + geom_boxplot.
-    parts = ax.violinplot(data, positions=positions, showextrema=False, widths=0.85)
-    for body in parts["bodies"]:
-        body.set(facecolor="#e6e5e2", alpha=1.0, edgecolor=_INK, linewidth=1.1)
-
     non_empty = [(p, d) for p, d in zip(positions, data) if d]
     if non_empty:
+        parts = ax.violinplot(
+            [d for _, d in non_empty], positions=[p for p, _ in non_empty],
+            showextrema=False, widths=0.85,
+        )
+        for body in parts["bodies"]:
+            body.set(facecolor="#e6e5e2", alpha=1.0, edgecolor=_INK, linewidth=1.1)
         ax.boxplot(
             [d for _, d in non_empty], positions=[p for p, _ in non_empty],
             widths=0.08, patch_artist=True, showfliers=True,

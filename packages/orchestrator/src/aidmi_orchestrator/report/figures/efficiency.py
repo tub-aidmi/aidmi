@@ -3,7 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from aidmi_orchestrator.report.aggregate import group_mean
-from aidmi_orchestrator.report.theme import apply_theme, color_for_cell
+from aidmi_orchestrator.report.theme import apply_theme, color_for_cell, ordered_cells
 
 _INK = "#0b0b0b"
 _MUTED = "#898781"
@@ -45,10 +45,8 @@ def _draw_bars(ax, cells, values, fmt, ylabel):
 
 
 def _ranked_by_f1(records):
-    f1 = group_mean(records, _cell_key, lambda r: r.f1)
-    cells = sorted({r.cell for r in records})
-    ranked = sorted((c for c in cells if c in f1), key=lambda c: (-f1[c], c))
-    return ranked + sorted(c for c in cells if c not in f1)
+    """Canonical STRATEGY_ORDER, shared with the bar section."""
+    return ordered_cells({r.cell for r in records})
 
 
 def fig_efficiency(records, out_dir) -> Path:

@@ -3,7 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from aidmi_orchestrator.report.aggregate import group_mean, materialization_rate
-from aidmi_orchestrator.report.theme import apply_theme, color_for_cell
+from aidmi_orchestrator.report.theme import apply_theme, color_for_cell, ordered_cells
 
 # Same tokens as pareto.py/levers.py: text stays ink/muted, data color on marks.
 _INK = "#0b0b0b"
@@ -36,17 +36,8 @@ def _cell_key(r):
 
 
 def _ranked_cells(records):
-    """All cells present, ranked by mean recall descending.
-
-    Cells with no recall at all (every rep failed before ground truth could
-    be scored) still need a slot -- they sink to the end, ordered by name so
-    the layout stays deterministic.
-    """
-    all_cells = sorted({r.cell for r in records})
-    recall = group_mean(records, _cell_key, lambda r: r.recall)
-    ranked = sorted((c for c in all_cells if c in recall), key=lambda c: (-recall[c], c))
-    unranked = sorted(c for c in all_cells if c not in recall)
-    return ranked + unranked
+    """Canonical STRATEGY_ORDER, shared with the bar section."""
+    return ordered_cells({r.cell for r in records})
 
 
 def _bar_labels(ax, xs, ys, fmt):

@@ -3,7 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from aidmi_orchestrator.report.aggregate import group_mean
-from aidmi_orchestrator.report.theme import apply_theme
+from aidmi_orchestrator.report.theme import apply_theme, ordered_cells
 
 _INK = "#0b0b0b"
 _MUTED = "#898781"
@@ -38,10 +38,8 @@ def _total_tokens(r):
 
 
 def _ranked_cells(records):
-    f1 = group_mean(records, _cell_key, _f1_outcome)
-    cells = sorted({r.cell for r in records})
-    ranked = sorted((c for c in cells if c in f1), key=lambda c: (-f1[c], c))
-    return ranked + sorted(c for c in cells if c not in f1)
+    """Canonical STRATEGY_ORDER, shared with the bar section."""
+    return ordered_cells({r.cell for r in records})
 
 
 def _draw_grouped(ax, cells, per_cell_ctx, fmt, ylabel, *, ctxs):
