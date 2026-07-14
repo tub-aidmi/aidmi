@@ -254,18 +254,17 @@ def fig_recall_violin_sc(records, out_dir) -> Path:
 
     apply_theme()
     mpl.rcParams["svg.hashsalt"] = "aidmi-recall-violin-sc"
-    mpl.rcParams["hatch.linewidth"] = 0.5
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
 
     covered = cells_covering_states(records, "sc", [False, True])
     recall = _outcome(lambda r: r.recall)
-    # Colour is reserved for strategy identity everywhere else, so the two states
-    # share one neutral fill and are told apart by hatch texture instead.
-    states = [(False, "off", "///"), (True, "on", "xxx")]
+    # Colour is reserved for strategy identity everywhere else, so both states
+    # share one neutral fill; the x labels tell them apart.
+    states = [(False, "off"), (True, "on")]
     data = [
         [recall(r) for r in records if r.sc is state and r.cell in covered]
-        for state, _, _ in states
+        for state, _ in states
     ]
 
     fig, ax = plt.subplots(figsize=(5.0, 4.2))
@@ -274,9 +273,8 @@ def fig_recall_violin_sc(records, out_dir) -> Path:
     # Violin carries the density; a slim white boxplot inside carries the summary
     # (IQR box, median, whiskers, outliers) -- ggplot geom_violin + geom_boxplot.
     parts = ax.violinplot(data, positions=positions, showextrema=False, widths=0.85)
-    for body, (_, _, hatch) in zip(parts["bodies"], states):
-        body.set(facecolor="#e6e5e2", alpha=1.0, edgecolor=_INK, linewidth=1.1,
-                 hatch=hatch)
+    for body in parts["bodies"]:
+        body.set(facecolor="#e6e5e2", alpha=1.0, edgecolor=_INK, linewidth=1.1)
 
     non_empty = [(p, d) for p, d in zip(positions, data) if d]
     if non_empty:
@@ -295,7 +293,7 @@ def fig_recall_violin_sc(records, out_dir) -> Path:
     ax.set_xlim(-0.6, len(states) - 0.4)
     ax.set_ylim(-0.05, 1.08)
     ax.set_xticks(positions)
-    ax.set_xticklabels([f"sc {label}\n(n={len(d)})" for (_, label, _), d in zip(states, data)],
+    ax.set_xticklabels([f"sc {label}\n(n={len(d)})" for (_, label), d in zip(states, data)],
                        color=_INK)
     ax.set_ylabel("Recall", color=_INK)
     ax.grid(False)
