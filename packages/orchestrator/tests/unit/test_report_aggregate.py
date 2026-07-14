@@ -12,7 +12,7 @@ def _r(cell, recall, mat):
         sc=True, rep=0, dbt_success=mat, materialized=mat,
         tables_materialized=1.0 if mat else 0.0,
         recall=recall, precision=None, field_acc=None,
-        f1=None, recall_strict=None, cost=None, secs=None, tokens_in=None, tokens_out=None,
+        f1=None, cost=None, secs=None, tokens_in=None, tokens_out=None,
         status="complete", silent_fail=False, tables_declared=5, cols_covered=None)
 
 

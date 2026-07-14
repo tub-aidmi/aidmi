@@ -8,10 +8,8 @@ import psycopg2
 from aidmi_orchestrator.evaluator._ground_truth_utils import (
     TARGET_TABLES,
     harmonic_mean_f1,
-    index_by_column,
     legacy_id_column,
     match_produced_to_golden,
-    row_is_field_correct,
     safe_rate,
     schema_has_table,
     fetch_table_rows,
@@ -31,7 +29,6 @@ class GroundTruthRecallEvaluator:
 
         per_table: dict[str, dict[str, Any]] = {}
         total_matched = 0
-        total_strict_matched = 0
         total_produced = 0
         total_golden = 0
         tables_materialized = 0
@@ -72,16 +69,6 @@ class GroundTruthRecallEvaluator:
                     golden_rows, produced_rows, legacy_col
                 )
 
-                produced_by_legacy = index_by_column(produced_rows, legacy_col)
-                strict_matched = 0
-                for grow in golden_rows:
-                    lid = grow.get(legacy_col)
-                    if lid is None:
-                        continue
-                    prow = produced_by_legacy.get(str(lid))
-                    if prow is not None and row_is_field_correct(grow, prow):
-                        strict_matched += 1
-
                 recall = safe_rate(matched, golden_n)
                 precision = safe_rate(matched, produced_n)
                 per_table[table] = {
@@ -96,7 +83,6 @@ class GroundTruthRecallEvaluator:
                 }
 
                 total_matched += matched
-                total_strict_matched += strict_matched
                 total_produced += produced_n
                 total_golden += golden_n
 
@@ -113,7 +99,6 @@ class GroundTruthRecallEvaluator:
             "gt_recall_overall": overall_recall,
             "gt_precision_overall": overall_precision,
             "gt_f1_overall": overall_f1,
-            "gt_recall_strict": safe_rate(total_strict_matched, total_golden),
             "gt_tables_materialized": tables_materialized_rate,
             "gt_per_table": per_table,
         }

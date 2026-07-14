@@ -22,7 +22,7 @@ def _mk(cell, ctx, sc, model, *, recall=None, field_acc=None, cost=None,
         dbt_success=materialized, materialized=materialized,
         tables_materialized=1.0 if materialized else 0.0,
         recall=recall, precision=None, field_acc=field_acc,
-        f1=None, recall_strict=None, cost=cost, secs=None, tokens_in=None, tokens_out=None,
+        f1=None, cost=cost, secs=None, tokens_in=None, tokens_out=None,
         status="complete", silent_fail=False, tables_declared=5, cols_covered=None,
     )
 
@@ -83,7 +83,7 @@ def test_summary_best_config_materialization_uses_mean_rate():
         campaign="c", model="m", fixture="f", cell="partial", ctx="metadata_only",
         sc=True, rep=0, dbt_success=True, materialized=True,
         tables_materialized=0.5, recall=0.9, precision=None, field_acc=None,
-        f1=None, recall_strict=None, cost=None, secs=None, tokens_in=None,
+        f1=None, cost=None, secs=None, tokens_in=None,
         tokens_out=None, status="complete", silent_fail=False,
         tables_declared=5, cols_covered=None,
     )

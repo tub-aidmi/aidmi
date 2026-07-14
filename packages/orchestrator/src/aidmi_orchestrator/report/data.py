@@ -17,7 +17,7 @@ class RunRecord:
     materialized: bool
     tables_materialized: float | None
     recall: float | None; precision: float | None; field_acc: float | None
-    f1: float | None; recall_strict: float | None
+    f1: float | None
     cost: float | None; secs: float | None
     tokens_in: int | None; tokens_out: int | None
     status: str | None; silent_fail: bool
@@ -73,7 +73,6 @@ def _record(row: dict, fallback_campaign: str) -> RunRecord:
         tables_materialized=tables_mat,
         recall=m.get("gt_recall_overall"), precision=m.get("gt_precision_overall"),
         field_acc=m.get("gt_field_accuracy_overall"), f1=m.get("gt_f1_overall"),
-        recall_strict=m.get("gt_recall_strict"),
         cost=m.get("dollar_cost_total"), secs=row.get("wall_clock_seconds"),
         tokens_in=m.get("tokens_input_total"), tokens_out=m.get("tokens_output_total"),
         status=status, silent_fail=silent,
