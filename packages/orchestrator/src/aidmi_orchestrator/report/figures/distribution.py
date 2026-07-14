@@ -72,6 +72,16 @@ def _strategy_order(records):
     return ordered_cells({r.cell for r in records})
 
 
+def _counts_subtitle(counts, unit):
+    """'N=<total> runs · n=<lo>–<hi>/<unit>' -- mirrors the bar section subtitle."""
+    if not counts:
+        return ""
+    total = sum(counts)
+    lo, hi = min(counts), max(counts)
+    per = f"n={lo}/{unit}" if lo == hi else f"n={lo}–{hi}/{unit}"
+    return f"N={total} runs · {per}"
+
+
 def _draw_panel(ax, groups, colors, values, label, *, unit_axis):
     data = [values.get(g, []) for g in groups]
     positions = list(range(len(groups)))
@@ -139,7 +149,7 @@ def _draw_violin_panel(ax, groups, colors, values, label, *, unit_axis):
 
 
 def _dist_figure(records, out_dir, filename, salt, key, colors_for, title,
-                 order_groups=None, panel_fn=_draw_panel) -> Path:
+                 order_groups=None, panel_fn=_draw_panel, subtitle_unit=None) -> Path:
     import matplotlib as mpl
     import matplotlib.pyplot as plt
 
@@ -167,8 +177,12 @@ def _dist_figure(records, out_dir, filename, salt, key, colors_for, title,
         bottom.set_xticklabels(strip_common_version(groups), rotation=25,
                                ha="right", fontsize=9, color=_INK)
 
-    fig.suptitle(title, color=_INK, fontsize=12, x=0.02, ha="left")
-    fig.subplots_adjust(left=0.07, right=0.98, top=0.94, bottom=0.13,
+    fig.suptitle(title, color=_INK, fontsize=12, x=0.02, y=0.985, ha="left")
+    if subtitle_unit:
+        counts = [sum(1 for r in records if key(r) == g) for g in groups]
+        fig.text(0.02, 0.952, _counts_subtitle(counts, subtitle_unit),
+                 ha="left", va="top", fontsize=9, color=_MUTED)
+    fig.subplots_adjust(left=0.07, right=0.98, top=0.92, bottom=0.13,
                         wspace=0.16, hspace=0.15)
 
     out = out_dir / filename
@@ -224,7 +238,7 @@ def _fk_values_by(records, key):
 
 
 def _fk_iqr_figure(records, out_dir, filename, salt, key, colors_for, title,
-                   order_groups=None, panel_fn=_draw_panel) -> Path:
+                   order_groups=None, panel_fn=_draw_panel, subtitle_unit=None) -> Path:
     import matplotlib as mpl
     import matplotlib.pyplot as plt
 
@@ -244,8 +258,12 @@ def _fk_iqr_figure(records, out_dir, filename, salt, key, colors_for, title,
     ax.set_xticks(range(len(groups)))
     ax.set_xticklabels(strip_common_version(groups), rotation=25, ha="right",
                        fontsize=9, color=_INK)
-    fig.suptitle(title, color=_INK, fontsize=12, x=0.02, ha="left")
-    fig.subplots_adjust(left=0.1, right=0.98, top=0.92, bottom=0.2)
+    fig.suptitle(title, color=_INK, fontsize=12, x=0.02, y=0.985, ha="left")
+    if subtitle_unit:
+        counts = [len(values[g]) for g in groups]
+        fig.text(0.02, 0.945, _counts_subtitle(counts, subtitle_unit),
+                 ha="left", va="top", fontsize=9, color=_MUTED)
+    fig.subplots_adjust(left=0.1, right=0.98, top=0.9, bottom=0.2)
 
     out = out_dir / filename
     fig.savefig(out, format="svg", metadata={"Date": None})
@@ -277,8 +295,8 @@ def fig_fk_violin_by_strategy(records, out_dir) -> Path:
     return _fk_iqr_figure(
         on, out_dir, "fk_violin_by_strategy.svg", "aidmi-fk-violin-strategy",
         lambda r: r.cell, _strategy_colors,
-        "FK integrity by strategy (self-correction on) — violin + box over every run",
-        panel_fn=_draw_violin_panel,
+        "FK integrity by strategy (self-correction on)",
+        panel_fn=_draw_violin_panel, subtitle_unit="strategy",
     )
 
 
@@ -287,8 +305,9 @@ def fig_fk_violin_by_fixture(records, out_dir) -> Path:
     return _fk_iqr_figure(
         on, out_dir, "fk_violin_by_fixture.svg", "aidmi-fk-violin-fixture",
         lambda r: r.fixture, _fixture_colors,
-        "FK integrity by fixture (self-correction on) — violin + box over every run",
+        "FK integrity by fixture (self-correction on)",
         order_groups=_fixture_order, panel_fn=_draw_violin_panel,
+        subtitle_unit="fixture",
     )
 
 
@@ -365,8 +384,8 @@ def fig_violin_by_strategy(records, out_dir) -> Path:
     return _dist_figure(
         on, out_dir, "violin_by_strategy.svg", "aidmi-violin-strategy",
         lambda r: r.cell, _strategy_colors,
-        "Per-strategy distribution (self-correction on) — violin + box over every run",
-        panel_fn=_draw_violin_panel,
+        "Per-strategy distribution (self-correction on)",
+        panel_fn=_draw_violin_panel, subtitle_unit="strategy",
     )
 
 
@@ -375,8 +394,9 @@ def fig_violin_by_fixture(records, out_dir) -> Path:
     return _dist_figure(
         on, out_dir, "violin_by_fixture.svg", "aidmi-violin-fixture",
         lambda r: r.fixture, _fixture_colors,
-        "Per-fixture distribution (self-correction on) — violin + box over every run",
+        "Per-fixture distribution (self-correction on)",
         order_groups=_fixture_order, panel_fn=_draw_violin_panel,
+        subtitle_unit="fixture",
     )
 
 
