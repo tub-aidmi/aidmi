@@ -7,6 +7,7 @@ from pathlib import Path
 from aidmi_orchestrator.report.aggregate import rep_values
 from aidmi_orchestrator.report.theme import (
     apply_theme,
+    cells_covering_states,
     color_for_cell,
     ordered_fixtures,
     strip_common_version,
@@ -240,6 +241,64 @@ def fig_fk_iqr_by_fixture(records, out_dir) -> Path:
         "FK integrity by fixture (self-correction on) — box (IQR + median) over every run",
         order_groups=_fixture_order,
     )
+
+
+def fig_recall_violin_sc(records, out_dir) -> Path:
+    """Recall distribution, self-correction off vs on, as a pair of violins.
+
+    Restricted to strategies run in both states so the two populations are a
+    fair paired comparison. Null recall (a run that produced nothing) is a
+    zero-quality outcome, so it is zero-filled into the distribution."""
+    import matplotlib as mpl
+    import matplotlib.pyplot as plt
+
+    apply_theme()
+    mpl.rcParams["svg.hashsalt"] = "aidmi-recall-violin-sc"
+    out_dir = Path(out_dir)
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    covered = cells_covering_states(records, "sc", [False, True])
+    recall = _outcome(lambda r: r.recall)
+    states = [(False, "off", "#B279A2"), (True, "on", "#54A24B")]
+    data = [
+        [recall(r) for r in records if r.sc is state and r.cell in covered]
+        for state, _, _ in states
+    ]
+
+    fig, ax = plt.subplots(figsize=(5.0, 4.2))
+    positions = list(range(len(states)))
+    parts = ax.violinplot(data, positions=positions, showextrema=False, widths=0.8)
+    for body, (_, _, color) in zip(parts["bodies"], states):
+        body.set(facecolor=color, alpha=0.35, edgecolor=_MUTED, linewidth=1.0)
+    for p, values, (_, _, color) in zip(positions, data, states):
+        if not values:
+            continue
+        ax.scatter(
+            [p + off for off in _jitter(len(values))], values,
+            s=12, color=color, alpha=0.6, edgecolors=_SURFACE, linewidths=0.3,
+            zorder=3,
+        )
+        ax.hlines(statistics.median(values), p - 0.4, p + 0.4,
+                  color=_INK, linewidth=1.6, zorder=4)
+
+    ax.set_xlim(-0.6, len(states) - 0.4)
+    ax.set_ylim(-0.05, 1.08)
+    ax.set_xticks(positions)
+    ax.set_xticklabels([f"sc {label}\n(n={len(d)})" for (_, label, _), d in zip(states, data)],
+                       color=_INK)
+    ax.set_ylabel("Recall", color=_INK)
+    ax.grid(False)
+    fig.suptitle(
+        "Recall distribution: self-correction off vs on "
+        "(strategies run in both states)",
+        color=_INK, fontsize=11.5, x=0.02, ha="left",
+    )
+    fig.subplots_adjust(left=0.12, right=0.97, top=0.9, bottom=0.13)
+
+    out = out_dir / "recall_violin_sc.svg"
+    fig.savefig(out, format="svg", metadata={"Date": None})
+    plt.close(fig)
+    return out
 
 
 def fig_dist_by_strategy_for_fixture(records, out_dir, fixture) -> Path:

@@ -20,6 +20,7 @@ from aidmi_orchestrator.report.figures.distribution import (
     fig_dist_by_strategy_for_fixture,
     fig_fk_iqr_by_fixture,
     fig_fk_iqr_by_strategy,
+    fig_recall_violin_sc,
 )
 from aidmi_orchestrator.report.figures.heatmap import fig_heatmap, fig_metric_heatmap
 from aidmi_orchestrator.report.figures.levers import (
@@ -67,6 +68,7 @@ def _build_core_figures(records: list[RunRecord], figdir: Path) -> dict[str, Pat
         "dist_by_fixture": fig_dist_by_fixture(records, figdir),
         "fk_iqr_by_strategy": fig_fk_iqr_by_strategy(records, figdir),
         "fk_iqr_by_fixture": fig_fk_iqr_by_fixture(records, figdir),
+        "recall_violin_sc": fig_recall_violin_sc(records, figdir),
         "lever_sc": fig_lever_sc(records, figdir),
         "lever_ctx": fig_lever_ctx(records, figdir),
         "lever_ctx_sc_on": fig_lever_ctx_sc_on(records, figdir),
@@ -188,7 +190,7 @@ def _build_sections(
             stacked=True, subsections=tuple(fixture_by_strategy),
         ),
         Section(
-            "wip", "WIP", [figs["thinking_tokens"]], "",
+            "wip", "WIP", [figs["thinking_tokens"], figs["recall_violin_sc"]], "",
         ),
     ]
     if multi_model:
