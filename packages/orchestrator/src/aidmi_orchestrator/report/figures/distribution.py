@@ -298,8 +298,7 @@ def fig_recall_violin_sc(records, out_dir) -> Path:
     ax.set_ylabel("Recall", color=_INK)
     ax.grid(False)
     fig.suptitle(
-        "Recall distribution: self-correction off vs on "
-        "(strategies run in both states)",
+        "Recall distribution: self-correction off vs on",
         color=_INK, fontsize=11.5, x=0.02, ha="left",
     )
     fig.subplots_adjust(left=0.12, right=0.97, top=0.9, bottom=0.13)
