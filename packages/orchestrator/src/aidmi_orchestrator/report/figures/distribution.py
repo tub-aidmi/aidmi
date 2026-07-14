@@ -230,7 +230,7 @@ def _fk_values_by(records, key):
 
 
 def _fk_iqr_figure(records, out_dir, filename, salt, key, colors_for, title,
-                   order_groups=None) -> Path:
+                   order_groups=None, panel_fn=_draw_panel) -> Path:
     import matplotlib as mpl
     import matplotlib.pyplot as plt
 
@@ -248,7 +248,7 @@ def _fk_iqr_figure(records, out_dir, filename, salt, key, colors_for, title,
 
     col_w = max(4.5, 0.9 * len(groups) + 2.0)
     fig, ax = plt.subplots(figsize=(col_w, 4.2))
-    _draw_panel(ax, groups, colors, values, "FK integrity", unit_axis=True)
+    panel_fn(ax, groups, colors, values, "FK integrity", unit_axis=True)
     ax.set_xticks(range(len(groups)))
     ax.set_xticklabels(strip_common_version(groups), rotation=25, ha="right",
                        fontsize=9, color=_INK)
@@ -277,6 +277,26 @@ def fig_fk_iqr_by_fixture(records, out_dir) -> Path:
         lambda r: r.fixture, _fixture_colors,
         "FK integrity by fixture (self-correction on) — box (IQR + median) over every run",
         order_groups=_fixture_order,
+    )
+
+
+def fig_fk_violin_by_strategy(records, out_dir) -> Path:
+    on = [r for r in records if r.sc is True]
+    return _fk_iqr_figure(
+        on, out_dir, "fk_violin_by_strategy.svg", "aidmi-fk-violin-strategy",
+        lambda r: r.cell, _strategy_colors,
+        "FK integrity by strategy (self-correction on) — violin + box over every run",
+        panel_fn=_draw_violin_panel,
+    )
+
+
+def fig_fk_violin_by_fixture(records, out_dir) -> Path:
+    on = [r for r in records if r.sc is True]
+    return _fk_iqr_figure(
+        on, out_dir, "fk_violin_by_fixture.svg", "aidmi-fk-violin-fixture",
+        lambda r: r.fixture, _fixture_colors,
+        "FK integrity by fixture (self-correction on) — violin + box over every run",
+        order_groups=_fixture_order, panel_fn=_draw_violin_panel,
     )
 
 

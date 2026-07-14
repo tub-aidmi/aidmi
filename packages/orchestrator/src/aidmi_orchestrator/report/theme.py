@@ -49,6 +49,7 @@ FIXTURE_ORDER = [
 # from the filtered record set). Comment a line out to bring one back; the CLI
 # --exclude flag adds to this set for one-off runs.
 EXCLUDED_STRATEGIES = {
+    "plan_write_critique",
     "write_tools_freeform_inlinedbt",
 }
 
