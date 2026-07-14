@@ -254,12 +254,15 @@ def fig_recall_violin_sc(records, out_dir) -> Path:
 
     apply_theme()
     mpl.rcParams["svg.hashsalt"] = "aidmi-recall-violin-sc"
+    mpl.rcParams["hatch.linewidth"] = 0.5
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
 
     covered = cells_covering_states(records, "sc", [False, True])
     recall = _outcome(lambda r: r.recall)
-    states = [(False, "off", "#B279A2"), (True, "on", "#54A24B")]
+    # Colour is reserved for strategy identity everywhere else, so the two states
+    # share one neutral fill and are told apart by hatch texture instead.
+    states = [(False, "off", "///"), (True, "on", "xxx")]
     data = [
         [recall(r) for r in records if r.sc is state and r.cell in covered]
         for state, _, _ in states
@@ -271,8 +274,9 @@ def fig_recall_violin_sc(records, out_dir) -> Path:
     # Violin carries the density; a slim white boxplot inside carries the summary
     # (IQR box, median, whiskers, outliers) -- ggplot geom_violin + geom_boxplot.
     parts = ax.violinplot(data, positions=positions, showextrema=False, widths=0.85)
-    for body, (_, _, color) in zip(parts["bodies"], states):
-        body.set(facecolor=color, alpha=0.75, edgecolor=_INK, linewidth=1.1)
+    for body, (_, _, hatch) in zip(parts["bodies"], states):
+        body.set(facecolor="#e6e5e2", alpha=1.0, edgecolor=_INK, linewidth=1.1,
+                 hatch=hatch)
 
     non_empty = [(p, d) for p, d in zip(positions, data) if d]
     if non_empty:
