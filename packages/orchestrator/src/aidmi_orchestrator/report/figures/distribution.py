@@ -107,8 +107,45 @@ def _draw_panel(ax, groups, colors, values, label, *, unit_axis):
     ax.set_ylabel(label, color=_INK)
 
 
+def _draw_violin_panel(ax, groups, colors, values, label, *, unit_axis):
+    data = [values.get(g, []) for g in groups]
+    positions = list(range(len(groups)))
+    non_empty = [(p, d) for p, d in zip(positions, data) if d]
+
+    # Violin bodies carry the density: transparent fill + solid outline in the
+    # group's colour (matches the IQR figures). A violin needs >= 2 points.
+    violinable = [(p, d) for p, d in non_empty if len(d) >= 2]
+    if violinable:
+        parts = ax.violinplot(
+            [d for _, d in violinable], positions=[p for p, _ in violinable],
+            showextrema=False, widths=0.85,
+        )
+        for (p, _), body in zip(violinable, parts["bodies"]):
+            body.set(facecolor=colors[p], alpha=0.28, edgecolor=colors[p],
+                     linewidth=1.1)
+    # Slim neutral boxplot inside carries the IQR + median + whiskers + outliers.
+    if non_empty:
+        ax.boxplot(
+            [d for _, d in non_empty], positions=[p for p, _ in non_empty],
+            widths=0.12, patch_artist=True, showfliers=True,
+            boxprops=dict(facecolor=_SURFACE, edgecolor=_INK, linewidth=0.9),
+            medianprops=dict(color=_INK, linewidth=1.3),
+            whiskerprops=dict(color=_INK, linewidth=0.9),
+            capprops=dict(color=_INK, linewidth=0.9),
+            flierprops=dict(marker="o", markersize=2.5, markerfacecolor=_INK,
+                            markeredgecolor=_INK),
+            zorder=4,
+        )
+    ax.set_xlim(-0.6, len(groups) - 0.4)
+    if unit_axis:
+        ax.set_ylim(-0.05, 1.08)
+    else:
+        ax.set_ylim(bottom=0)
+    ax.set_ylabel(label, color=_INK)
+
+
 def _dist_figure(records, out_dir, filename, salt, key, colors_for, title,
-                 order_groups=None) -> Path:
+                 order_groups=None, panel_fn=_draw_panel) -> Path:
     import matplotlib as mpl
     import matplotlib.pyplot as plt
 
@@ -129,8 +166,8 @@ def _dist_figure(records, out_dir, filename, salt, key, colors_for, title,
     for col, metrics, unit_axis in columns:
         for i, (label, getter) in enumerate(metrics):
             ax = axes[i][col]
-            _draw_panel(ax, groups, colors, rep_values(records, key, getter),
-                        label, unit_axis=unit_axis)
+            panel_fn(ax, groups, colors, rep_values(records, key, getter),
+                     label, unit_axis=unit_axis)
         bottom = axes[len(metrics) - 1][col]
         bottom.set_xticks(range(len(groups)))
         bottom.set_xticklabels(strip_common_version(groups), rotation=25,
@@ -307,6 +344,26 @@ def fig_recall_violin_sc(records, out_dir) -> Path:
     fig.savefig(out, format="svg", metadata={"Date": None})
     plt.close(fig)
     return out
+
+
+def fig_violin_by_strategy(records, out_dir) -> Path:
+    on = [r for r in records if r.sc is True]
+    return _dist_figure(
+        on, out_dir, "violin_by_strategy.svg", "aidmi-violin-strategy",
+        lambda r: r.cell, _strategy_colors,
+        "Per-strategy distribution (self-correction on) — violin + box over every run",
+        panel_fn=_draw_violin_panel,
+    )
+
+
+def fig_violin_by_fixture(records, out_dir) -> Path:
+    on = [r for r in records if r.sc is True]
+    return _dist_figure(
+        on, out_dir, "violin_by_fixture.svg", "aidmi-violin-fixture",
+        lambda r: r.fixture, _fixture_colors,
+        "Per-fixture distribution (self-correction on) — violin + box over every run",
+        order_groups=_fixture_order, panel_fn=_draw_violin_panel,
+    )
 
 
 def fig_dist_by_strategy_for_fixture(records, out_dir, fixture) -> Path:

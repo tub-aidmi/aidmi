@@ -21,6 +21,8 @@ from aidmi_orchestrator.report.figures.distribution import (
     fig_fk_iqr_by_fixture,
     fig_fk_iqr_by_strategy,
     fig_recall_violin_sc,
+    fig_violin_by_fixture,
+    fig_violin_by_strategy,
 )
 from aidmi_orchestrator.report.figures.heatmap import fig_heatmap, fig_metric_heatmap
 from aidmi_orchestrator.report.figures.levers import (
@@ -69,6 +71,8 @@ def _build_core_figures(records: list[RunRecord], figdir: Path) -> dict[str, Pat
         "fk_iqr_by_strategy": fig_fk_iqr_by_strategy(records, figdir),
         "fk_iqr_by_fixture": fig_fk_iqr_by_fixture(records, figdir),
         "recall_violin_sc": fig_recall_violin_sc(records, figdir),
+        "violin_by_strategy": fig_violin_by_strategy(records, figdir),
+        "violin_by_fixture": fig_violin_by_fixture(records, figdir),
         "lever_sc": fig_lever_sc(records, figdir),
         "lever_ctx": fig_lever_ctx(records, figdir),
         "lever_ctx_sc_on": fig_lever_ctx_sc_on(records, figdir),
@@ -178,6 +182,12 @@ def _build_sections(
             "distribution", "Distribution",
             [figs["dist_by_strategy"], figs["fk_iqr_by_strategy"],
              figs["dist_by_fixture"], figs["fk_iqr_by_fixture"]],
+            "",
+            stacked=True,
+        ),
+        Section(
+            "violin", "Violin",
+            [figs["violin_by_strategy"], figs["violin_by_fixture"]],
             "",
             stacked=True,
         ),
