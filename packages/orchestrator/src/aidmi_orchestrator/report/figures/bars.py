@@ -44,6 +44,7 @@ def _std_tokens(v):
 _METRICS = [
     ("recall", "Recall", lambda r: r.recall, False, True, _std_unit),
     ("field_acc", "Field accuracy", lambda r: r.field_acc, False, True, _std_unit),
+    ("fk_integrity", "FK integrity", lambda r: r.fk_integrity, False, True, _std_unit),
     ("mat_rate", "Mat. rate", lambda r: r.tables_materialized, True, True, _std_unit),
     ("cost", "Cost/run ($)", lambda r: r.cost, False, False, _std_cost),
     ("tokens", "Tokens/run (in+out)", _total_tokens, False, False, _std_tokens),

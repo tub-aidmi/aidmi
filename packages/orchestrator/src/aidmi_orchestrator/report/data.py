@@ -25,6 +25,8 @@ class RunRecord:
     tokens_thoughts: int | None = None
     retries: int | None = None
     cache_hit_rate: float | None = None
+    fk_integrity: float | None = None
+    fk_dangling: int | None = None
 
 def _self_correction(cfg: dict) -> bool:
     """The enable_self_correction toggle, normalized to a bool.
@@ -80,6 +82,8 @@ def _record(row: dict, fallback_campaign: str) -> RunRecord:
         tokens_thoughts=m.get("tokens_thoughts_total"),
         retries=m.get("llm_retries_total"),
         cache_hit_rate=m.get("cache_hit_rate"),
+        fk_integrity=m.get("gt_fk_integrity_overall"),
+        fk_dangling=m.get("gt_fk_dangling_total"),
     )
 
 def _iter_paths(paths):

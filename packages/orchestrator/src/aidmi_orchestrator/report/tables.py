@@ -117,13 +117,14 @@ def best_config_table(records: list[RunRecord]) -> str:
 
 
 _SUMMARY_HEADER = [
-    "Group", "n", "Recall", "Field acc", "Mat rate", "Cost $", "Time (s)",
+    "Group", "n", "Recall", "Field acc", "FK integrity", "Mat rate", "Cost $", "Time (s)",
 ]
 _SUMMARY_LEGEND = (
     "Cells: mean / median ±sd. Recall and materialization rate count a run that "
-    "produced nothing as 0; field acc, cost and time are over runs that produced "
-    "output. Materialization rate is the fraction of target tables a run "
-    "materialized."
+    "produced nothing as 0; field acc, FK integrity, cost and time are over runs "
+    "that produced output. Field acc scores attribute columns; FK integrity scores "
+    "foreign keys by resolving them through the parent's legacy id. Materialization "
+    "rate is the fraction of target tables a run materialized."
 )
 
 
@@ -151,6 +152,7 @@ def _summary_metric_cells(recs: list[RunRecord]) -> list[str]:
         _esc(len(recs)),
         _fmt_stats(_zero_vals(recs, lambda r: r.recall)),
         _fmt_stats(_eval_vals(recs, lambda r: r.field_acc)),
+        _fmt_stats(_eval_vals(recs, lambda r: r.fk_integrity)),
         _fmt_stats(_zero_vals(recs, lambda r: r.tables_materialized)),
         _fmt_stats(_eval_vals(recs, lambda r: r.cost), prec=4, prefix="$"),
         _fmt_stats(_eval_vals(recs, lambda r: r.secs), integer=True),
@@ -332,6 +334,7 @@ def appendix_table(records: list[RunRecord]) -> str:
 
     recall_values = rep_values(records, key, lambda r: r.recall)
     field_acc_values = rep_values(records, key, lambda r: r.field_acc)
+    fk_integrity_values = rep_values(records, key, lambda r: r.fk_integrity)
     cost_values = rep_values(records, key, lambda r: r.cost)
     secs_values = rep_values(records, key, lambda r: r.secs)
     tables_declared_values = rep_values(records, key, lambda r: r.tables_declared)
@@ -343,13 +346,14 @@ def appendix_table(records: list[RunRecord]) -> str:
     header = [
         "Model", "Cell", "Context", "Self-correct",
         "Recall (mean±sd)", "Materialization%", "Field acc (mean±sd)",
-        "Cost $", "Secs", "Tables declared", "Cols covered",
+        "FK integrity (mean±sd)", "Cost $", "Secs", "Tables declared", "Cols covered",
     ]
     rows = []
     for model, cell, ctx, sc in configs:
         cfg_key = (model, cell, ctx, sc)
         recall_str = _fmt_mean_sd(recall_values.get(cfg_key, []))
         field_acc_str = _fmt_mean_sd(field_acc_values.get(cfg_key, []))
+        fk_integrity_str = _fmt_mean_sd(fk_integrity_values.get(cfg_key, []))
         mat_str = _fmt_pct(mat_by_config.get(cfg_key, 0.0))
         cost_vals = cost_values.get(cfg_key, [])
         cost_str = f"${statistics.mean(cost_vals):.4f}" if cost_vals else "-"
@@ -362,7 +366,7 @@ def appendix_table(records: list[RunRecord]) -> str:
 
         rows.append(_row([
             _esc(model), _esc(cell), _esc(ctx), _fmt_sc(sc),
-            recall_str, mat_str, field_acc_str,
+            recall_str, mat_str, field_acc_str, fk_integrity_str,
             cost_str, secs_str, tdecl_str, cols_str,
         ]))
 

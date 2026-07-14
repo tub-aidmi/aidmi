@@ -141,6 +141,8 @@ _HEATMAP_METRICS = {
                lambda v: f"{v * 100:.0f}%"),
     "field_acc": ("Field accuracy", "Field accuracy", lambda r: r.field_acc,
                   False, True, lambda v: f"{v * 100:.0f}%"),
+    "fk_integrity": ("FK integrity", "FK integrity", lambda r: r.fk_integrity,
+                     False, True, lambda v: f"{v * 100:.0f}%"),
     "mat_rate": ("Materialization rate", "Mat. rate",
                  lambda r: r.tables_materialized, True, True,
                  lambda v: f"{v * 100:.0f}%"),

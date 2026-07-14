@@ -78,7 +78,7 @@ def _build_core_figures(records: list[RunRecord], figdir: Path) -> dict[str, Pat
             f"heatmap_{key}": fig_metric_heatmap(
                 [r for r in records if r.sc is True], figdir, key=key
             )
-            for key in ("recall", "field_acc", "mat_rate", "cost", "tokens", "time", "retries")
+            for key in ("recall", "field_acc", "fk_integrity", "mat_rate", "cost", "tokens", "time", "retries")
         },
     }
 
@@ -159,12 +159,13 @@ def _build_sections(
         ),
         Section(
             "heatmaps", "Heatmaps",
-            # Row-major 2-column flow: quality (recall, field acc, mat rate) down
-            # the left, cost/effort (cost, tokens, time) down the right.
+            # Row-major 2-column flow: quality (recall, field acc, fk integrity,
+            # mat rate) down the left, cost/effort (cost, tokens, time) down the
+            # right.
             [figs["heatmap_recall"], figs["heatmap_cost"],
              figs["heatmap_field_acc"], figs["heatmap_tokens"],
-             figs["heatmap_mat_rate"], figs["heatmap_time"],
-             figs["heatmap_retries"]],
+             figs["heatmap_fk_integrity"], figs["heatmap_time"],
+             figs["heatmap_mat_rate"], figs["heatmap_retries"]],
             "",
         ),
         Section(
