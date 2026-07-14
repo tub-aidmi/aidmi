@@ -18,6 +18,8 @@ from aidmi_orchestrator.report.figures.distribution import (
     fig_dist_by_fixture_for_strategy,
     fig_dist_by_strategy,
     fig_dist_by_strategy_for_fixture,
+    fig_fk_iqr_by_fixture,
+    fig_fk_iqr_by_strategy,
 )
 from aidmi_orchestrator.report.figures.heatmap import fig_heatmap, fig_metric_heatmap
 from aidmi_orchestrator.report.figures.levers import (
@@ -63,6 +65,8 @@ def _build_core_figures(records: list[RunRecord], figdir: Path) -> dict[str, Pat
         "corr_tokens_mat_rate": fig_tokens_vs_mat_rate(records, figdir),
         "dist_by_strategy": fig_dist_by_strategy(records, figdir),
         "dist_by_fixture": fig_dist_by_fixture(records, figdir),
+        "fk_iqr_by_strategy": fig_fk_iqr_by_strategy(records, figdir),
+        "fk_iqr_by_fixture": fig_fk_iqr_by_fixture(records, figdir),
         "lever_sc": fig_lever_sc(records, figdir),
         "lever_ctx": fig_lever_ctx(records, figdir),
         "lever_ctx_sc_on": fig_lever_ctx_sc_on(records, figdir),
@@ -170,7 +174,8 @@ def _build_sections(
         ),
         Section(
             "distribution", "Distribution",
-            [figs["dist_by_strategy"], figs["dist_by_fixture"]],
+            [figs["dist_by_strategy"], figs["fk_iqr_by_strategy"],
+             figs["dist_by_fixture"], figs["fk_iqr_by_fixture"]],
             "",
             stacked=True,
         ),

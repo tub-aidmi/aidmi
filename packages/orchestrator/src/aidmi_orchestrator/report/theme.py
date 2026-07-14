@@ -49,7 +49,6 @@ FIXTURE_ORDER = [
 # from the filtered record set). Comment a line out to bring one back; the CLI
 # --exclude flag adds to this set for one-off runs.
 EXCLUDED_STRATEGIES = {
-    "plan_write_critique",
     "write_tools_freeform_inlinedbt",
 }
 
@@ -88,6 +87,22 @@ def ordered_cells(cells):
     ranked = [c for c in STRATEGY_ORDER if c in present]
     extra = sorted(present - set(STRATEGY_ORDER))
     return ranked + extra
+
+
+def cells_covering_states(records, attr, states):
+    """Cells with at least one run in every one of `states` for `attr`.
+
+    A lever plot compares a metric across the lever's states; a strategy that was
+    only ever run in one state (e.g. self-correction always on) has no comparison
+    to make and would render as a lone point, so it is dropped from that plot.
+    """
+    seen: dict[str, set] = {}
+    for r in records:
+        value = getattr(r, attr)
+        if value in states:
+            seen.setdefault(r.cell, set()).add(value)
+    need = set(states)
+    return {cell for cell, got in seen.items() if need <= got}
 
 
 def _fixture_base(fixture):

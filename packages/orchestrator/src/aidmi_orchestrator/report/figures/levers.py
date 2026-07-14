@@ -3,7 +3,12 @@ from __future__ import annotations
 from pathlib import Path
 
 from aidmi_orchestrator.report.aggregate import group_mean, materialization_rate
-from aidmi_orchestrator.report.theme import apply_theme, color_for_cell, ordered_cells
+from aidmi_orchestrator.report.theme import (
+    apply_theme,
+    cells_covering_states,
+    color_for_cell,
+    ordered_cells,
+)
 
 # Same tokens as pareto.py: data color lives on the marks only, text stays ink/muted.
 _INK = "#0b0b0b"
@@ -148,7 +153,9 @@ def _slope_figure(
     ]
 
     models = sorted({r.model for r in filtered})
-    cells = ordered_cells({r.cell for r in filtered})
+    # Only strategies run in every lever state belong on a lever comparison.
+    covered = cells_covering_states(filtered, attr, x_order)
+    cells = [c for c in ordered_cells({r.cell for r in filtered}) if c in covered]
     cost_by_model = cost_by_model or {}
     n_cols = max(len(models), 1)
 

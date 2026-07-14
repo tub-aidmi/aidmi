@@ -180,6 +180,68 @@ def fig_dist_by_fixture(records, out_dir) -> Path:
     )
 
 
+def _fk_values_by(records, key):
+    """group -> list of non-null FK integrity values (nulls are 'no FK cells',
+    not a zero outcome, so they drop out rather than zero-fill)."""
+    groups: dict = {}
+    for r in records:
+        if r.fk_integrity is None:
+            continue
+        groups.setdefault(key(r), []).append(r.fk_integrity)
+    return groups
+
+
+def _fk_iqr_figure(records, out_dir, filename, salt, key, colors_for, title,
+                   order_groups=None) -> Path:
+    import matplotlib as mpl
+    import matplotlib.pyplot as plt
+
+    apply_theme()
+    mpl.rcParams["svg.hashsalt"] = salt
+    out_dir = Path(out_dir)
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    values = _fk_values_by(records, key)
+    if order_groups:
+        groups = [g for g in order_groups(records) if g in values]
+    else:
+        groups = sorted(values, key=lambda g: (-statistics.median(values[g]), g))
+    colors = colors_for(groups)
+
+    col_w = max(4.5, 0.9 * len(groups) + 2.0)
+    fig, ax = plt.subplots(figsize=(col_w, 4.2))
+    _draw_panel(ax, groups, colors, values, "FK integrity", unit_axis=True)
+    ax.set_xticks(range(len(groups)))
+    ax.set_xticklabels(strip_common_version(groups), rotation=25, ha="right",
+                       fontsize=9, color=_INK)
+    fig.suptitle(title, color=_INK, fontsize=12, x=0.02, ha="left")
+    fig.subplots_adjust(left=0.1, right=0.98, top=0.92, bottom=0.2)
+
+    out = out_dir / filename
+    fig.savefig(out, format="svg", metadata={"Date": None})
+    plt.close(fig)
+    return out
+
+
+def fig_fk_iqr_by_strategy(records, out_dir) -> Path:
+    on = [r for r in records if r.sc is True]
+    return _fk_iqr_figure(
+        on, out_dir, "fk_iqr_by_strategy.svg", "aidmi-fk-iqr-strategy",
+        lambda r: r.cell, _strategy_colors,
+        "FK integrity by strategy (self-correction on) — box (IQR + median) over every run",
+    )
+
+
+def fig_fk_iqr_by_fixture(records, out_dir) -> Path:
+    on = [r for r in records if r.sc is True]
+    return _fk_iqr_figure(
+        on, out_dir, "fk_iqr_by_fixture.svg", "aidmi-fk-iqr-fixture",
+        lambda r: r.fixture, _fixture_colors,
+        "FK integrity by fixture (self-correction on) — box (IQR + median) over every run",
+        order_groups=_fixture_order,
+    )
+
+
 def fig_dist_by_strategy_for_fixture(records, out_dir, fixture) -> Path:
     on = [r for r in records if r.sc is True and r.fixture == fixture]
     slug = _slug(fixture)
