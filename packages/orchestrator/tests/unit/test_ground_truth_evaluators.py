@@ -11,6 +11,9 @@ from aidmi_orchestrator.evaluator.base import FixtureMetadata, RunArtifacts
 from aidmi_orchestrator.evaluator.ground_truth_field_accuracy import (
     GroundTruthFieldAccuracyEvaluator,
 )
+from aidmi_orchestrator.evaluator.ground_truth_fk_integrity import (
+    GroundTruthFkIntegrityEvaluator,
+)
 from aidmi_orchestrator.evaluator.ground_truth_notes import GroundTruthNotesEvaluator
 from aidmi_orchestrator.evaluator.ground_truth_recall import GroundTruthRecallEvaluator
 from aidmi_orchestrator.evaluator._ground_truth_utils import ground_truth_row_matched
@@ -201,3 +204,76 @@ def test_recall_evaluator_missing_table_lowers_overall_recall(seeded_db):
     assert metrics["gt_per_table"]["Account"]["matched"] == 0
     assert metrics["gt_recall_overall"] == pytest.approx(0.0)
     assert metrics["gt_tables_materialized"] == pytest.approx(0.0)
+
+
+@pytest.fixture
+def fk_db(staging_db_url):
+    """Account + Contact with a remapped FK id space for FK-integrity tests."""
+    with psycopg2.connect(staging_db_url) as conn:
+        with conn.cursor() as cur:
+            cur.execute(f'DROP SCHEMA IF EXISTS "{GOLDEN}" CASCADE')
+            cur.execute(f'DROP SCHEMA IF EXISTS "{OUT}" CASCADE')
+            cur.execute(f'CREATE SCHEMA "{GOLDEN}"')
+            cur.execute(f'CREATE SCHEMA "{OUT}"')
+
+            for schema in (GOLDEN, OUT):
+                cur.execute(
+                    f'CREATE TABLE "{schema}"."Account" ('
+                    f'"Id" text PRIMARY KEY, "Legacy_Customer_ID__c" text)'
+                )
+                cur.execute(
+                    f'CREATE TABLE "{schema}"."Contact" ('
+                    f'"Id" text PRIMARY KEY, "FirstName" text, '
+                    f'"Legacy_Contact_ID__c" text, "AccountId" text)'
+                )
+
+            cur.execute(
+                f'INSERT INTO "{GOLDEN}"."Account" VALUES '
+                f"('001A', 'CUST-1'), ('001B', 'CUST-2')"
+            )
+            # 'PA1' is a remapped surrogate for CUST-1: same legacy account,
+            # different Id than golden's '001A'. FK resolution must see through it.
+            cur.execute(
+                f'INSERT INTO "{OUT}"."Account" VALUES '
+                f"('PA1', 'CUST-1'), ('001X', 'CUST-99')"
+            )
+
+            # golden AccountId -> CUST-1, CUST-2, orphan(NULL), CUST-1
+            cur.execute(
+                f'INSERT INTO "{GOLDEN}"."Contact" VALUES '
+                f"('C1g', 'Ann', 'CT-1', '001A'), "
+                f"('C2g', 'Bob', 'CT-2', '001B'), "
+                f"('C3g', 'Cy', 'CT-3', NULL), "
+                f"('C4g', 'Di', 'CT-4', '001A')"
+            )
+            # produced: CT-1 match (remapped PA1->CUST-1), CT-2 wrong parent,
+            # CT-3 orphan preserved (match), CT-4 dangling ref (miss)
+            cur.execute(
+                f'INSERT INTO "{OUT}"."Contact" VALUES '
+                f"('C1p', 'Ann', 'CT-1', 'PA1'), "
+                f"('C2p', 'Bob', 'CT-2', 'PA1'), "
+                f"('C3p', 'Cy', 'CT-3', NULL), "
+                f"('C4p', 'Di', 'CT-4', '999ZZ')"
+            )
+    return staging_db_url
+
+
+def test_fk_integrity_evaluator(fk_db):
+    artifacts = _artifacts(fk_db, written=["Account", "Contact"])
+    metrics = GroundTruthFkIntegrityEvaluator().evaluate(artifacts)
+
+    # CT-1 remapped-match, CT-3 orphan-match; CT-2 wrong parent, CT-4 dangling.
+    assert metrics["gt_fk_integrity_overall"] == pytest.approx(0.5)
+    assert metrics["gt_fk_dangling_total"] == 1
+
+    contact = metrics["gt_fk_integrity_per_table"]["Contact"]
+    assert contact["compared_cells"] == 4
+    assert contact["matched_cells"] == 2
+    assert contact["per_column"]["AccountId"] == pytest.approx(0.5)
+    assert contact["dangling_per_column"]["AccountId"] == 1
+
+
+def test_fk_integrity_does_not_apply_without_golden_schema():
+    artifacts = _artifacts("postgresql://x")
+    artifacts.fixture.golden_schema = None
+    assert GroundTruthFkIntegrityEvaluator().applies_to(artifacts) is False

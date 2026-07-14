@@ -14,6 +14,7 @@ DEFAULT_EVALUATORS_V2 = [
     "ground_truth_recall",
     "ground_truth_notes",
     "ground_truth_field_accuracy",
+    "ground_truth_fk_integrity",
 ]
 
 
