@@ -20,6 +20,10 @@ class PriceInfo:
     reasoning_cost_per_token: float | None = None
 
 
+def default_pricing_config_path() -> Path:
+    return Path(__file__).resolve().parents[2] / "configs" / "pricing.json"
+
+
 def load_overrides(path: Path | None) -> dict[str, PriceInfo]:
     if path is None or not path.exists():
         return {}

@@ -1,5 +1,6 @@
 from datetime import datetime
 from pathlib import Path
+import pytest
 from aidmi_orchestrator.domain import StrategyResult, ModelSpec
 from aidmi_orchestrator.evaluator.base import RunArtifacts, FixtureMetadata
 from aidmi_orchestrator.evaluator.execution import ExecutionEvaluator
@@ -169,6 +170,34 @@ def test_llm_usage_evaluator_malformed_details():
     out = LlmUsageEvaluator().evaluate(_artifacts(trace=trace))
     assert out["tokens_thoughts_total"] == 0
     assert out["usage_details_total"] == {"ok": 3}
+
+
+def test_llm_usage_evaluator_auto_loads_default_pricing(monkeypatch, tmp_path):
+    import json
+    import aidmi_orchestrator.evaluator.llm_usage as llm_usage_mod
+
+    override = tmp_path / "pricing.json"
+    override.write_text(json.dumps({
+        "litellm/ise-ollama/qwen3.6:35b-a3b": {
+            "input_cost_per_token": 5e-06,
+            "output_cost_per_token": 5e-06,
+        },
+    }))
+    monkeypatch.setattr(
+        llm_usage_mod, "default_pricing_config_path", lambda: override,
+    )
+    trace = [
+        LlmCallEvent(
+            timestamp=datetime.utcnow(),
+            role="writer",
+            model_spec=ModelSpec(provider="litellm", model_name="ise-ollama/qwen3.6:35b-a3b"),
+            messages=[], response="ok",
+            usage={"input_tokens": 1000, "output_tokens": 500},
+            latency_ms=100.0,
+        ),
+    ]
+    out = LlmUsageEvaluator().evaluate(_artifacts(trace=trace))
+    assert out["dollar_cost_total"] == pytest.approx(1500 * 5e-06)
 
 
 def test_llm_usage_evaluator_unknown_model_no_context_limit():

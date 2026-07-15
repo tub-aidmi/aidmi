@@ -8,7 +8,12 @@ from aidmi_orchestrator.evaluator.base import (
     Evaluator, RunArtifacts, register_evaluator,
 )
 from aidmi_orchestrator.trace import LlmCallEvent
-from aidmi_orchestrator.pricing import lookup_price, lookup_context_limit, load_overrides
+from aidmi_orchestrator.pricing import (
+    lookup_price,
+    lookup_context_limit,
+    load_overrides,
+    default_pricing_config_path,
+)
 
 
 def _safe_int(value: Any) -> int:
@@ -54,6 +59,8 @@ class LlmUsageEvaluator:
     name = "llm_usage"
 
     def __init__(self, pricing_override_path=None):
+        if pricing_override_path is None:
+            pricing_override_path = default_pricing_config_path()
         self._overrides = load_overrides(pricing_override_path)
 
     def applies_to(self, artifacts: RunArtifacts) -> bool:

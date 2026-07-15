@@ -330,7 +330,15 @@ Total: 1 (mock, mock fixture only) + 1×2 fixtures = 3 cells. With `runs_per_cel
 
 ## Pricing override
 
-Costs in `BenchmarkResult.metrics.dollar_cost_total` are computed from LiteLLM's `model_cost` table by default. For models LiteLLM does not know (custom Ollama tags, internal proxies, recently released models), supply a JSON file via `--pricing-config` or by placing it at `packages/orchestrator/configs/pricing.json`.
+Costs in `BenchmarkResult.metrics.dollar_cost_total` are computed from LiteLLM's `model_cost` table by default. For models LiteLLM does not know (custom Ollama tags, internal proxies, recently released models), place a JSON file at `packages/orchestrator/configs/pricing.json`; the `llm_usage` evaluator loads it automatically on every run.
+
+The ISE LiteLLM proxy reports its own per-token prices via `/model/info`. Snapshot them into the override file with:
+
+```
+uv run --package aidmi-orchestrator python packages/orchestrator/scripts/fetch_ise_pricing.py
+```
+
+(requires the SSH tunnel up and `LITELLM_API_KEY` set). Re-run it whenever the proxy's model roster or prices change.
 
 ### Schema
 

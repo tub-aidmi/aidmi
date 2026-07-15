@@ -1,7 +1,13 @@
 import json
 from pathlib import Path
 import pytest
-from aidmi_orchestrator.pricing import PriceInfo, lookup_price, lookup_context_limit, load_overrides
+from aidmi_orchestrator.pricing import (
+    PriceInfo,
+    lookup_price,
+    lookup_context_limit,
+    load_overrides,
+    default_pricing_config_path,
+)
 
 
 def test_lookup_openai_model_via_litellm():
@@ -61,3 +67,20 @@ def test_gemini_flash_has_reasoning_cost():
     assert info.reasoning_cost_per_token is not None
     assert info.reasoning_cost_per_token > 0
     assert info.max_input_tokens == 1_048_576
+
+
+def test_default_pricing_config_path_points_to_packaged_configs():
+    path = default_pricing_config_path()
+    assert path.name == "pricing.json"
+    assert path.parent.name == "configs"
+    assert path.parent.parent.name == "orchestrator"
+
+
+def test_committed_pricing_covers_ise_grid_models():
+    overrides = load_overrides(default_pricing_config_path())
+    qwen = lookup_price("litellm", "ise-ollama/qwen3.6:35b-a3b", overrides=overrides)
+    assert qwen is not None, "ISE qwen model missing from configs/pricing.json"
+    assert qwen.input_cost_per_token > 0
+    assert qwen.output_cost_per_token > 0
+    mistral = lookup_price("litellm", "nvidia/mistral-medium-3.5-128b", overrides=overrides)
+    assert mistral is not None, "nvidia mistral-medium missing from configs/pricing.json"
