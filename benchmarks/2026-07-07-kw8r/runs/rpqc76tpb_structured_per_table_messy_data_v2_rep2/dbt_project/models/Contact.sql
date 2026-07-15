@@ -1,0 +1,1 @@
+-- model failed to produce structured output: Tool 'query_postgres' exceeded max retries count of 1

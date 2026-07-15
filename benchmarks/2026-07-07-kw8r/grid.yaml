@@ -1,0 +1,91 @@
+fixture:
+  - master_v2
+  - messy_data_v2
+  - missing_relations_v2
+  - wrong_field_names_v2
+runs_per_cell: 3
+concurrency: 4
+per_model_exclusive: true
+exclusive_model_prefixes: ["ise-"]
+
+models:
+  qwen35b:
+    provider: litellm
+    model_name: ise-ollama/qwen3.6:35b-a3b
+    base_url: http://localhost:4000/v1
+    api_key_env: LITELLM_API_KEY
+  mistral128b:
+    provider: litellm
+    model_name: nvidia/mistral-medium-3.5-128b
+    base_url: http://localhost:4000/v1
+    api_key_env: LITELLM_API_KEY
+
+cells:
+  - name: structured_per_table
+    strategy: structured_per_table
+    config:
+      writer_model: [qwen35b, mistral128b]
+      context_mode: [metadata_only, live_query_tool]
+      enable_self_correction: [false, true]
+      max_self_correction_passes: 5
+      serial_llm_calls: true
+      validation_gate: static
+
+  - name: write_tools_freeform
+    strategy: write_tools_freeform
+    config:
+      writer_model: [qwen35b, mistral128b]
+      context_mode: [metadata_only, live_query_tool]
+      max_tool_turns: 40
+      enable_self_correction: [false, true]
+      max_self_correction_passes: 5
+      inline_run_dbt_tool: false
+
+  - name: write_tools_freeform_inline_dbt
+    strategy: write_tools_freeform
+    config:
+      writer_model: [qwen35b, mistral128b]
+      context_mode: [metadata_only, live_query_tool]
+      max_tool_turns: 40
+      enable_self_correction: true
+      max_self_correction_passes: 5
+      inline_run_dbt_tool: true
+
+  - name: plan_then_execute
+    strategy: plan_then_execute
+    config:
+      planner_model: [qwen35b, mistral128b]
+      context_mode: [metadata_only, live_query_tool]
+      enable_self_correction: [false, true]
+      max_self_correction_passes: 5
+      serial_llm_calls: true
+
+  - name: write_then_critique
+    strategy: write_then_critique
+    config:
+      writer_model: [qwen35b, mistral128b]
+      context_mode: [metadata_only, live_query_tool]
+      enable_self_correction: [false, true]
+      max_self_correction_passes: 5
+      serial_llm_calls: true
+      max_critique_rounds: 3
+
+  - name: plan_write_critique
+    strategy: plan_write_critique
+    config:
+      planner_model: [qwen35b, mistral128b]
+      context_mode: [metadata_only, live_query_tool]
+      max_dbt_correction_initial: 5
+      max_critique_rounds: 3
+      max_dbt_correction_per_critique: 3
+      serial_llm_calls: true
+
+  - name: ensemble_vote
+    strategy: ensemble_vote
+    config:
+      writer_model: [qwen35b, mistral128b]
+      context_mode: [metadata_only, live_query_tool]
+      enable_self_correction: [false, true]
+      max_self_correction_passes: 5
+      serial_llm_calls: true
+      n_candidates: 3

@@ -1,0 +1,19 @@
+{{ config(materialized='table') }}
+SELECT
+    CONCAT('001', REGEXP_REPLACE(a.asset_id, '^AST-', '')) AS "Id",
+    a.bezeichnung AS "Name",
+    a.seriennr AS "Serial_Number__c",
+    CASE 
+        WHEN a.garantie_bis ~ '^\d{4}-\d{2}-\d{2}$' THEN a.garantie_bis
+        WHEN a.garantie_bis ~ '^\d{2}\.\d{2}\.\d{4}$' THEN TO_CHAR(TO_DATE(a.garantie_bis, 'DD.MM.YYYY'), 'YYYY-MM-DD')
+        ELSE NULL 
+    END AS "Warranty_End_Date__c",
+    CONCAT('001', REGEXP_REPLACE(k.kunden_nr, '^CUST-', '')) AS "Account__c",
+    CONCAT('001', REGEXP_REPLACE(p.proj_id, '^PROJ-', '')) AS "Project__c",
+    a.asset_id AS "Legacy_Asset_ID__c",
+    NULL AS "CreatedDate",
+    NULL AS "LastModifiedDate",
+    0 AS "IsDeleted"
+FROM {{ source('fixture_wrong_field_names_v2_src', 'assets') }} a
+LEFT JOIN {{ source('fixture_wrong_field_names_v2_src', 'kunden') }} k ON a.kd_ref = k.kunden_nr
+LEFT JOIN {{ source('fixture_wrong_field_names_v2_src', 'proj') }} p ON a.projekt_ref = p.proj_id

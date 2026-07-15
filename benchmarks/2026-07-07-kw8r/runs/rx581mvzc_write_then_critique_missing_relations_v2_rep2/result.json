@@ -1,0 +1,50 @@
+{
+  "run_id": "rx581mvzc_write_then_critique_missing_relations_v2",
+  "fixture_name": "missing_relations_v2",
+  "strategy_name": "write_then_critique",
+  "strategy_spec_name": "write_then_critique_writer_model_qwen35b_context_mode_metadata_only_enable_self_correction_true",
+  "strategy_config": {
+    "writer_model": {
+      "provider": "litellm",
+      "model_name": "ise-ollama/qwen3.6:35b-a3b",
+      "base_url": "http://localhost:4000/v1",
+      "api_key_env": "LITELLM_API_KEY",
+      "extra": {}
+    },
+    "critic_model": null,
+    "max_critique_rounds": 3,
+    "context_mode": "metadata_only",
+    "samples_per_table": 3,
+    "max_query_tool_rows": 100,
+    "serial_llm_calls": true,
+    "enable_self_correction": true,
+    "max_self_correction_passes": 5,
+    "fixer_model": null,
+    "validation_gate": "none"
+  },
+  "rep_index": 2,
+  "started_at": "2026-07-14T09:02:37.118832",
+  "completed_at": "2026-07-14T11:31:41.952993",
+  "wall_clock_seconds": 8944.834161,
+  "strategy_result": {
+    "target_tables_written": [],
+    "target_schema": null,
+    "manifest": null,
+    "self_reported_status": "gave_up"
+  },
+  "metrics": {},
+  "error": "StrategyExecutionError('strategy crashed in run rx581mvzc_write_then_critique_missing_relations_v2: ModelHTTPError(\"status_code: 500, model_name: ise-ollama/qwen3.6:35b-a3b, body: {\\'message\\': \\'litellm.APIConnectionError: Ollama_chatException - litellm.Timeout: Connection timed out. Timeout passed=120.0, time taken=120.009 secondsNo fallback model group found for original model_group=ise-ollama/qwen3.6:35b-a3b. Fallbacks=[]. Received Model Group=ise-ollama/qwen3.6:35b-a3b\\\\\\\\nAvailable Model Group Fallbacks=None\\\\\\\\nError doing the fallback: litellm.APIConnectionError: Ollama_chatException - litellm.Timeout: Connection timed out. Timeout passed=120.0, time taken=120.009 secondsNo fallback model group found for original model_group=ise-ollama/qwen3.6:35b-a3b. Fallbacks=[] LiteLLM Retried: 2 times, LiteLLM Max Retries: 2\\', \\'type\\': None, \\'param\\': None, \\'code\\': \\'500\\'}\")')",
+  "source_schema": "",
+  "out_schema": "",
+  "provenance": {
+    "campaign_id": "2026-07-07-kw8r",
+    "git_sha": "fc33a83f125ff60390643ccbe92e9b502343a104",
+    "git_branch": "main",
+    "git_dirty": true,
+    "orchestrator_version": "0.1.0",
+    "strategy_spec_path": null,
+    "strategy_spec_sha256": null,
+    "dbt_project_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "recorded_at": "2026-07-14T11:31:42.012051"
+  }
+}

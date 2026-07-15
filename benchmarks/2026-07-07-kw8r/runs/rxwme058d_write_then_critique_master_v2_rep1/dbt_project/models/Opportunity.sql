@@ -1,0 +1,45 @@
+{{ config(materialized='table') }}
+SELECT MD5(o."opp_kennung") AS "Id",
+       o."titel" AS "Name",
+       CASE
+         WHEN UPPER(TRIM(o."vertriebsphase")) IN ('PROSPECTING', 'IN KONTAKT') THEN 'Prospecting'
+         WHEN UPPER(TRIM(o."vertriebsphase")) IN ('QUALIFICATION', 'QUALI') THEN 'Qualification'
+         WHEN UPPER(TRIM(o."vertriebsphase")) IN ('NEEDS ANALYSIS') THEN 'Needs Analysis'
+         WHEN UPPER(TRIM(o."vertriebsphase")) IN ('VALUE PROPOSITION') THEN 'Value Proposition'
+         WHEN UPPER(TRIM(o."vertriebsphase")) IN ('ID. DECISION MAKERS') THEN 'Id. Decision Makers'
+         WHEN UPPER(TRIM(o."vertriebsphase")) IN ('PERCEPTION ANALYSIS') THEN 'Perception Analysis'
+         WHEN UPPER(TRIM(o."vertriebsphase")) IN ('PROPOSAL/PRICE QUOTE') THEN 'Proposal/Price Quote'
+         WHEN UPPER(TRIM(o."vertriebsphase")) IN ('NEGOTIATION/REVIEW') THEN 'Negotiation/Review'
+         WHEN UPPER(TRIM(o."vertriebsphase")) IN ('CLOSED WON', 'ABGESCHLOSSEN (GEWONNEN)') THEN 'Closed Won'
+         WHEN UPPER(TRIM(o."vertriebsphase")) IN ('CLOSED LOST', 'ABGESCHLOSSEN (VERLOREN)', 'LOST') THEN 'Closed Lost'
+         ELSE NULL
+       END AS "StageName",
+       CASE
+         WHEN o."zieldatum" ~ '^\d{4}-\d{2}-\d{2}$' THEN o."zieldatum"
+         WHEN o."zieldatum" ~ '^\d{2}\.\d{2}\.\d{4}$' THEN TO_CHAR(TO_DATE(o."zieldatum", 'DD.MM.YYYY'), 'YYYY-MM-DD')
+         WHEN o."zieldatum" ~ '^\d{2}/\d{2}/\d{4}$' THEN TO_CHAR(TO_DATE(o."zieldatum", 'MM/DD/YYYY'), 'YYYY-MM-DD')
+         WHEN o."zieldatum" ~ '^\d{8}$' THEN TO_CHAR(TO_DATE(o."zieldatum", 'YYYYMMDD'), 'YYYY-MM-DD')
+         ELSE NULL
+       END AS "CloseDate",
+       CASE
+         WHEN o."auftragswert" IS NULL OR TRIM(o."auftragswert") IN ('None', '') THEN NULL
+         WHEN o."auftragswert" ~ '^[0-9\-]+\.?[0-9]*$' THEN o."auftragswert"::DOUBLE PRECISION
+         WHEN o."auftragswert" ~ '^[0-9\-]+,[0-9]+$' THEN REPLACE(o."auftragswert", ',', '.')::DOUBLE PRECISION
+         WHEN o."auftragswert" ~ '^[0-9\-]+\.[0-9]+,[0-9]+$' THEN REPLACE(REPLACE(o."auftragswert", '.', ''), ',', '.')::DOUBLE PRECISION
+         WHEN o."auftragswert" ~ '^[A-Za-z\s]+[0-9\-]+\.?[0-9]*$' THEN REGEXP_REPLACE(o."auftragswert", '[^0-9\-.]', '', 'g')::DOUBLE PRECISION
+         ELSE NULL
+       END AS "Amount",
+       CASE
+         WHEN UPPER(TRIM(o."waehrungscode")) IN ('CHF') THEN 'CHF'
+         WHEN UPPER(TRIM(o."waehrungscode")) IN ('EUR', '€', 'EURO') THEN 'EUR'
+         WHEN UPPER(TRIM(o."waehrungscode")) IN ('USD', '$', 'DOLLAR') THEN 'USD'
+         WHEN UPPER(TRIM(o."waehrungscode")) IN ('GBP') THEN 'GBP'
+         ELSE UPPER(TRIM(o."waehrungscode"))
+       END AS "CurrencyIsoCode",
+       MD5(k."kundennummer") AS "AccountId",
+       o."opp_kennung" AS "Legacy_Opportunity_ID__c",
+       NULL AS "CreatedDate",
+       NULL AS "LastModifiedDate",
+       0 AS "IsDeleted"
+FROM {{ source('fixture_master_v2_src', 'master_opportunities') }} o
+LEFT JOIN {{ source('fixture_master_v2_src', 'master_kunden') }} k ON REPLACE(o."kunden_ref", 'KD-', 'CUST-') = k."kundennummer"
