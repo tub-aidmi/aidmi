@@ -16,6 +16,46 @@ def _acc_ref(rec: dict[str, Any], by_name: bool = False) -> str:
     return p["name"] if by_name else p["legacy"]
 
 
+def _account_fields(a: dict[str, Any]) -> tuple[Any, ...]:
+    """The nine source-side account columns every problem emits, in order."""
+    return (
+        a["legacy"],
+        a["name_src"],
+        a["erp"],
+        a["tier_src"],
+        a["region"],
+        a["industry_src"],
+        a["website"],
+        a["city"],
+        a["country"],
+    )
+
+
+def _contact_head(c: dict[str, Any]) -> tuple[Any, ...]:
+    return (
+        c["legacy"],
+        c["first"],
+        c["last"],
+        c["email_src"],
+        c["phone_src"],
+        c["title"],
+        c["role_src"],
+        c["lang_src"],
+    )
+
+
+def _opp_head(o: dict[str, Any]) -> tuple[Any, ...]:
+    return (o["legacy"], o["name"], o["stage_src"], o["close_src"])
+
+
+def _proj_head(p: dict[str, Any]) -> tuple[Any, ...]:
+    return (p["legacy"], p["name"], p["status_src"], p["golive_src"])
+
+
+def _asset_head(s: dict[str, Any]) -> tuple[Any, ...]:
+    return (s["legacy"], s["name"], s["serial"], s["warranty_src"])
+
+
 def write_source_p1_pg(
     data: dict[str, list[dict[str, Any]]], source_schema: str
 ) -> str:
@@ -46,20 +86,7 @@ CREATE TABLE assets (asset_id text PRIMARY KEY, bezeichnung text, seriennr text,
                 "ort",
                 "land",
             ],
-            [
-                (
-                    a["legacy"],
-                    a["name_src"],
-                    a["erp"],
-                    a["tier_src"],
-                    a["region"],
-                    a["industry_src"],
-                    a["website"],
-                    a["city"],
-                    a["country"],
-                )
-                for a in data["accounts"]
-            ],
+            [_account_fields(a) for a in data["accounts"]],
         ),
         format_inserts(
             "ansprechpartner",
@@ -74,20 +101,7 @@ CREATE TABLE assets (asset_id text PRIMARY KEY, bezeichnung text, seriennr text,
                 "sprache",
                 "kunde",
             ],
-            [
-                (
-                    c["legacy"],
-                    c["first"],
-                    c["last"],
-                    c["email_src"],
-                    c["phone_src"],
-                    c["title"],
-                    c["role_src"],
-                    c["lang_src"],
-                    _acc_ref(c),
-                )
-                for c in data["contacts"]
-            ],
+            [_contact_head(c) + (_acc_ref(c),) for c in data["contacts"]],
         ),
         format_inserts(
             "chancen",
@@ -101,15 +115,7 @@ CREATE TABLE assets (asset_id text PRIMARY KEY, bezeichnung text, seriennr text,
                 "kd_nr",
             ],
             [
-                (
-                    o["legacy"],
-                    o["name"],
-                    o["stage_src"],
-                    o["close_src"],
-                    o["amount_src"],
-                    o["cur_src"],
-                    _acc_ref(o),
-                )
+                _opp_head(o) + (o["amount_src"], o["cur_src"], _acc_ref(o))
                 for o in data["opps"]
             ],
         ),
@@ -117,14 +123,7 @@ CREATE TABLE assets (asset_id text PRIMARY KEY, bezeichnung text, seriennr text,
             "proj",
             ["proj_id", "name", "status", "go_live", "kd", "opp"],
             [
-                (
-                    p["legacy"],
-                    p["name"],
-                    p["status_src"],
-                    p["golive_src"],
-                    _acc_ref(p),
-                    p["opp"]["legacy"] if p["opp"] else None,
-                )
+                _proj_head(p) + (_acc_ref(p), p["opp"]["legacy"] if p["opp"] else None)
                 for p in data["projs"]
             ],
         ),
@@ -139,14 +138,8 @@ CREATE TABLE assets (asset_id text PRIMARY KEY, bezeichnung text, seriennr text,
                 "projekt_ref",
             ],
             [
-                (
-                    s["legacy"],
-                    s["name"],
-                    s["serial"],
-                    s["warranty_src"],
-                    _acc_ref(s),
-                    s["proj"]["legacy"] if s["proj"] else None,
-                )
+                _asset_head(s)
+                + (_acc_ref(s), s["proj"]["legacy"] if s["proj"] else None)
                 for s in data["assets"]
             ],
         ),
@@ -187,21 +180,7 @@ CREATE TABLE Installed_Asset__c (Id text PRIMARY KEY, Name text, Serial_Number__
                 "BillingCountry",
                 "Legacy_Customer_ID__c",
             ],
-            [
-                (
-                    a["legacy"],
-                    a["name_src"],
-                    a["erp"],
-                    a["tier_src"],
-                    a["region"],
-                    a["industry_src"],
-                    a["website"],
-                    a["city"],
-                    a["country"],
-                    a["legacy"],
-                )
-                for a in data["accounts"]
-            ],
+            [_account_fields(a) + (a["legacy"],) for a in data["accounts"]],
         ),
         format_inserts(
             "Contact",
@@ -216,20 +195,7 @@ CREATE TABLE Installed_Asset__c (Id text PRIMARY KEY, Name text, Serial_Number__
                 "Preferred_Language__c",
                 "AccountId",
             ],
-            [
-                (
-                    c["legacy"],
-                    c["first"],
-                    c["last"],
-                    c["email_src"],
-                    c["phone_src"],
-                    c["title"],
-                    c["role_src"],
-                    c["lang_src"],
-                    c["parent"]["legacy"],
-                )
-                for c in data["contacts"]
-            ],
+            [_contact_head(c) + (c["parent"]["legacy"],) for c in data["contacts"]],
         ),
         format_inserts(
             "Opportunity",
@@ -243,15 +209,8 @@ CREATE TABLE Installed_Asset__c (Id text PRIMARY KEY, Name text, Serial_Number__
                 "AccountId",
             ],
             [
-                (
-                    o["legacy"],
-                    o["name"],
-                    o["stage_src"],
-                    o["close_src"],
-                    str(o["amount_src"]),
-                    o["cur_src"],
-                    o["parent"]["legacy"],
-                )
+                _opp_head(o)
+                + (str(o["amount_src"]), o["cur_src"], o["parent"]["legacy"])
                 for o in data["opps"]
             ],
         ),
@@ -266,11 +225,8 @@ CREATE TABLE Installed_Asset__c (Id text PRIMARY KEY, Name text, Serial_Number__
                 "Opportunity__c",
             ],
             [
-                (
-                    p["legacy"],
-                    p["name"],
-                    p["status_src"],
-                    p["golive_src"],
+                _proj_head(p)
+                + (
                     p["parent"]["legacy"],
                     p["opp"]["legacy"] if p["opp"] else None,
                 )
@@ -288,11 +244,8 @@ CREATE TABLE Installed_Asset__c (Id text PRIMARY KEY, Name text, Serial_Number__
                 "Project__c",
             ],
             [
-                (
-                    s["legacy"],
-                    s["name"],
-                    s["serial"],
-                    s["warranty_src"],
+                _asset_head(s)
+                + (
                     s["parent"]["legacy"],
                     s["proj"]["legacy"] if s["proj"] else None,
                 )
@@ -446,20 +399,7 @@ CREATE TABLE master_assets (asset_kennung text PRIMARY KEY, asset_name text, ser
                 "stadt",
                 "land_region",
             ],
-            [
-                (
-                    a["legacy"],
-                    a["name_src"],
-                    a["erp"],
-                    a["tier_src"],
-                    a["region"],
-                    a["industry_src"],
-                    a["website"],
-                    a["city"],
-                    a["country"],
-                )
-                for a in data["accounts"]
-            ],
+            [_account_fields(a) for a in data["accounts"]],
         ),
         format_inserts(
             "master_kontakte",
@@ -474,20 +414,7 @@ CREATE TABLE master_assets (asset_kennung text PRIMARY KEY, asset_name text, ser
                 "korrespondenzsprache",
                 "kd_nummer",
             ],
-            [
-                (
-                    c["legacy"],
-                    c["first"],
-                    c["last"],
-                    c["email_src"],
-                    c["phone_src"],
-                    c["title"],
-                    c["role_src"],
-                    c["lang_src"],
-                    _acc_ref(c),
-                )
-                for c in data["contacts"]
-            ],
+            [_contact_head(c) + (_acc_ref(c),) for c in data["contacts"]],
         ),
         format_inserts(
             "master_opportunities",
@@ -501,11 +428,8 @@ CREATE TABLE master_assets (asset_kennung text PRIMARY KEY, asset_name text, ser
                 "kunden_ref",
             ],
             [
-                (
-                    o["legacy"],
-                    o["name"],
-                    o["stage_src"],
-                    o["close_src"],
+                _opp_head(o)
+                + (
                     str(o["amount_src"]),
                     o["cur_src"],
                     (
@@ -528,11 +452,8 @@ CREATE TABLE master_assets (asset_kennung text PRIMARY KEY, asset_name text, ser
                 "opp_kennung_ref",
             ],
             [
-                (
-                    p["legacy"],
-                    p["name"],
-                    p["status_src"],
-                    p["golive_src"],
+                _proj_head(p)
+                + (
                     _acc_ref(p),
                     p["opp"]["legacy"]
                     if p["opp"]
@@ -552,11 +473,8 @@ CREATE TABLE master_assets (asset_kennung text PRIMARY KEY, asset_name text, ser
                 "projekt_kennung",
             ],
             [
-                (
-                    s["legacy"],
-                    s["name"],
-                    s["serial"],
-                    s["warranty_src"],
+                _asset_head(s)
+                + (
                     _acc_ref(s),
                     s["proj"]["legacy"]
                     if s["proj"]
