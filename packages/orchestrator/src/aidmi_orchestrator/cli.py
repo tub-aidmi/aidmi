@@ -23,7 +23,6 @@ from aidmi_orchestrator.campaign import (
     Campaign,
     DEFAULT_BENCHMARKS_ROOT,
     resolve_campaign,
-    results_jsonl_for_campaign,
 )
 from aidmi_orchestrator.fixtures.base import get_fixture
 from aidmi_orchestrator.persistence import record_run

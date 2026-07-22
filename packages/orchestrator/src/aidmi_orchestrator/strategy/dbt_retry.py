@@ -19,15 +19,6 @@ def extract_failing_models(result: Any) -> list[tuple[str, str]]:
     return failing
 
 
-def extract_skipped_models(result: Any) -> list[tuple[str, str]]:
-    """Return models skipped due to fail_fast (or similar) as synthetic failures."""
-    return [
-        (dbt_model_table_name(getattr(model, "model_name", "") or "<unknown>"), "skipped due to fail_fast")
-        for model in getattr(result, "models", []) or []
-        if getattr(model, "status", None) == "skipped"
-    ]
-
-
 def summarize_dbt_failure(result: Any) -> str:
     lines: list[str] = []
     overall = getattr(result, "overall_status", None)

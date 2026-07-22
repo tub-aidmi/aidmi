@@ -36,7 +36,3 @@ def build_initial_user_prompt(
             "will run dbt after you finish and prompt you to fix failures if needed."
         )
     return prompt
-
-
-def initial_user_prompt(context: str) -> str:
-    return build_initial_user_prompt(context)
