@@ -114,6 +114,12 @@ sweep-verbose campaign:
 report campaign:
   {{orch}} report "{{benchmarks}}/{{campaign}}" --out "{{benchmarks}}/{{campaign}}/report"
 
+verify-results:
+  {{orch-test}} python -m aidmi_orchestrator.scripts.verify_results
+
+snapshot-results:
+  {{orch-test}} python -m aidmi_orchestrator.scripts.verify_results --snapshot
+
 sweep-demo:
   #!/usr/bin/env bash
   set -euo pipefail
