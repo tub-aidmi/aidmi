@@ -1,11 +1,11 @@
 import pytest
-from pydantic import BaseModel
+from aidmi_orchestrator.fixtures.base import get_fixture, list_fixtures
 from aidmi_orchestrator.strategy.base import (
-    Strategy,
-    register_strategy,
-    make_strategy,
     list_strategies,
+    make_strategy,
+    register_strategy,
 )
+from pydantic import BaseModel
 
 
 class _DummyConfig(BaseModel):
@@ -45,11 +45,7 @@ def test_double_register_raises():
         register_strategy("test_double_xyz", A, _DummyConfig)
 
 
-from aidmi_orchestrator.fixtures.base import get_fixture, list_fixtures
-
-
 def test_mock_fixture_registered():
-    import aidmi_orchestrator.fixtures  # triggers registration
 
     assert "mock" in list_fixtures()
     f = get_fixture("mock")
@@ -59,7 +55,6 @@ def test_mock_fixture_registered():
 
 
 def test_master_fixture_registered():
-    import aidmi_orchestrator.fixtures  # triggers registration
 
     assert "master" in list_fixtures()
     f = get_fixture("master")
@@ -69,8 +64,7 @@ def test_master_fixture_registered():
 
 
 def test_mock_strategy_registered_and_instantiable():
-    import aidmi_orchestrator.strategy  # triggers registration
-    from aidmi_orchestrator.strategy.base import make_strategy, list_strategies
+    from aidmi_orchestrator.strategy.base import list_strategies, make_strategy
 
     assert "mock" in list_strategies()
     s = make_strategy("mock", {"mapping_source": "/dev/null"})

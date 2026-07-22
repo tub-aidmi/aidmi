@@ -1,8 +1,10 @@
 """PlanThenExecute: one global planner call, then per-table writers following the plan."""
 
 from __future__ import annotations
+
 from datetime import datetime
 from typing import Literal
+
 from pydantic import BaseModel, Field
 from pydantic_ai import Agent
 
@@ -12,16 +14,16 @@ from aidmi_orchestrator.strategy.base import (
     run_coroutines,
     write_proposal,
 )
-from aidmi_orchestrator.strategy.structured_common import (
-    make_table_agent,
-    manifest_from_mappings,
-)
 from aidmi_orchestrator.strategy.plan_then_execute.prompts import (
     PLANNER_SYSTEM_PROMPT,
     executor_user_prompt,
     planner_user_prompt,
 )
 from aidmi_orchestrator.strategy.self_correction import run_dbt_self_correction
+from aidmi_orchestrator.strategy.structured_common import (
+    make_table_agent,
+    manifest_from_mappings,
+)
 from aidmi_orchestrator.trace import StrategyEvent
 
 

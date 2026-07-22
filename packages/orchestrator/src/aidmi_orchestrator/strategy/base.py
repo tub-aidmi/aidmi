@@ -1,30 +1,28 @@
 """Strategy Protocol + registry + shared helpers."""
 
 from __future__ import annotations
+
 import asyncio
 import re
+from collections.abc import Awaitable
 from pathlib import Path
-from typing import Any, Awaitable, Protocol, TypeVar, runtime_checkable
-
-T = TypeVar("T")
-
-from pydantic import BaseModel
+from typing import Any, Protocol, runtime_checkable
 
 from aidmi_pipeline.sources_yaml import ensure_sources_yaml_raw_schema
-
-from aidmi_orchestrator.strategy.sql_sanitize import sanitize_dbt_sql
+from pydantic import BaseModel
 
 from aidmi_orchestrator.domain import (
-    SourceSummary,
-    TargetSchema,
-    MappingManifest,
-    TableMappingNote,
     ColumnNote,
+    MappingManifest,
+    SourceSummary,
     StrategyResult,
+    TableMappingNote,
+    TargetSchema,
 )
 from aidmi_orchestrator.strategy.guidelines.compose import (
     context_transformation_section,
 )
+from aidmi_orchestrator.strategy.sql_sanitize import sanitize_dbt_sql
 
 
 @runtime_checkable
@@ -50,13 +48,13 @@ def list_strategies() -> list[str]:
     return sorted(_STRATEGIES)
 
 
-async def run_coroutines(coros: list[Awaitable[T]], *, serial: bool) -> list[T]:
+async def run_coroutines[T](coros: list[Awaitable[T]], *, serial: bool) -> list[T]:
     if serial:
         return [await c for c in coros]
     return list(await asyncio.gather(*coros))
 
 
-async def run_named_coroutines(
+async def run_named_coroutines[T](
     items: list[tuple[str, Awaitable[T]]],
     *,
     serial: bool,

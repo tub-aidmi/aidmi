@@ -5,10 +5,10 @@ Postgres, and call api.run_dbt() under strict containment.
 """
 
 from __future__ import annotations
-from pathlib import Path
-from typing import Any
+
 import time
 from datetime import datetime
+from pathlib import Path
 
 import psycopg2
 

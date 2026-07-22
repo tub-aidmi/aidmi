@@ -6,8 +6,8 @@ from pathlib import Path
 
 import psycopg2
 import pytest
-
 from aidmi_orchestrator.domain import StrategyResult
+from aidmi_orchestrator.evaluator._ground_truth_utils import ground_truth_row_matched
 from aidmi_orchestrator.evaluator.base import FixtureMetadata, RunArtifacts
 from aidmi_orchestrator.evaluator.ground_truth_field_accuracy import (
     GroundTruthFieldAccuracyEvaluator,
@@ -17,7 +17,6 @@ from aidmi_orchestrator.evaluator.ground_truth_fk_integrity import (
 )
 from aidmi_orchestrator.evaluator.ground_truth_notes import GroundTruthNotesEvaluator
 from aidmi_orchestrator.evaluator.ground_truth_recall import GroundTruthRecallEvaluator
-from aidmi_orchestrator.evaluator._ground_truth_utils import ground_truth_row_matched
 
 GOLDEN = "gt_golden"
 OUT = "gt_out"

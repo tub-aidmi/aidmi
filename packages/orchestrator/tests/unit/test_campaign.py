@@ -2,9 +2,7 @@ import json
 from datetime import datetime
 from pathlib import Path
 
-import pytest
 import yaml
-
 from aidmi_orchestrator.campaign import (
     Campaign,
     bundle_dir_for_run,
@@ -12,7 +10,7 @@ from aidmi_orchestrator.campaign import (
     resolve_run_bundle,
     results_jsonl_for_campaign,
 )
-from aidmi_orchestrator.domain import BenchmarkResult, RunProvenance, StrategyResult
+from aidmi_orchestrator.domain import BenchmarkResult, StrategyResult
 from aidmi_orchestrator.persistence import record_run, scaffold_dbt_project
 
 

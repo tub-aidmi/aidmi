@@ -1,11 +1,11 @@
 import asyncio
-import pytest
-from pydantic_ai.exceptions import ModelHTTPError, UnexpectedModelBehavior
-from aidmi_orchestrator.strategy.structured_common import (
-    generate_table_mapping_safe,
-    TableMapping,
-)
+
 from aidmi_orchestrator.strategy.self_correction import run_dbt_self_correction
+from aidmi_orchestrator.strategy.structured_common import (
+    TableMapping,
+    generate_table_mapping_safe,
+)
+from pydantic_ai.exceptions import ModelHTTPError, UnexpectedModelBehavior
 
 
 class RaisingAgent:

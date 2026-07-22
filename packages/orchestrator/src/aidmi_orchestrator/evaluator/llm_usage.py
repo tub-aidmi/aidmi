@@ -1,22 +1,22 @@
 """LlmUsageEvaluator — token counts, cache rate, dollar cost (LiteLLM + override)."""
 
 from __future__ import annotations
+
 import statistics
 from collections import defaultdict
 from typing import Any
 
 from aidmi_orchestrator.evaluator.base import (
-    Evaluator,
     RunArtifacts,
     register_evaluator,
 )
-from aidmi_orchestrator.trace import LlmCallEvent
 from aidmi_orchestrator.pricing import (
-    lookup_price,
-    lookup_context_limit,
-    load_overrides,
     default_pricing_config_path,
+    load_overrides,
+    lookup_context_limit,
+    lookup_price,
 )
+from aidmi_orchestrator.trace import LlmCallEvent
 
 
 def _safe_int(value: Any) -> int:

@@ -1,4 +1,5 @@
 from pathlib import Path
+
 import yaml
 from aidmi_orchestrator.strategy.base import make_strategy
 

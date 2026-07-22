@@ -8,7 +8,7 @@ from typing import Any
 from pydantic_ai import Agent
 from pydantic_ai.exceptions import ModelHTTPError, UnexpectedModelBehavior
 
-from aidmi_orchestrator.strategy.base import write_proposal, run_coroutines
+from aidmi_orchestrator.strategy.base import run_coroutines, write_proposal
 from aidmi_orchestrator.strategy.dbt_retry import retry_failing_tables
 from aidmi_orchestrator.strategy.structured_common import (
     TableMapping,

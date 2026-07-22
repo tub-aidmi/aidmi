@@ -1,10 +1,20 @@
 from datetime import datetime
 from pathlib import Path
+
+import psycopg2
 import pytest
-from aidmi_orchestrator.domain import StrategyResult, ModelSpec
-from aidmi_orchestrator.evaluator.base import RunArtifacts, FixtureMetadata
+from aidmi_orchestrator.domain import (
+    ModelSpec,
+    StrategyResult,
+    TargetColumn,
+    TargetSchema,
+    TargetTable,
+)
+from aidmi_orchestrator.evaluator.base import FixtureMetadata, RunArtifacts
 from aidmi_orchestrator.evaluator.execution import ExecutionEvaluator
 from aidmi_orchestrator.evaluator.llm_usage import LlmUsageEvaluator
+from aidmi_orchestrator.evaluator.row_equality import ExactComparator, FuzzyComparator
+from aidmi_orchestrator.evaluator.schema import SchemaEvaluator
 from aidmi_orchestrator.trace import LlmCallEvent
 
 
@@ -196,6 +206,7 @@ def test_llm_usage_evaluator_malformed_details():
 
 def test_llm_usage_evaluator_auto_loads_default_pricing(monkeypatch, tmp_path):
     import json
+
     import aidmi_orchestrator.evaluator.llm_usage as llm_usage_mod
 
     override = tmp_path / "pricing.json"
@@ -250,11 +261,6 @@ def test_llm_usage_evaluator_unknown_model_no_context_limit():
     assert out["tokens_input_peak"] == 999999
 
 
-import psycopg2
-from aidmi_orchestrator.evaluator.schema import SchemaEvaluator
-from aidmi_orchestrator.domain import TargetSchema, TargetTable, TargetColumn
-
-
 def _materialize(db_url, schema, table, columns: list[tuple[str, str]]):
     cols_sql = ", ".join(f'"{c}" {t}' for c, t in columns)
     with psycopg2.connect(db_url) as conn:
@@ -305,13 +311,6 @@ def test_schema_evaluator_coverage_vs_input(staging_db_url, tmp_path):
     assert out["extraneous_columns"] == 1
     assert "produced_column_count" in out
     assert out["produced_column_count"] == 4
-
-
-from aidmi_orchestrator.evaluator.row_equality import (
-    RowEqualityEvaluator,
-    ExactComparator,
-    FuzzyComparator,
-)
 
 
 def test_exact_comparator_identical():

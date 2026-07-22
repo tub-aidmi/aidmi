@@ -1,8 +1,7 @@
 from __future__ import annotations
+
 import statistics
 from collections import defaultdict
-from typing import Callable, Hashable
-from aidmi_orchestrator.report.data import RunRecord
 
 
 def group_mean(records, key, metric):

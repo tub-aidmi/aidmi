@@ -8,12 +8,10 @@ from __future__ import annotations
 import asyncio
 import os
 
-import pytest
-
-import aidmi_orchestrator.strategy  # noqa: F401
 import aidmi_orchestrator.evaluator  # noqa: F401
 import aidmi_orchestrator.fixtures  # noqa: F401
-
+import aidmi_orchestrator.strategy  # noqa: F401
+import pytest
 from aidmi_orchestrator.benchmark import Benchmark
 from aidmi_orchestrator.fixtures.base import get_fixture
 from aidmi_orchestrator.scripts.init_fixtures import init_fixture

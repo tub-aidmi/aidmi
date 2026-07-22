@@ -1,17 +1,15 @@
 from datetime import datetime
+
 from aidmi_orchestrator.domain import (
-    ColumnInfo,
-    TableInfo,
-    SourceSummary,
-    TargetColumn,
-    TargetTable,
-    TargetSchema,
-    ModelSpec,
-    ColumnNote,
-    TableMappingNote,
-    MappingManifest,
-    StrategyResult,
     BenchmarkResult,
+    ColumnInfo,
+    ModelSpec,
+    SourceSummary,
+    StrategyResult,
+    TableInfo,
+    TargetColumn,
+    TargetSchema,
+    TargetTable,
 )
 
 

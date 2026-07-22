@@ -2,6 +2,8 @@
 
 from aidmi_orchestrator.strategy.structured_common import (
     WRITER_SYSTEM_PROMPT as SYSTEM_PROMPT,
+)
+from aidmi_orchestrator.strategy.structured_common import (
     per_table_user_prompt,
 )
 

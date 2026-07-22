@@ -1,6 +1,7 @@
 """DataPreservationEvaluator — ground-truth-free lossiness signals via SQL aggregates."""
 
 from __future__ import annotations
+
 from typing import Any
 
 import psycopg2

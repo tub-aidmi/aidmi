@@ -1,14 +1,20 @@
 """Provider registry + Model construction + TracedModel wrapper."""
 
 from __future__ import annotations
+
 import asyncio
 import dataclasses
 import os
 import time
-from typing import Any, Callable
+from collections.abc import Callable
 from datetime import datetime
+from typing import Any
 
 from pydantic_ai.exceptions import ModelHTTPError
+from pydantic_ai.messages import ModelMessage, ModelResponse
+from pydantic_ai.models import ModelRequestParameters
+from pydantic_ai.models.wrapper import WrapperModel
+from pydantic_ai.settings import ModelSettings
 
 from aidmi_orchestrator.domain import ModelSpec
 from aidmi_orchestrator.llm_retry import (
@@ -17,8 +23,7 @@ from aidmi_orchestrator.llm_retry import (
     retry_delay_seconds,
 )
 from aidmi_orchestrator.progress import log_message
-from aidmi_orchestrator.trace import TraceSink, LlmCallEvent
-
+from aidmi_orchestrator.trace import LlmCallEvent, TraceSink
 
 ProviderFactory = Callable[[ModelSpec], Any]
 _PROVIDERS: dict[str, ProviderFactory] = {}
@@ -120,11 +125,6 @@ register_provider("google_cloud", _google_cloud_factory)
 
 
 # ---------- TracedModel ----------
-
-from pydantic_ai.models.wrapper import WrapperModel
-from pydantic_ai.models import ModelRequestParameters
-from pydantic_ai.messages import ModelResponse, ModelMessage
-from pydantic_ai.settings import ModelSettings
 
 
 def _base_usage_dict(response: ModelResponse) -> dict[str, Any]:

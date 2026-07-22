@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 import re
 
 import matplotlib as mpl
@@ -79,7 +80,7 @@ def strip_common_version(labels):
     the same one (e.g. all *_v2 -> bare names); otherwise leave them untouched.
     Order preserved. Non-versioned labels (strategy cells) pass through."""
     labels = list(labels)
-    matches = [_VERSION_RE.match(l) for l in labels]
+    matches = [_VERSION_RE.match(label) for label in labels]
     if labels and all(matches):
         versions = {m.group("ver") for m in matches}
         if len(versions) == 1:

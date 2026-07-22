@@ -4,15 +4,17 @@ as a baseline in benchmark sweeps.
 """
 
 from __future__ import annotations
+
 import json
 from pathlib import Path
+
 from pydantic import BaseModel
 
 from aidmi_orchestrator.domain import (
-    StrategyResult,
-    MappingManifest,
-    TableMappingNote,
     ColumnNote,
+    MappingManifest,
+    StrategyResult,
+    TableMappingNote,
 )
 from aidmi_orchestrator.strategy.base import write_proposal
 

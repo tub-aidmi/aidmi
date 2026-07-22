@@ -1,6 +1,8 @@
 from __future__ import annotations
-import csv, json
-from dataclasses import dataclass, asdict
+
+import csv
+import json
+from dataclasses import asdict, dataclass
 from pathlib import Path
 
 import yaml

@@ -1,6 +1,7 @@
 """run_orchestrator — sequential flow."""
 
 from __future__ import annotations
+
 from datetime import datetime
 from pathlib import Path
 from typing import IO
@@ -10,14 +11,14 @@ from aidmi_pipeline.config import MigrationRun, StagingConfig
 from aidmi_orchestrator.api import OrchestratorAPI
 from aidmi_orchestrator.discover import discover
 from aidmi_orchestrator.domain import TargetSchema
-from aidmi_orchestrator.evaluator.base import RunArtifacts, FixtureMetadata
+from aidmi_orchestrator.evaluator.base import FixtureMetadata, RunArtifacts
 from aidmi_orchestrator.persistence import (
     scaffold_dbt_project,
-    write_strategy_result,
     write_mapping_manifest,
+    write_strategy_result,
 )
 from aidmi_orchestrator.progress import log_message
-from aidmi_orchestrator.trace import TraceSink, StrategyEvent
+from aidmi_orchestrator.trace import StrategyEvent, TraceSink
 
 
 class StrategyExecutionError(RuntimeError):

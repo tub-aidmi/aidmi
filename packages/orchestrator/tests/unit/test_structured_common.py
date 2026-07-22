@@ -3,11 +3,8 @@
 from __future__ import annotations
 
 import asyncio
-from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import MagicMock
-
-from pydantic_ai.models.test import TestModel
 
 from aidmi_orchestrator.domain import (
     ColumnInfo,
@@ -18,13 +15,14 @@ from aidmi_orchestrator.domain import (
     TargetTable,
 )
 from aidmi_orchestrator.strategy.structured_common import (
+    WRITER_SYSTEM_PROMPT,
     TableMapping,
-    make_table_agent,
     generate_table_mapping,
+    make_table_agent,
     manifest_from_mappings,
     per_table_user_prompt,
-    WRITER_SYSTEM_PROMPT,
 )
+from pydantic_ai.models.test import TestModel
 
 
 def small_source_summary() -> SourceSummary:

@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-from typing import Awaitable, Callable
+from collections.abc import Awaitable, Callable
 
-from aidmi_orchestrator.strategy.base import run_coroutines, run_named_coroutines
+from aidmi_orchestrator.strategy.base import run_named_coroutines
 from aidmi_orchestrator.strategy.dbt_retry import retry_failing_tables
 from aidmi_orchestrator.strategy.structured_common import TableMapping
 from aidmi_orchestrator.strategy.write_then_critique.critique import CritiqueReport

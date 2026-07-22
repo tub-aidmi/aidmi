@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from aidmi_orchestrator.report.data import load_records, RunRecord
+from aidmi_orchestrator.report.data import load_records
 
 FIX = Path(__file__).parent / "fixtures" / "mini_results.jsonl"
 

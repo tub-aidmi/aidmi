@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from typing import Any
 
-import psycopg2
 from psycopg2.extensions import new_type, register_type
 from psycopg2.extras import RealDictCursor
 

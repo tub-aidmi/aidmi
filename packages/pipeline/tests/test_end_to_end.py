@@ -2,10 +2,9 @@ import json
 from pathlib import Path
 
 import dlt
-from dlt.sources.filesystem import filesystem, read_jsonl
-
 from aidmi_pipeline.config import MigrationRun, StagingConfig
 from aidmi_pipeline.migration import run_migration
+from dlt.sources.filesystem import filesystem, read_jsonl
 
 dlt.config["normalize.data_writer.disable_compression"] = True
 
@@ -51,7 +50,9 @@ def test_end_to_end(staging_db_url, tmp_path):
     rows = {
         r["user_id"]: r
         for r in (
-            json.loads(l) for l in output_path.read_text().splitlines() if l.strip()
+            json.loads(line)
+            for line in output_path.read_text().splitlines()
+            if line.strip()
         )
     }
 

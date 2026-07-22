@@ -6,7 +6,6 @@ import asyncio
 from pathlib import Path
 
 import yaml
-
 from aidmi_orchestrator.strategy.base import (
     ensure_sources_yaml_raw_schema,
     normalize_source_refs,
@@ -16,7 +15,6 @@ from aidmi_orchestrator.strategy.write_tools_freeform.tools import (
     make_query_postgres,
     make_run_dbt,
 )
-
 
 BAD_YAML = """version: 2
 

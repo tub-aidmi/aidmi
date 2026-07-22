@@ -1,17 +1,16 @@
 import json
 from datetime import datetime
+
 from aidmi_orchestrator.domain import (
-    StrategyResult,
-    MappingManifest,
     BenchmarkResult,
+    StrategyResult,
 )
 from aidmi_orchestrator.persistence import (
-    scaffold_dbt_project,
-    write_strategy_result,
-    write_mapping_manifest,
-    write_benchmark_result,
     copy_dbt_project,
-    record_run,
+    scaffold_dbt_project,
+    write_benchmark_result,
+    write_mapping_manifest,
+    write_strategy_result,
 )
 
 

@@ -1,6 +1,5 @@
 import asyncio
 
-import pytest
 from aidmi_orchestrator.strategy.self_correction import run_dbt_self_correction
 from aidmi_orchestrator.strategy.structured_common import TableMapping
 

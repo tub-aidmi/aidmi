@@ -1,10 +1,10 @@
 """ExecutionEvaluator — dbt run signals."""
 
 from __future__ import annotations
+
 from typing import Any
 
 from aidmi_orchestrator.evaluator.base import (
-    Evaluator,
     RunArtifacts,
     register_evaluator,
 )

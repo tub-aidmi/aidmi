@@ -6,14 +6,13 @@ import asyncio
 from types import SimpleNamespace
 from unittest.mock import AsyncMock
 
-from pydantic_ai.models.test import TestModel
-
 from aidmi_orchestrator.domain import ModelSpec
 from aidmi_orchestrator.strategy.dbt_retry import retry_failing_tables
 from aidmi_orchestrator.strategy.structured_per_table.strategy import (
     StructuredPerTable,
     StructuredPerTableConfig,
 )
+from pydantic_ai.models.test import TestModel
 
 from .test_structured_common import MAPPING_ARGS, fake_api
 

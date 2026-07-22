@@ -1,6 +1,7 @@
 """Typer CLI: run, sweep, campaign, apply-dbt, evaluate, report."""
 
 from __future__ import annotations
+
 import asyncio
 import json
 import os
@@ -15,10 +16,9 @@ from dotenv import load_dotenv
 
 load_dotenv(override=True)
 
-import aidmi_orchestrator.strategy  # noqa: F401
 import aidmi_orchestrator.evaluator  # noqa: F401
 import aidmi_orchestrator.fixtures  # noqa: F401
-
+import aidmi_orchestrator.strategy  # noqa: F401
 from aidmi_orchestrator.benchmark import (
     Benchmark,
     expand_grid,
@@ -26,8 +26,8 @@ from aidmi_orchestrator.benchmark import (
     sweep_job_status,
 )
 from aidmi_orchestrator.campaign import (
-    Campaign,
     DEFAULT_BENCHMARKS_ROOT,
+    Campaign,
     resolve_campaign,
 )
 from aidmi_orchestrator.fixtures.base import get_fixture

@@ -5,16 +5,15 @@ from __future__ import annotations
 import asyncio
 
 import pytest
-from pydantic import ValidationError
-from pydantic_ai.models.test import TestModel
-
 from aidmi_orchestrator.domain import ModelSpec
-from aidmi_orchestrator.strategy.structured_common import TableMapping
 from aidmi_orchestrator.strategy.ensemble_vote.strategy import (
     EnsembleVote,
     EnsembleVoteConfig,
     pick_candidate,
 )
+from aidmi_orchestrator.strategy.structured_common import TableMapping
+from pydantic import ValidationError
+from pydantic_ai.models.test import TestModel
 
 from .test_structured_common import MAPPING_ARGS, fake_api
 

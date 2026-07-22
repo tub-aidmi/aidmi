@@ -1,10 +1,11 @@
 """Postgres introspection → SourceSummary."""
 
 from __future__ import annotations
+
 import psycopg2
 from psycopg2.extras import RealDictCursor
 
-from aidmi_orchestrator.domain import ColumnInfo, TableInfo, SourceSummary
+from aidmi_orchestrator.domain import ColumnInfo, SourceSummary, TableInfo
 
 
 def discover(

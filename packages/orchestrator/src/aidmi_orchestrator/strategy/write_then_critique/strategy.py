@@ -1,8 +1,10 @@
 """WriteThenCritique: per-table writers + one global critic, bounded revision rounds."""
 
 from __future__ import annotations
+
 from datetime import datetime
 from typing import Literal
+
 from pydantic import BaseModel, Field
 from pydantic_ai import Agent
 
@@ -12,12 +14,13 @@ from aidmi_orchestrator.strategy.base import (
     run_coroutines,
     write_proposal,
 )
+from aidmi_orchestrator.strategy.llm_run import google_run_kwargs
+from aidmi_orchestrator.strategy.self_correction import run_dbt_self_correction
 from aidmi_orchestrator.strategy.structured_common import (
+    TableMapping,
     generate_table_mapping_safe,
     make_table_agent,
     manifest_from_mappings,
-    resolve_structured_status,
-    TableMapping,
 )
 from aidmi_orchestrator.strategy.write_then_critique.critique import (
     CritiqueReport,
@@ -29,8 +32,6 @@ from aidmi_orchestrator.strategy.write_then_critique.prompts import (
     render_proposal,
     revision_user_prompt,
 )
-from aidmi_orchestrator.strategy.llm_run import google_run_kwargs
-from aidmi_orchestrator.strategy.self_correction import run_dbt_self_correction
 from aidmi_orchestrator.trace import StrategyEvent
 
 

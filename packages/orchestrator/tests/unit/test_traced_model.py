@@ -3,15 +3,14 @@ from dataclasses import dataclass, field
 from unittest.mock import patch
 
 import pytest
+from aidmi_orchestrator.domain import ModelSpec
+from aidmi_orchestrator.llm import TracedModel, _usage_dict
+from aidmi_orchestrator.trace import LlmCallEvent, TraceSink
 from pydantic_ai.exceptions import ModelHTTPError
 from pydantic_ai.messages import ModelMessage, ModelResponse
 from pydantic_ai.models import Model, ModelRequestParameters
 from pydantic_ai.models.function import FunctionModel
 from pydantic_ai.usage import RequestUsage
-
-from aidmi_orchestrator.domain import ModelSpec
-from aidmi_orchestrator.llm import TracedModel, _usage_dict
-from aidmi_orchestrator.trace import LlmCallEvent, TraceSink
 
 
 @dataclass(init=False)

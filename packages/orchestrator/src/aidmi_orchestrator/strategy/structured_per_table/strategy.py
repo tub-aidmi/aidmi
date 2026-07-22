@@ -1,7 +1,9 @@
 """StructuredPerTable: one PydanticAI agent per target table."""
 
 from __future__ import annotations
+
 from typing import Literal
+
 from pydantic import BaseModel
 
 from aidmi_orchestrator.domain import ModelSpec, StrategyResult
@@ -10,14 +12,14 @@ from aidmi_orchestrator.strategy.base import (
     run_coroutines,
     write_proposal,
 )
+from aidmi_orchestrator.strategy.llm_run import google_run_kwargs
+from aidmi_orchestrator.strategy.self_correction import run_dbt_self_correction
 from aidmi_orchestrator.strategy.structured_common import (
     generate_table_mapping_safe,
     make_table_agent,
     manifest_from_mappings,
     resolve_structured_status,
 )
-from aidmi_orchestrator.strategy.llm_run import google_run_kwargs
-from aidmi_orchestrator.strategy.self_correction import run_dbt_self_correction
 
 
 class StructuredPerTableConfig(BaseModel):

@@ -1,7 +1,5 @@
 from pathlib import Path
 
-import pytest
-
 from aidmi_orchestrator.ddl_target_schema import parse_create_table, parse_ddl_file
 from aidmi_orchestrator.domain import TargetSchema
 

@@ -55,7 +55,7 @@ def fig_thinking_tokens(records, out_dir) -> Path:
         label="Reasoning (thoughts)",
     )
 
-    for i, c in enumerate(cells):
+    for i, _c in enumerate(cells):
         total = visible[i] + thought[i]
         if total > 0:
             pct = 100 * thought[i] / total

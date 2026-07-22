@@ -4,8 +4,9 @@ from __future__ import annotations
 
 import json
 import random
+from collections.abc import Callable
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any
 
 from faker import Faker
 
@@ -265,7 +266,9 @@ def gen_dataset(
     legacy_prefix: str,
 ) -> dict[str, list[dict[str, Any]]]:
     reset(seed_offset)
-    rate = lambda k: orphans.get(k, 0.0)
+
+    def rate(k):
+        return orphans.get(k, 0.0)
 
     accounts: list[dict[str, Any]] = []
     contacts: list[dict[str, Any]] = []

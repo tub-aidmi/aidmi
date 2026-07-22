@@ -5,8 +5,8 @@ No I/O, no behavior beyond validation. Keep this module pure.
 
 from datetime import datetime
 from typing import Any, Literal
-from pydantic import BaseModel, ConfigDict
 
+from pydantic import BaseModel, ConfigDict
 
 # ---------- Source side (produced by discover) ----------
 

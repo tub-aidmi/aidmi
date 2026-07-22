@@ -10,7 +10,6 @@ import psycopg2
 from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
 
 import aidmi_orchestrator.fixtures  # noqa: F401 — register fixtures
-
 from aidmi_orchestrator.fixtures.base import get_fixture, list_fixtures
 
 

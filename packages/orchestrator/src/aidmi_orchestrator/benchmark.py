@@ -1,12 +1,13 @@
 """Benchmark harness: run() with grid expansion."""
 
 from __future__ import annotations
+
 import asyncio
 import copy
 import itertools
 from datetime import datetime
 from pathlib import Path
-from typing import Any, IO
+from typing import IO, Any
 
 from aidmi_orchestrator.domain import BenchmarkResult, StrategyResult
 from aidmi_orchestrator.evaluator.base import (
@@ -15,7 +16,7 @@ from aidmi_orchestrator.evaluator.base import (
     make_evaluator,
 )
 from aidmi_orchestrator.fixtures.base import Fixture
-from aidmi_orchestrator.orchestrator import run_orchestrator, StrategyExecutionError
+from aidmi_orchestrator.orchestrator import StrategyExecutionError, run_orchestrator
 from aidmi_orchestrator.persistence import write_benchmark_result
 from aidmi_orchestrator.run_id import make_run_id, slug
 from aidmi_orchestrator.strategy.base import Strategy

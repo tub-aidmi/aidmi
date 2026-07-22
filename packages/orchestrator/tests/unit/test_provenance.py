@@ -1,6 +1,3 @@
-import pytest
-from pathlib import Path
-
 from aidmi_orchestrator.provenance import dbt_project_sha256, file_sha256
 
 

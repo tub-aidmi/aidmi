@@ -8,7 +8,6 @@ from pathlib import Path
 import yaml
 from ulid import ULID
 
-from aidmi_orchestrator.domain import CampaignProvenance
 from aidmi_orchestrator.provenance import make_campaign_provenance
 
 DEFAULT_BENCHMARKS_ROOT = Path("benchmarks")

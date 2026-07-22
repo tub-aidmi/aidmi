@@ -1,9 +1,9 @@
 import pytest
 from aidmi_orchestrator.domain import ModelSpec
 from aidmi_orchestrator.llm import (
+    list_providers,
     make_llm,
     register_provider,
-    list_providers,
 )
 
 

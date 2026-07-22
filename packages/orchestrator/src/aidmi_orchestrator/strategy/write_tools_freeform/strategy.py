@@ -2,12 +2,13 @@
 query + run_dbt for self-correction)."""
 
 from __future__ import annotations
+
 from typing import Literal
+
+from aidmi_pipeline.sources_yaml import ensure_sources_yaml_raw_schema
 from pydantic import BaseModel
 from pydantic_ai import Agent, Tool, UsageLimits
 from pydantic_ai.exceptions import UnexpectedModelBehavior, UsageLimitExceeded
-
-from aidmi_pipeline.sources_yaml import ensure_sources_yaml_raw_schema
 
 from aidmi_orchestrator.domain import ModelSpec, StrategyResult
 from aidmi_orchestrator.progress import log_message
@@ -24,10 +25,10 @@ from aidmi_orchestrator.strategy.write_tools_freeform.self_correction import (
     run_post_agent_dbt_loop,
 )
 from aidmi_orchestrator.strategy.write_tools_freeform.tools import (
-    make_write_file,
-    make_read_file,
     make_query_postgres,
+    make_read_file,
     make_run_dbt,
+    make_write_file,
 )
 
 

@@ -5,13 +5,11 @@ from __future__ import annotations
 import asyncio
 import json
 
-import aidmi_orchestrator.strategy  # noqa: F401
 import aidmi_orchestrator.evaluator  # noqa: F401
 import aidmi_orchestrator.fixtures  # noqa: F401
-
+import aidmi_orchestrator.strategy  # noqa: F401
 from aidmi_orchestrator.benchmark import Benchmark
 from aidmi_orchestrator.fixtures.base import get_fixture
-from aidmi_orchestrator.scripts.init_fixtures import init_fixture
 from aidmi_orchestrator.scheduler import (
     SweepJob,
     completed_keys,
@@ -19,6 +17,7 @@ from aidmi_orchestrator.scheduler import (
     filter_resumed,
     run_jobs,
 )
+from aidmi_orchestrator.scripts.init_fixtures import init_fixture
 from aidmi_orchestrator.strategy.base import make_strategy
 
 
@@ -50,7 +49,7 @@ def test_concurrent_mock_sweep_and_resume(staging_db_url, tmp_path):
     assert len(results) == 2
     assert all(r.error is None for r in results)
 
-    rows = [json.loads(l) for l in results_path.read_text().splitlines()]
+    rows = [json.loads(line) for line in results_path.read_text().splitlines()]
     assert {r["rep_index"] for r in rows} == {0, 1}
     assert all(r["metrics"]["dbt_success"] for r in rows)
 

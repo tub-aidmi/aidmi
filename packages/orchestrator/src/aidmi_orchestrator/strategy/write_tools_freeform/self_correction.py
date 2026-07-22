@@ -4,10 +4,9 @@ from __future__ import annotations
 
 from typing import Any, Protocol
 
+from aidmi_pipeline.sources_yaml import ensure_sources_yaml_raw_schema
 from pydantic_ai import Agent, UsageLimits
 from pydantic_ai.exceptions import ModelHTTPError, UnexpectedModelBehavior
-
-from aidmi_pipeline.sources_yaml import ensure_sources_yaml_raw_schema
 
 
 class _DbtRunnable(Protocol):

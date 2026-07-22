@@ -1,10 +1,9 @@
 import re
 from pathlib import Path
 
-from typer.testing import CliRunner
-
 from aidmi_orchestrator.cli import app
 from aidmi_orchestrator.report.data import load_records
+from typer.testing import CliRunner
 
 FIX = Path("packages/orchestrator/tests/unit/fixtures/mini_results.jsonl")
 

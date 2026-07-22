@@ -1,6 +1,7 @@
 """SchemaEvaluator — three modes per spec Section 8.3."""
 
 from __future__ import annotations
+
 from collections import Counter
 from typing import Any
 

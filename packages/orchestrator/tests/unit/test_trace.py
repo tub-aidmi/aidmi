@@ -1,12 +1,12 @@
 import json
 from datetime import datetime
-from pathlib import Path
+
 from aidmi_orchestrator.domain import ModelSpec
 from aidmi_orchestrator.trace import (
-    TraceSink,
     LlmCallEvent,
-    ToolCallEvent,
     StrategyEvent,
+    ToolCallEvent,
+    TraceSink,
 )
 
 

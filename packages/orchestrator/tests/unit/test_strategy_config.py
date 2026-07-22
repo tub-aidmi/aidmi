@@ -1,10 +1,10 @@
+from aidmi_orchestrator.domain import ModelSpec
 from aidmi_orchestrator.strategy.structured_per_table.strategy import (
     StructuredPerTableConfig,
 )
 from aidmi_orchestrator.strategy.write_then_critique.strategy import (
     WriteThenCritiqueConfig,
 )
-from aidmi_orchestrator.domain import ModelSpec
 
 WRITER = ModelSpec(provider="litellm", model_name="ise-ollama/qwen3.6:35b-a3b")
 

@@ -18,6 +18,7 @@ By default it targets http://localhost:4000 and emits keys for provider
 """
 
 from __future__ import annotations
+
 import argparse
 import json
 import os

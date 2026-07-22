@@ -1,20 +1,17 @@
 """Integration test: full orchestrator end-to-end with MockStrategy."""
 
-import json
 import asyncio
+import json
 
-import psycopg2
-
-from aidmi_pipeline.config import out_schema_for_run
-
-import aidmi_orchestrator.strategy  # noqa: F401
 import aidmi_orchestrator.evaluator  # noqa: F401
 import aidmi_orchestrator.fixtures  # noqa: F401
-
+import aidmi_orchestrator.strategy  # noqa: F401
+import psycopg2
+from aidmi_orchestrator.benchmark import Benchmark
 from aidmi_orchestrator.fixtures.base import get_fixture
 from aidmi_orchestrator.scripts.init_fixtures import init_fixture
 from aidmi_orchestrator.strategy.base import make_strategy
-from aidmi_orchestrator.benchmark import Benchmark
+from aidmi_pipeline.config import out_schema_for_run
 
 
 def test_mock_strategy_full_pipeline(staging_db_url, tmp_path):

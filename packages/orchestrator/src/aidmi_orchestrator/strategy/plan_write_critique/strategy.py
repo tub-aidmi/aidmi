@@ -12,12 +12,13 @@ from aidmi_orchestrator.domain import ModelSpec, StrategyResult
 from aidmi_orchestrator.progress import log_message
 from aidmi_orchestrator.strategy.base import (
     build_context_prompt,
-    run_coroutines,
     run_named_coroutines,
     write_proposal,
 )
 from aidmi_orchestrator.strategy.plan_then_execute.prompts import (
     PLANNER_SYSTEM_PROMPT as PLANNER_SYSTEM_PROMPT_METADATA,
+)
+from aidmi_orchestrator.strategy.plan_then_execute.prompts import (
     executor_user_prompt,
 )
 from aidmi_orchestrator.strategy.plan_then_execute.strategy import (
@@ -31,15 +32,15 @@ from aidmi_orchestrator.strategy.plan_write_critique.loops import (
 from aidmi_orchestrator.strategy.plan_write_critique.prompts import (
     CRITIC_SYSTEM_PROMPT,
     CRITIC_SYSTEM_PROMPT_WITH_QUERY_TOOL,
+    PLANNER_SYSTEM_PROMPT,
     critique_user_prompt,
     planner_user_prompt,
-    PLANNER_SYSTEM_PROMPT,
 )
 from aidmi_orchestrator.strategy.structured_common import (
+    TableMapping,
     make_table_agent,
     manifest_from_mappings,
     retry_user_prompt,
-    TableMapping,
 )
 from aidmi_orchestrator.strategy.write_then_critique.critique import CritiqueReport
 from aidmi_orchestrator.strategy.write_then_critique.prompts import render_proposal

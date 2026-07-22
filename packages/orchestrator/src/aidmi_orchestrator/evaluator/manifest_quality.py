@@ -1,6 +1,7 @@
 """ManifestQualityEvaluator — structural scoring of the mapping explanation artifact."""
 
 from __future__ import annotations
+
 from typing import Any
 
 from aidmi_orchestrator.evaluator.base import RunArtifacts, register_evaluator

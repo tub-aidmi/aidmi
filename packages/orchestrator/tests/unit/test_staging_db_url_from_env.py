@@ -1,5 +1,4 @@
 import pytest
-
 from aidmi_orchestrator.cli import staging_db_url_from_env
 
 

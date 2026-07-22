@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import re
-import statistics
 from pathlib import Path
 
 from aidmi_orchestrator.report.aggregate import rep_values

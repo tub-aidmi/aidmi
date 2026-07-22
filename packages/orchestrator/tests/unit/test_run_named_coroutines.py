@@ -1,7 +1,6 @@
 import asyncio
 
 import pytest
-
 from aidmi_orchestrator.strategy.base import run_named_coroutines
 
 

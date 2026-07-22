@@ -1,10 +1,12 @@
 """Trace sink + event types. Streams JSONL to disk."""
 
 from __future__ import annotations
+
 import json
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Literal, IO
+from typing import IO, Any, Literal
+
 from pydantic import BaseModel
 
 from aidmi_orchestrator.domain import ModelSpec

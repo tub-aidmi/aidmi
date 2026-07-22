@@ -1,18 +1,16 @@
 """Smoke test against Google Cloud (Agent Platform). Skipped unless GOOGLE_API_KEY is set."""
 
-import os
 import asyncio
-import pytest
+import os
 
-import aidmi_orchestrator.strategy  # noqa: F401
 import aidmi_orchestrator.evaluator  # noqa: F401
 import aidmi_orchestrator.fixtures  # noqa: F401
-
+import aidmi_orchestrator.strategy  # noqa: F401
+import pytest
+from aidmi_orchestrator.benchmark import Benchmark
 from aidmi_orchestrator.fixtures.base import get_fixture
 from aidmi_orchestrator.scripts.init_fixtures import init_fixture
 from aidmi_orchestrator.strategy.base import make_strategy
-from aidmi_orchestrator.benchmark import Benchmark
-
 
 pytestmark = pytest.mark.requires_llm
 

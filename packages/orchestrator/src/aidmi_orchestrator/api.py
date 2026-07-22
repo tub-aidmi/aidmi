@@ -1,6 +1,7 @@
 """OrchestratorAPI — the surface every strategy receives."""
 
 from __future__ import annotations
+
 import asyncio
 import re
 import time
@@ -13,9 +14,8 @@ import psycopg2
 from psycopg2.extras import RealDictCursor
 
 from aidmi_orchestrator.domain import ModelSpec, SourceSummary, TargetSchema
-from aidmi_orchestrator.trace import TraceSink, DbtRunEvent
-from aidmi_orchestrator.llm import make_llm, TracedModel
-
+from aidmi_orchestrator.llm import TracedModel, make_llm
+from aidmi_orchestrator.trace import DbtRunEvent, TraceSink
 
 _SELECT_RE = re.compile(r"^\s*(SELECT|WITH)\b", re.IGNORECASE)
 

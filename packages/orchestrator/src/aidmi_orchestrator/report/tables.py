@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import html
 import statistics
-
 from collections import Counter
 
 from aidmi_orchestrator.report.aggregate import (

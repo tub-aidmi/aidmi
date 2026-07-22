@@ -8,12 +8,12 @@ import psycopg2
 
 from aidmi_orchestrator.evaluator._ground_truth_utils import (
     TARGET_TABLES,
+    fetch_table_rows,
     harmonic_mean_f1,
     legacy_id_column,
     match_produced_to_golden,
     safe_rate,
     schema_has_table,
-    fetch_table_rows,
 )
 from aidmi_orchestrator.evaluator.base import RunArtifacts, register_evaluator
 
