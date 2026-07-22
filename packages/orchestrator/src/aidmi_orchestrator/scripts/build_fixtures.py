@@ -1291,7 +1291,7 @@ PROBLEMS: dict[str, dict[str, Any]] = {
 }
 
 
-def build_fixture(pkey: str) -> dict[str, int]:
+def build_fixture(pkey: str, out_root: Path | None = None) -> dict[str, int]:
     cfg = PROBLEMS[pkey]
     fixture_name = PROBLEM_TO_FIXTURE[pkey]
     source_schema = f"fixture_{fixture_name}_src"
@@ -1306,7 +1306,7 @@ def build_fixture(pkey: str) -> dict[str, int]:
         legacy_prefix=cfg["legacy_prefix"],
     )
 
-    out_dir = FIXTURES_DIR / fixture_name
+    out_dir = (out_root or FIXTURES_DIR) / fixture_name
     out_dir.mkdir(parents=True, exist_ok=True)
 
     source_sql = cfg["writer"](data, source_schema)
@@ -1327,7 +1327,7 @@ def build_fixture(pkey: str) -> dict[str, int]:
     return counts
 
 
-def main() -> None:
+def main(out_root: Path | None = None) -> None:
     labels = {
         "p1": "Wrong Field & Object Names",
         "p2": "Messy Data",
@@ -1336,7 +1336,7 @@ def main() -> None:
     }
     for pkey in ["p1", "p2", "p3", "p4"]:
         print(f"Building {pkey.upper()} — {labels[pkey]} ...")
-        build_fixture(pkey)
+        build_fixture(pkey, out_root)
     print("Done.")
 
 
