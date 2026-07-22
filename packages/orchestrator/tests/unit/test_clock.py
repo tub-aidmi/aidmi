@@ -1,4 +1,5 @@
-from datetime import datetime, timedelta
+import time
+from datetime import UTC, datetime, timedelta
 
 from aidmi_orchestrator.clock import utc_now
 
@@ -9,5 +10,6 @@ def test_utc_now_is_naive():
 
 def test_utc_now_tracks_utc():
     now = utc_now()
-    assert abs(now - datetime.now()) < timedelta(days=1)
+    reference = datetime.fromtimestamp(time.time(), UTC).replace(tzinfo=None)
     assert isinstance(now, datetime)
+    assert abs(now - reference) < timedelta(seconds=5)
