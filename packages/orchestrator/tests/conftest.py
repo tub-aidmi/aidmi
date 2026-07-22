@@ -24,3 +24,12 @@ def postgres_container():
 @pytest.fixture
 def staging_db_url(postgres_container):
     return postgres_container.get_connection_url(driver=None)
+
+
+_DOCKER_FIXTURES = {"postgres_container", "staging_db_url"}
+
+
+def pytest_collection_modifyitems(items):
+    for item in items:
+        if _DOCKER_FIXTURES & set(item.fixturenames):
+            item.add_marker(pytest.mark.requires_docker)

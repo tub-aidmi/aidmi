@@ -16,6 +16,12 @@ dependencies = [
 [project.scripts]
 aidmi-pipeline = "aidmi_pipeline.cli:app"
 
+[tool.pytest.ini_options]
+markers = [
+    "requires_llm: tests that hit a real LLM endpoint; skipped unless API keys are present",
+    "requires_docker: tests that need a Postgres testcontainer",
+]
+
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
