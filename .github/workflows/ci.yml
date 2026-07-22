@@ -11,6 +11,9 @@ concurrency:
 
 jobs:
   check:
+    # Same-repo PRs are already covered by the push run for the identical commit;
+    # the pull_request trigger exists only for forks, which produce no push event.
+    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name != github.repository
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
