@@ -12,7 +12,7 @@ from aidmi_orchestrator.report.data import load_records
 from aidmi_orchestrator.report.driver import build_report
 
 BASELINE_ROOT = Path("benchmarks/.baseline")
-CAMPAIGNS = ("2026-07-06-yq3v", "2026-07-07-kw8r")
+CAMPAIGNS = ("v2-final-gemini", "v2-final-ise")
 
 _DATE_RE = re.compile(r"<dc:date>.*?</dc:date>", re.DOTALL)
 _ID_RE = re.compile(r'\b(id|xlink:href|clip-path|href)="[^"]*"')
