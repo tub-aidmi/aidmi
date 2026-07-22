@@ -5,6 +5,7 @@ Override file format: a single JSON object mapping `"provider/model_name"` to
 `{"input_cost_per_token": float, "output_cost_per_token": float,
 "cached_input_cost_per_token": float | None}`.
 """
+
 from __future__ import annotations
 import json
 from dataclasses import dataclass
@@ -41,16 +42,20 @@ def load_overrides(path: Path | None) -> dict[str, PriceInfo]:
 def _load_litellm_table() -> dict:
     try:
         import litellm
+
         return getattr(litellm, "model_cost", {})
     except ImportError:
         pass
     import importlib.util
+
     spec = importlib.util.find_spec("litellm")
     if spec is None or spec.origin is None:
         return {}
     pkg_dir = Path(spec.origin).parent
-    for candidate in ["model_prices_and_context_window.json",
-                      "model_prices_and_context_window_backup.json"]:
+    for candidate in [
+        "model_prices_and_context_window.json",
+        "model_prices_and_context_window_backup.json",
+    ]:
         p = pkg_dir / candidate
         if p.exists():
             try:
@@ -78,7 +83,8 @@ def _price_from_entry(entry: dict) -> PriceInfo:
         output_cost_per_token=float(entry.get("output_cost_per_token", 0.0)),
         cached_input_cost_per_token=(
             float(entry["cache_read_input_token_cost"])
-            if "cache_read_input_token_cost" in entry else None
+            if "cache_read_input_token_cost" in entry
+            else None
         ),
         max_input_tokens=int(max_input) if max_input is not None else None,
         reasoning_cost_per_token=float(reasoning) if reasoning is not None else None,

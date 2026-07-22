@@ -23,8 +23,14 @@ _SURFACE = "#fcfcfb"
 # from a categorical ramp -- the colour only separates boxes, it carries no
 # meaning of its own.
 _FIXTURE_PALETTE = [
-    "#4C78A8", "#F58518", "#54A24B", "#B279A2",
-    "#E45756", "#72B7B2", "#EECA3B", "#9D755D",
+    "#4C78A8",
+    "#F58518",
+    "#54A24B",
+    "#B279A2",
+    "#E45756",
+    "#72B7B2",
+    "#EECA3B",
+    "#9D755D",
 ]
 
 
@@ -34,7 +40,7 @@ _FIXTURE_PALETTE = [
 # quality axes are zero-filled. Tokens and time are absolute-scale instrument
 # readings; a null there is genuinely missing (not "0 tokens"), so it drops out.
 def _outcome(getter):
-    return lambda r: (v if (v := getter(r)) is not None else 0.0)
+    return lambda r: v if (v := getter(r)) is not None else 0.0
 
 
 def _total_tokens(r):
@@ -88,10 +94,14 @@ def _draw_panel(ax, groups, colors, values, label, *, unit_axis):
     non_empty = [(p, d) for p, d in zip(positions, data) if d]
     if non_empty:
         bp = ax.boxplot(
-            [d for _, d in non_empty], positions=[p for p, _ in non_empty],
-            widths=0.55, showfliers=False, patch_artist=True,
+            [d for _, d in non_empty],
+            positions=[p for p, _ in non_empty],
+            widths=0.55,
+            showfliers=False,
+            patch_artist=True,
             medianprops=dict(color=_INK, linewidth=1.4),
-            whiskerprops=dict(color=_MUTED), capprops=dict(color=_MUTED),
+            whiskerprops=dict(color=_MUTED),
+            capprops=dict(color=_MUTED),
         )
         for (p, _), box in zip(non_empty, bp["boxes"]):
             box.set(facecolor=colors[p], alpha=0.25, edgecolor=_MUTED)
@@ -100,8 +110,14 @@ def _draw_panel(ax, groups, colors, values, label, *, unit_axis):
             continue
         xs = [p + off for off in _jitter(len(d))]
         ax.scatter(
-            xs, d, s=14, color=colors[p], alpha=0.7,
-            edgecolors=_SURFACE, linewidths=0.3, zorder=3,
+            xs,
+            d,
+            s=14,
+            color=colors[p],
+            alpha=0.7,
+            edgecolors=_SURFACE,
+            linewidths=0.3,
+            zorder=3,
         )
     ax.set_xlim(-0.6, len(groups) - 0.4)
     if unit_axis:
@@ -121,23 +137,30 @@ def _draw_violin_panel(ax, groups, colors, values, label, *, unit_axis):
     violinable = [(p, d) for p, d in non_empty if len(d) >= 2]
     if violinable:
         parts = ax.violinplot(
-            [d for _, d in violinable], positions=[p for p, _ in violinable],
-            showextrema=False, widths=0.85,
+            [d for _, d in violinable],
+            positions=[p for p, _ in violinable],
+            showextrema=False,
+            widths=0.85,
         )
         for (p, _), body in zip(violinable, parts["bodies"]):
-            body.set(facecolor=colors[p], alpha=0.28, edgecolor=colors[p],
-                     linewidth=1.1)
+            body.set(
+                facecolor=colors[p], alpha=0.28, edgecolor=colors[p], linewidth=1.1
+            )
     # Slim neutral boxplot inside carries the IQR + median + whiskers + outliers.
     if non_empty:
         ax.boxplot(
-            [d for _, d in non_empty], positions=[p for p, _ in non_empty],
-            widths=0.12, patch_artist=True, showfliers=True,
+            [d for _, d in non_empty],
+            positions=[p for p, _ in non_empty],
+            widths=0.12,
+            patch_artist=True,
+            showfliers=True,
             boxprops=dict(facecolor=_SURFACE, edgecolor=_INK, linewidth=0.9),
             medianprops=dict(color=_INK, linewidth=1.3),
             whiskerprops=dict(color=_INK, linewidth=0.9),
             capprops=dict(color=_INK, linewidth=0.9),
-            flierprops=dict(marker="o", markersize=2.5, markerfacecolor=_INK,
-                            markeredgecolor=_INK),
+            flierprops=dict(
+                marker="o", markersize=2.5, markerfacecolor=_INK, markeredgecolor=_INK
+            ),
             zorder=4,
         )
     ax.set_xlim(-0.6, len(groups) - 0.4)
@@ -148,8 +171,18 @@ def _draw_violin_panel(ax, groups, colors, values, label, *, unit_axis):
     ax.set_ylabel(label, color=_INK)
 
 
-def _dist_figure(records, out_dir, filename, salt, key, colors_for, title,
-                 order_groups=None, panel_fn=_draw_panel, subtitle_unit=None) -> Path:
+def _dist_figure(
+    records,
+    out_dir,
+    filename,
+    salt,
+    key,
+    colors_for,
+    title,
+    order_groups=None,
+    panel_fn=_draw_panel,
+    subtitle_unit=None,
+) -> Path:
     import matplotlib as mpl
     import matplotlib.pyplot as plt
 
@@ -163,27 +196,49 @@ def _dist_figure(records, out_dir, filename, salt, key, colors_for, title,
     nrows = max(len(_LEFT_METRICS), len(_RIGHT_METRICS))
     col_w = max(4.5, 0.9 * len(groups) + 2.0)
     fig, axes = plt.subplots(
-        nrows=nrows, ncols=2, squeeze=False, sharex="col",
+        nrows=nrows,
+        ncols=2,
+        squeeze=False,
+        sharex="col",
         figsize=(2 * col_w, 2.6 * nrows + 0.6),
     )
     columns = [(0, _LEFT_METRICS, True), (1, _RIGHT_METRICS, False)]
     for col, metrics, unit_axis in columns:
         for i, (label, getter) in enumerate(metrics):
             ax = axes[i][col]
-            panel_fn(ax, groups, colors, rep_values(records, key, getter),
-                     label, unit_axis=unit_axis)
+            panel_fn(
+                ax,
+                groups,
+                colors,
+                rep_values(records, key, getter),
+                label,
+                unit_axis=unit_axis,
+            )
         bottom = axes[len(metrics) - 1][col]
         bottom.set_xticks(range(len(groups)))
-        bottom.set_xticklabels(strip_common_version(groups), rotation=25,
-                               ha="right", fontsize=9, color=_INK)
+        bottom.set_xticklabels(
+            strip_common_version(groups),
+            rotation=25,
+            ha="right",
+            fontsize=9,
+            color=_INK,
+        )
 
     fig.suptitle(title, color=_INK, fontsize=12, x=0.02, y=0.985, ha="left")
     if subtitle_unit:
         counts = [sum(1 for r in records if key(r) == g) for g in groups]
-        fig.text(0.02, 0.952, _counts_subtitle(counts, subtitle_unit),
-                 ha="left", va="top", fontsize=9, color=_MUTED)
-    fig.subplots_adjust(left=0.07, right=0.98, top=0.92, bottom=0.13,
-                        wspace=0.16, hspace=0.15)
+        fig.text(
+            0.02,
+            0.952,
+            _counts_subtitle(counts, subtitle_unit),
+            ha="left",
+            va="top",
+            fontsize=9,
+            color=_MUTED,
+        )
+    fig.subplots_adjust(
+        left=0.07, right=0.98, top=0.92, bottom=0.13, wspace=0.16, hspace=0.15
+    )
 
     out = out_dir / filename
     fig.savefig(out, format="svg", metadata={"Date": None})
@@ -210,8 +265,12 @@ def _fixture_order(records):
 def fig_dist_by_strategy(records, out_dir) -> Path:
     on = [r for r in records if r.sc is True]
     return _dist_figure(
-        on, out_dir, "dist_by_strategy.svg", "aidmi-dist-strategy",
-        lambda r: r.cell, _strategy_colors,
+        on,
+        out_dir,
+        "dist_by_strategy.svg",
+        "aidmi-dist-strategy",
+        lambda r: r.cell,
+        _strategy_colors,
         "Per-strategy distribution (self-correction on) — box (IQR + median) over every run",
     )
 
@@ -219,8 +278,12 @@ def fig_dist_by_strategy(records, out_dir) -> Path:
 def fig_dist_by_fixture(records, out_dir) -> Path:
     on = [r for r in records if r.sc is True]
     return _dist_figure(
-        on, out_dir, "dist_by_fixture.svg", "aidmi-dist-fixture",
-        lambda r: r.fixture, _fixture_colors,
+        on,
+        out_dir,
+        "dist_by_fixture.svg",
+        "aidmi-dist-fixture",
+        lambda r: r.fixture,
+        _fixture_colors,
         "Per-fixture distribution (self-correction on) — box (IQR + median) over every run",
         order_groups=_fixture_order,
     )
@@ -237,8 +300,18 @@ def _fk_values_by(records, key):
     return groups
 
 
-def _fk_iqr_figure(records, out_dir, filename, salt, key, colors_for, title,
-                   order_groups=None, panel_fn=_draw_panel, subtitle_unit=None) -> Path:
+def _fk_iqr_figure(
+    records,
+    out_dir,
+    filename,
+    salt,
+    key,
+    colors_for,
+    title,
+    order_groups=None,
+    panel_fn=_draw_panel,
+    subtitle_unit=None,
+) -> Path:
     import matplotlib as mpl
     import matplotlib.pyplot as plt
 
@@ -256,13 +329,21 @@ def _fk_iqr_figure(records, out_dir, filename, salt, key, colors_for, title,
     fig, ax = plt.subplots(figsize=(col_w, 4.2))
     panel_fn(ax, groups, colors, values, "FK integrity", unit_axis=True)
     ax.set_xticks(range(len(groups)))
-    ax.set_xticklabels(strip_common_version(groups), rotation=25, ha="right",
-                       fontsize=9, color=_INK)
+    ax.set_xticklabels(
+        strip_common_version(groups), rotation=25, ha="right", fontsize=9, color=_INK
+    )
     fig.suptitle(title, color=_INK, fontsize=12, x=0.02, y=0.985, ha="left")
     if subtitle_unit:
         counts = [len(values[g]) for g in groups]
-        fig.text(0.02, 0.945, _counts_subtitle(counts, subtitle_unit),
-                 ha="left", va="top", fontsize=9, color=_MUTED)
+        fig.text(
+            0.02,
+            0.945,
+            _counts_subtitle(counts, subtitle_unit),
+            ha="left",
+            va="top",
+            fontsize=9,
+            color=_MUTED,
+        )
     fig.subplots_adjust(left=0.1, right=0.98, top=0.9, bottom=0.2)
 
     out = out_dir / filename
@@ -274,8 +355,12 @@ def _fk_iqr_figure(records, out_dir, filename, salt, key, colors_for, title,
 def fig_fk_iqr_by_strategy(records, out_dir) -> Path:
     on = [r for r in records if r.sc is True]
     return _fk_iqr_figure(
-        on, out_dir, "fk_iqr_by_strategy.svg", "aidmi-fk-iqr-strategy",
-        lambda r: r.cell, _strategy_colors,
+        on,
+        out_dir,
+        "fk_iqr_by_strategy.svg",
+        "aidmi-fk-iqr-strategy",
+        lambda r: r.cell,
+        _strategy_colors,
         "FK integrity by strategy (self-correction on) — box (IQR + median) over every run",
     )
 
@@ -283,8 +368,12 @@ def fig_fk_iqr_by_strategy(records, out_dir) -> Path:
 def fig_fk_iqr_by_fixture(records, out_dir) -> Path:
     on = [r for r in records if r.sc is True]
     return _fk_iqr_figure(
-        on, out_dir, "fk_iqr_by_fixture.svg", "aidmi-fk-iqr-fixture",
-        lambda r: r.fixture, _fixture_colors,
+        on,
+        out_dir,
+        "fk_iqr_by_fixture.svg",
+        "aidmi-fk-iqr-fixture",
+        lambda r: r.fixture,
+        _fixture_colors,
         "FK integrity by fixture (self-correction on) — box (IQR + median) over every run",
         order_groups=_fixture_order,
     )
@@ -293,20 +382,30 @@ def fig_fk_iqr_by_fixture(records, out_dir) -> Path:
 def fig_fk_violin_by_strategy(records, out_dir) -> Path:
     on = [r for r in records if r.sc is True]
     return _fk_iqr_figure(
-        on, out_dir, "fk_violin_by_strategy.svg", "aidmi-fk-violin-strategy",
-        lambda r: r.cell, _strategy_colors,
+        on,
+        out_dir,
+        "fk_violin_by_strategy.svg",
+        "aidmi-fk-violin-strategy",
+        lambda r: r.cell,
+        _strategy_colors,
         "FK integrity by strategy (self-correction on)",
-        panel_fn=_draw_violin_panel, subtitle_unit="strategy",
+        panel_fn=_draw_violin_panel,
+        subtitle_unit="strategy",
     )
 
 
 def fig_fk_violin_by_fixture(records, out_dir) -> Path:
     on = [r for r in records if r.sc is True]
     return _fk_iqr_figure(
-        on, out_dir, "fk_violin_by_fixture.svg", "aidmi-fk-violin-fixture",
-        lambda r: r.fixture, _fixture_colors,
+        on,
+        out_dir,
+        "fk_violin_by_fixture.svg",
+        "aidmi-fk-violin-fixture",
+        lambda r: r.fixture,
+        _fixture_colors,
         "FK integrity by fixture (self-correction on)",
-        order_groups=_fixture_order, panel_fn=_draw_violin_panel,
+        order_groups=_fixture_order,
+        panel_fn=_draw_violin_panel,
         subtitle_unit="fixture",
     )
 
@@ -343,33 +442,43 @@ def fig_recall_violin_sc(records, out_dir) -> Path:
     non_empty = [(p, d) for p, d in zip(positions, data) if d]
     if non_empty:
         parts = ax.violinplot(
-            [d for _, d in non_empty], positions=[p for p, _ in non_empty],
-            showextrema=False, widths=0.85,
+            [d for _, d in non_empty],
+            positions=[p for p, _ in non_empty],
+            showextrema=False,
+            widths=0.85,
         )
         for body in parts["bodies"]:
             body.set(facecolor="#e6e5e2", alpha=1.0, edgecolor=_INK, linewidth=1.1)
         ax.boxplot(
-            [d for _, d in non_empty], positions=[p for p, _ in non_empty],
-            widths=0.08, patch_artist=True, showfliers=True,
+            [d for _, d in non_empty],
+            positions=[p for p, _ in non_empty],
+            widths=0.08,
+            patch_artist=True,
+            showfliers=True,
             boxprops=dict(facecolor=_SURFACE, edgecolor=_INK, linewidth=1.0),
             medianprops=dict(color=_INK, linewidth=1.4),
             whiskerprops=dict(color=_INK, linewidth=1.0),
             capprops=dict(color=_INK, linewidth=1.0),
-            flierprops=dict(marker="o", markersize=3, markerfacecolor=_INK,
-                            markeredgecolor=_INK),
+            flierprops=dict(
+                marker="o", markersize=3, markerfacecolor=_INK, markeredgecolor=_INK
+            ),
             zorder=4,
         )
 
     ax.set_xlim(-0.6, len(states) - 0.4)
     ax.set_ylim(-0.05, 1.08)
     ax.set_xticks(positions)
-    ax.set_xticklabels([f"sc {label}\n(n={len(d)})" for (_, label), d in zip(states, data)],
-                       color=_INK)
+    ax.set_xticklabels(
+        [f"sc {label}\n(n={len(d)})" for (_, label), d in zip(states, data)], color=_INK
+    )
     ax.set_ylabel("Recall", color=_INK)
     ax.grid(False)
     fig.suptitle(
         "Recall distribution: self-correction off vs on",
-        color=_INK, fontsize=11.5, x=0.02, ha="left",
+        color=_INK,
+        fontsize=11.5,
+        x=0.02,
+        ha="left",
     )
     fig.subplots_adjust(left=0.12, right=0.97, top=0.9, bottom=0.13)
 
@@ -382,20 +491,30 @@ def fig_recall_violin_sc(records, out_dir) -> Path:
 def fig_violin_by_strategy(records, out_dir) -> Path:
     on = [r for r in records if r.sc is True]
     return _dist_figure(
-        on, out_dir, "violin_by_strategy.svg", "aidmi-violin-strategy",
-        lambda r: r.cell, _strategy_colors,
+        on,
+        out_dir,
+        "violin_by_strategy.svg",
+        "aidmi-violin-strategy",
+        lambda r: r.cell,
+        _strategy_colors,
         "Per-strategy distribution (self-correction on)",
-        panel_fn=_draw_violin_panel, subtitle_unit="strategy",
+        panel_fn=_draw_violin_panel,
+        subtitle_unit="strategy",
     )
 
 
 def fig_violin_by_fixture(records, out_dir) -> Path:
     on = [r for r in records if r.sc is True]
     return _dist_figure(
-        on, out_dir, "violin_by_fixture.svg", "aidmi-violin-fixture",
-        lambda r: r.fixture, _fixture_colors,
+        on,
+        out_dir,
+        "violin_by_fixture.svg",
+        "aidmi-violin-fixture",
+        lambda r: r.fixture,
+        _fixture_colors,
         "Per-fixture distribution (self-correction on)",
-        order_groups=_fixture_order, panel_fn=_draw_violin_panel,
+        order_groups=_fixture_order,
+        panel_fn=_draw_violin_panel,
         subtitle_unit="fixture",
     )
 
@@ -404,8 +523,12 @@ def fig_dist_by_strategy_for_fixture(records, out_dir, fixture) -> Path:
     on = [r for r in records if r.sc is True and r.fixture == fixture]
     slug = _slug(fixture)
     return _dist_figure(
-        on, out_dir, f"dist_strategy__{slug}.svg", f"aidmi-dist-strategy-{slug}",
-        lambda r: r.cell, _strategy_colors,
+        on,
+        out_dir,
+        f"dist_strategy__{slug}.svg",
+        f"aidmi-dist-strategy-{slug}",
+        lambda r: r.cell,
+        _strategy_colors,
         "Per-strategy distribution (self-correction on) — box (IQR + median) over every run",
     )
 
@@ -414,8 +537,12 @@ def fig_dist_by_fixture_for_strategy(records, out_dir, cell) -> Path:
     on = [r for r in records if r.sc is True and r.cell == cell]
     slug = _slug(cell)
     return _dist_figure(
-        on, out_dir, f"dist_fixture__{slug}.svg", f"aidmi-dist-fixture-{slug}",
-        lambda r: r.fixture, _fixture_colors,
+        on,
+        out_dir,
+        f"dist_fixture__{slug}.svg",
+        f"aidmi-dist-fixture-{slug}",
+        lambda r: r.fixture,
+        _fixture_colors,
         "Per-fixture distribution (self-correction on) — box (IQR + median) over every run",
         order_groups=_fixture_order,
     )

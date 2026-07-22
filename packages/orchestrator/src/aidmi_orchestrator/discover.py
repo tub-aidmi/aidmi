@@ -1,4 +1,5 @@
 """Postgres introspection → SourceSummary."""
+
 from __future__ import annotations
 import psycopg2
 from psycopg2.extras import RealDictCursor
@@ -6,7 +7,9 @@ from psycopg2.extras import RealDictCursor
 from aidmi_orchestrator.domain import ColumnInfo, TableInfo, SourceSummary
 
 
-def discover(db_url: str, dataset_name: str, samples_per_table: int = 100) -> SourceSummary:
+def discover(
+    db_url: str, dataset_name: str, samples_per_table: int = 100
+) -> SourceSummary:
     tables: list[TableInfo] = []
     with psycopg2.connect(db_url) as conn:
         with conn.cursor() as cur:
@@ -49,12 +52,14 @@ def discover(db_url: str, dataset_name: str, samples_per_table: int = 100) -> So
                 )
                 sample_rows = [dict(r) for r in cur.fetchall()]
 
-            tables.append(TableInfo(
-                db_schema=dataset_name,
-                name=table_name,
-                columns=columns,
-                row_count=row_count,
-                sample_rows=sample_rows,
-            ))
+            tables.append(
+                TableInfo(
+                    db_schema=dataset_name,
+                    name=table_name,
+                    columns=columns,
+                    row_count=row_count,
+                    sample_rows=sample_rows,
+                )
+            )
 
     return SourceSummary(tables=tables)

@@ -1,4 +1,5 @@
 """Typer CLI: run, sweep, campaign, apply-dbt, evaluate, report."""
+
 from __future__ import annotations
 import asyncio
 import json
@@ -18,7 +19,12 @@ import aidmi_orchestrator.strategy  # noqa: F401
 import aidmi_orchestrator.evaluator  # noqa: F401
 import aidmi_orchestrator.fixtures  # noqa: F401
 
-from aidmi_orchestrator.benchmark import Benchmark, expand_grid, parse_strategy_spec, sweep_job_status
+from aidmi_orchestrator.benchmark import (
+    Benchmark,
+    expand_grid,
+    parse_strategy_spec,
+    sweep_job_status,
+)
 from aidmi_orchestrator.campaign import (
     Campaign,
     DEFAULT_BENCHMARKS_ROOT,
@@ -83,7 +89,11 @@ def _attach_provenance(
     workspace_run_dir: Path,
 ):
     spec_rel = _spec_repo_relative(strategy_spec_path) if strategy_spec_path else None
-    spec_hash = file_sha256(strategy_spec_path) if strategy_spec_path and strategy_spec_path.is_file() else None
+    spec_hash = (
+        file_sha256(strategy_spec_path)
+        if strategy_spec_path and strategy_spec_path.is_file()
+        else None
+    )
     prov = make_run_provenance(
         campaign_id=campaign_id,
         strategy_spec_path=spec_rel,
@@ -100,7 +110,9 @@ app.add_typer(campaign_app, name="campaign")
 @campaign_app.command("new")
 def campaign_new(
     label: Annotated[str | None, typer.Argument(help="optional human label")] = None,
-    benchmarks_root: Annotated[Path, typer.Option(help="benchmarks root directory")] = DEFAULT_BENCHMARKS_ROOT,
+    benchmarks_root: Annotated[
+        Path, typer.Option(help="benchmarks root directory")
+    ] = DEFAULT_BENCHMARKS_ROOT,
 ):
     """Create a new campaign directory."""
     camp = Campaign.create(label=label, root=benchmarks_root)
@@ -114,11 +126,22 @@ def run(
     fixture: Annotated[str, typer.Option(help="registered fixture name")],
     strategy_spec: Annotated[Path, typer.Option(help="path to a strategy YAML")],
     campaign: Annotated[str, typer.Option(help="campaign id or path")],
-    run_id: Annotated[str | None, typer.Option(help="optional run id (auto-generated slug otherwise)")] = None,
-    workspace: Annotated[Path, typer.Option(help="transient workspace directory")] = Path("./aidmi_workspace"),
-    benchmarks_root: Annotated[Path, typer.Option(help="benchmarks root directory")] = DEFAULT_BENCHMARKS_ROOT,
-    archive_dbt: Annotated[bool, typer.Option("--archive-dbt/--no-archive-dbt", help="copy dbt into run bundle")] = True,
-    verbose: Annotated[bool, typer.Option("-v", "--verbose", help="stream trace JSONL lines to stderr")] = False,
+    run_id: Annotated[
+        str | None, typer.Option(help="optional run id (auto-generated slug otherwise)")
+    ] = None,
+    workspace: Annotated[
+        Path, typer.Option(help="transient workspace directory")
+    ] = Path("./aidmi_workspace"),
+    benchmarks_root: Annotated[
+        Path, typer.Option(help="benchmarks root directory")
+    ] = DEFAULT_BENCHMARKS_ROOT,
+    archive_dbt: Annotated[
+        bool,
+        typer.Option("--archive-dbt/--no-archive-dbt", help="copy dbt into run bundle"),
+    ] = True,
+    verbose: Annotated[
+        bool, typer.Option("-v", "--verbose", help="stream trace JSONL lines to stderr")
+    ] = False,
 ):
     """Run one orchestrator pass and record into a campaign."""
     spec = yaml.safe_load(strategy_spec.read_text(encoding="utf-8"))
@@ -168,13 +191,33 @@ def run(
 def sweep(
     campaign: Annotated[str, typer.Option(help="campaign id or path")],
     fixture: Annotated[str | None, typer.Option(help="single fixture override")] = None,
-    runs_per_cell: Annotated[int, typer.Option(help="repetitions per cell (overrides grid YAML)")] = 1,
-    workspace: Annotated[Path, typer.Option(help="transient workspace directory")] = Path("./aidmi_workspace"),
-    benchmarks_root: Annotated[Path, typer.Option(help="benchmarks root directory")] = DEFAULT_BENCHMARKS_ROOT,
-    concurrency: Annotated[int | None, typer.Option(help="parallel runs (overrides grid YAML)")] = None,
-    resume: Annotated[bool, typer.Option("--resume/--no-resume", help="skip completed (spec, fixture, rep) tuples")] = True,
-    archive_dbt: Annotated[bool, typer.Option("--archive-dbt/--no-archive-dbt", help="copy dbt into run bundles")] = True,
-    verbose: Annotated[bool, typer.Option("-v", "--verbose", help="stream trace (concurrency 1 only)")] = False,
+    runs_per_cell: Annotated[
+        int, typer.Option(help="repetitions per cell (overrides grid YAML)")
+    ] = 1,
+    workspace: Annotated[
+        Path, typer.Option(help="transient workspace directory")
+    ] = Path("./aidmi_workspace"),
+    benchmarks_root: Annotated[
+        Path, typer.Option(help="benchmarks root directory")
+    ] = DEFAULT_BENCHMARKS_ROOT,
+    concurrency: Annotated[
+        int | None, typer.Option(help="parallel runs (overrides grid YAML)")
+    ] = None,
+    resume: Annotated[
+        bool,
+        typer.Option(
+            "--resume/--no-resume", help="skip completed (spec, fixture, rep) tuples"
+        ),
+    ] = True,
+    archive_dbt: Annotated[
+        bool,
+        typer.Option(
+            "--archive-dbt/--no-archive-dbt", help="copy dbt into run bundles"
+        ),
+    ] = True,
+    verbose: Annotated[
+        bool, typer.Option("-v", "--verbose", help="stream trace (concurrency 1 only)")
+    ] = False,
 ):
     """Sweep cells from the campaign's grid.yaml."""
     from aidmi_orchestrator.scheduler import (
@@ -197,9 +240,13 @@ def sweep(
     if not fixtures:
         raise typer.BadParameter("provide --fixture or a 'fixture' key in grid.yaml.")
 
-    resolved_runs = runs_per_cell if runs_per_cell != 1 else int(grid_data.get("runs_per_cell", 1))
+    resolved_runs = (
+        runs_per_cell if runs_per_cell != 1 else int(grid_data.get("runs_per_cell", 1))
+    )
     resolved_concurrency = concurrency or int(grid_data.get("concurrency", 3))
-    prefixes = tuple(grid_data.get("exclusive_model_prefixes", list(DEFAULT_EXCLUSIVE_PREFIXES)))
+    prefixes = tuple(
+        grid_data.get("exclusive_model_prefixes", list(DEFAULT_EXCLUSIVE_PREFIXES))
+    )
     per_model_exclusive = bool(grid_data.get("per_model_exclusive", False))
 
     cells = expand_grid(grid_data)
@@ -214,10 +261,14 @@ def sweep(
     log_message(f"cells: {', '.join(cell_names)}", scope="sweep")
 
     staging_url = _require_staging_url()
-    benches = {fx: Benchmark(get_fixture(fx), workspace, staging_url) for fx in fixtures}
+    benches = {
+        fx: Benchmark(get_fixture(fx), workspace, staging_url) for fx in fixtures
+    }
     for job in jobs:
         if job.fixture_name not in benches:
-            benches[job.fixture_name] = Benchmark(get_fixture(job.fixture_name), workspace, staging_url)
+            benches[job.fixture_name] = Benchmark(
+                get_fixture(job.fixture_name), workspace, staging_url
+            )
 
     results_path = camp.results_jsonl
     if resume:
@@ -236,7 +287,9 @@ def sweep(
 
     mirror = sys.stderr if (verbose and resolved_concurrency == 1) else None
     if verbose and resolved_concurrency > 1:
-        log_message("verbose trace JSONL mirroring disabled for concurrency > 1", scope="sweep")
+        log_message(
+            "verbose trace JSONL mirroring disabled for concurrency > 1", scope="sweep"
+        )
 
     total = len(jobs)
     counter = {"done": 0, "next": 0}
@@ -309,7 +362,9 @@ def apply_dbt_cmd(
     run_id: Annotated[str, typer.Option("--run-id", help="run id to apply")],
     campaign: Annotated[str, typer.Option(help="campaign id or path")],
     rep_index: Annotated[int, typer.Option(help="rep index for repeated cells")] = 0,
-    benchmarks_root: Annotated[Path, typer.Option(help="benchmarks root directory")] = DEFAULT_BENCHMARKS_ROOT,
+    benchmarks_root: Annotated[
+        Path, typer.Option(help="benchmarks root directory")
+    ] = DEFAULT_BENCHMARKS_ROOT,
 ):
     """Re-apply archived dbt SQL from a recorded run (transform only, no LLM)."""
     camp = resolve_campaign(campaign, benchmarks_root)
@@ -332,7 +387,9 @@ def evaluate(
     run_id: Annotated[str, typer.Option("--run-id", help="run id to evaluate")],
     campaign: Annotated[str, typer.Option(help="campaign id or path")],
     rep_index: Annotated[int, typer.Option(help="rep index for repeated cells")] = 0,
-    benchmarks_root: Annotated[Path, typer.Option(help="benchmarks root directory")] = DEFAULT_BENCHMARKS_ROOT,
+    benchmarks_root: Annotated[
+        Path, typer.Option(help="benchmarks root directory")
+    ] = DEFAULT_BENCHMARKS_ROOT,
 ):
     """Re-run evaluators against a recorded run's out_schema (no LLM)."""
     camp = resolve_campaign(campaign, benchmarks_root)
@@ -350,11 +407,17 @@ def evaluate(
 
 @app.command()
 def report(
-    results: Annotated[list[Path], typer.Argument(help="campaign dirs or results.jsonl files")],
-    out: Annotated[Path, typer.Option(help="report output directory")] = Path("./report"),
+    results: Annotated[
+        list[Path], typer.Argument(help="campaign dirs or results.jsonl files")
+    ],
+    out: Annotated[Path, typer.Option(help="report output directory")] = Path(
+        "./report"
+    ),
     exclude: Annotated[
         list[str] | None,
-        typer.Option(help="strategy (cell) to drop, on top of EXCLUDED_STRATEGIES; repeatable"),
+        typer.Option(
+            help="strategy (cell) to drop, on top of EXCLUDED_STRATEGIES; repeatable"
+        ),
     ] = None,
 ):
     """Render benchmark campaign(s) into an SVG figure gallery."""

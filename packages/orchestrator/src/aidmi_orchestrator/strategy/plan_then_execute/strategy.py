@@ -1,4 +1,5 @@
 """PlanThenExecute: one global planner call, then per-table writers following the plan."""
+
 from __future__ import annotations
 from datetime import datetime
 from typing import Literal
@@ -6,12 +7,19 @@ from pydantic import BaseModel, Field
 from pydantic_ai import Agent
 
 from aidmi_orchestrator.domain import ModelSpec, StrategyResult
-from aidmi_orchestrator.strategy.base import build_context_prompt, run_coroutines, write_proposal
+from aidmi_orchestrator.strategy.base import (
+    build_context_prompt,
+    run_coroutines,
+    write_proposal,
+)
 from aidmi_orchestrator.strategy.structured_common import (
-    make_table_agent, manifest_from_mappings,
+    make_table_agent,
+    manifest_from_mappings,
 )
 from aidmi_orchestrator.strategy.plan_then_execute.prompts import (
-    PLANNER_SYSTEM_PROMPT, executor_user_prompt, planner_user_prompt,
+    PLANNER_SYSTEM_PROMPT,
+    executor_user_prompt,
+    planner_user_prompt,
 )
 from aidmi_orchestrator.strategy.self_correction import run_dbt_self_correction
 from aidmi_orchestrator.trace import StrategyEvent
@@ -40,14 +48,18 @@ def plan_slice_text(plan: MappingPlan, target_table_name: str) -> str:
     lines = [f"Overview: {plan.overview}"] if plan.overview else []
     slice_ = next((t for t in plan.tables if t.target_table == target_table_name), None)
     if slice_ is None:
-        lines.append(f"(The plan has no specific plan for `{target_table_name}` — map it yourself, consistent with the overview.)")
+        lines.append(
+            f"(The plan has no specific plan for `{target_table_name}` — map it yourself, consistent with the overview.)"
+        )
         return "\n".join(lines)
     lines.append(f"Source tables: {', '.join(slice_.source_tables) or '(none listed)'}")
     if slice_.join_keys:
         lines.append(f"Join keys: {', '.join(slice_.join_keys)}")
     for c in slice_.columns:
         hint = f" ({c.transform_hint})" if c.transform_hint else ""
-        lines.append(f"- {c.target_column} <- {', '.join(c.source_columns) or '(unspecified)'}{hint}")
+        lines.append(
+            f"- {c.target_column} <- {', '.join(c.source_columns) or '(unspecified)'}{hint}"
+        )
     if slice_.notes:
         lines.append(f"Notes: {slice_.notes}")
     return "\n".join(lines)
@@ -56,7 +68,9 @@ def plan_slice_text(plan: MappingPlan, target_table_name: str) -> str:
 class PlanThenExecuteConfig(BaseModel):
     planner_model: ModelSpec
     writer_model: ModelSpec | None = None
-    context_mode: Literal["metadata_only", "metadata_plus_samples", "live_query_tool"] = "metadata_plus_samples"
+    context_mode: Literal[
+        "metadata_only", "metadata_plus_samples", "live_query_tool"
+    ] = "metadata_plus_samples"
     samples_per_table: int = 3
     max_query_tool_rows: int = 100
     serial_llm_calls: bool = False
@@ -75,21 +89,34 @@ class PlanThenExecute:
             raise ValueError("plan_then_execute requires a target_schema")
 
         planner = api.make_llm(self.config.planner_model, role="planner")
-        writer = api.make_llm(self.config.writer_model or self.config.planner_model, role="writer")
+        writer = api.make_llm(
+            self.config.writer_model or self.config.planner_model, role="writer"
+        )
         context = build_context_prompt(
-            api.source_summary, api.target_schema, self.config.context_mode,
+            api.source_summary,
+            api.target_schema,
+            self.config.context_mode,
             samples_per_table=self.config.samples_per_table,
         )
 
-        planner_agent = Agent(planner, output_type=MappingPlan, system_prompt=PLANNER_SYSTEM_PROMPT)
+        planner_agent = Agent(
+            planner, output_type=MappingPlan, system_prompt=PLANNER_SYSTEM_PROMPT
+        )
         plan = (await planner_agent.run(planner_user_prompt(context))).output
-        api.trace.record(StrategyEvent(
-            timestamp=datetime.utcnow(), label="plan_complete",
-            data={"overview": plan.overview, "tables_planned": [t.target_table for t in plan.tables]},
-        ))
+        api.trace.record(
+            StrategyEvent(
+                timestamp=datetime.utcnow(),
+                label="plan_complete",
+                data={
+                    "overview": plan.overview,
+                    "tables_planned": [t.target_table for t in plan.tables],
+                },
+            )
+        )
 
         writer_agent = make_table_agent(
-            writer, api=api,
+            writer,
+            api=api,
             enable_query_tool=(self.config.context_mode == "live_query_tool"),
             max_query_tool_rows=self.config.max_query_tool_rows,
         )
@@ -107,13 +134,19 @@ class PlanThenExecute:
         )
 
         mappings = [
-            m.model_copy(update={"reasoning": f"{plan.overview}\n{m.reasoning}".strip()})
+            m.model_copy(
+                update={"reasoning": f"{plan.overview}\n{m.reasoning}".strip()}
+            )
             for m in mappings
         ]
 
         sql_by_table = {m.target_table: m.dbt_sql for m in mappings}
-        source_tables = sorted({(t.db_schema, t.name) for t in api.source_summary.tables})
-        write_proposal(api.dbt_project_path, sql_by_table, source_tables, api.source_schema)
+        source_tables = sorted(
+            {(t.db_schema, t.name) for t in api.source_summary.tables}
+        )
+        write_proposal(
+            api.dbt_project_path, sql_by_table, source_tables, api.source_schema
+        )
 
         mappings_by_table = {m.target_table: m for m in mappings}
 

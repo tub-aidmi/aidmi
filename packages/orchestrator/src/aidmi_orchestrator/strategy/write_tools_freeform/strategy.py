@@ -1,5 +1,6 @@
 """WriteToolsFreeform: a single agent with file-write tools (optionally with
 query + run_dbt for self-correction)."""
+
 from __future__ import annotations
 from typing import Literal
 from pydantic import BaseModel
@@ -23,13 +24,18 @@ from aidmi_orchestrator.strategy.write_tools_freeform.self_correction import (
     run_post_agent_dbt_loop,
 )
 from aidmi_orchestrator.strategy.write_tools_freeform.tools import (
-    make_write_file, make_read_file, make_query_postgres, make_run_dbt,
+    make_write_file,
+    make_read_file,
+    make_query_postgres,
+    make_run_dbt,
 )
 
 
 class WriteToolsFreeformConfig(BaseModel):
     writer_model: ModelSpec
-    context_mode: Literal["metadata_only", "metadata_plus_samples", "live_query_tool"] = "metadata_plus_samples"
+    context_mode: Literal[
+        "metadata_only", "metadata_plus_samples", "live_query_tool"
+    ] = "metadata_plus_samples"
     samples_per_table: int = 3
     max_query_tool_rows: int = 100
     max_tool_turns: int = 20
@@ -53,12 +59,19 @@ class WriteToolsFreeform:
             Tool(make_read_file(api), name="read_file"),
         ]
         if self.config.context_mode == "live_query_tool":
-            tools.append(Tool(
-                make_query_postgres(api, self.config.max_query_tool_rows),
-                name="query_postgres",
-            ))
+            tools.append(
+                Tool(
+                    make_query_postgres(api, self.config.max_query_tool_rows),
+                    name="query_postgres",
+                )
+            )
         if self.config.enable_self_correction and self.config.inline_run_dbt_tool:
-            tools.append(Tool(make_run_dbt(api, self.config.max_self_correction_passes), name="run_dbt"))
+            tools.append(
+                Tool(
+                    make_run_dbt(api, self.config.max_self_correction_passes),
+                    name="run_dbt",
+                )
+            )
 
         usage_limits = UsageLimits(request_limit=self.config.max_tool_turns)
         agent = Agent(
@@ -70,7 +83,9 @@ class WriteToolsFreeform:
             ),
         )
         context = build_context_prompt(
-            api.source_summary, api.target_schema, self.config.context_mode,
+            api.source_summary,
+            api.target_schema,
+            self.config.context_mode,
             samples_per_table=self.config.samples_per_table,
         )
         log_message(
@@ -95,7 +110,9 @@ class WriteToolsFreeform:
         models_dir = api.dbt_project_path / "models"
         ensure_sources_yaml_raw_schema(models_dir, api.source_schema)
         produced = [p.stem for p in discover_model_sql_files(api.dbt_project_path)]
-        log_message(f"agent finished: {len(produced)} model(s) written", scope=self.name)
+        log_message(
+            f"agent finished: {len(produced)} model(s) written", scope=self.name
+        )
 
         fixer_agent = None
         fixer_run_kwargs = None

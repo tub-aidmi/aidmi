@@ -1,4 +1,5 @@
 """Failure-accounting: quality means reported both with and without failed runs."""
+
 from __future__ import annotations
 
 from types import SimpleNamespace

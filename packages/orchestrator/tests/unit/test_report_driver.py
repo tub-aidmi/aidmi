@@ -7,12 +7,28 @@ from aidmi_orchestrator.report.data import load_records
 from aidmi_orchestrator.report.driver import build_report
 
 NAV_ORDER_SINGLE_MODEL = [
-    "summary", "levers", "bar_plots", "correlation", "heatmaps", "distribution",
-    "violin", "strategy_by_fixture", "fixture_by_strategy", "wip",
+    "summary",
+    "levers",
+    "bar_plots",
+    "correlation",
+    "heatmaps",
+    "distribution",
+    "violin",
+    "strategy_by_fixture",
+    "fixture_by_strategy",
+    "wip",
 ]
 NAV_ORDER_MULTI_MODEL = [
-    "summary", "levers", "bar_plots", "correlation", "heatmaps", "distribution",
-    "violin", "strategy_by_fixture", "fixture_by_strategy", "wip",
+    "summary",
+    "levers",
+    "bar_plots",
+    "correlation",
+    "heatmaps",
+    "distribution",
+    "violin",
+    "strategy_by_fixture",
+    "fixture_by_strategy",
+    "wip",
     "cross_campaign",
 ]
 
@@ -82,7 +98,9 @@ def test_build_report_uses_campaign_label_in_title(tmp_path):
 
     build_report(records, tmp_path, labels={campaign_id: "My Campaign"})
 
-    title = re.search(r"<title>(.*?)</title>", (tmp_path / "index.html").read_text()).group(1)
+    title = re.search(
+        r"<title>(.*?)</title>", (tmp_path / "index.html").read_text()
+    ).group(1)
     assert "My Campaign" in title
     assert campaign_id not in title
 

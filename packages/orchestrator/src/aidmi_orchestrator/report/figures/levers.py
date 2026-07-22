@@ -42,8 +42,7 @@ def _total_tokens(r):
     return (r.tokens_in or 0) + (r.tokens_out or 0)
 
 
-def _draw_panel(ax, cells, model, mat_or_rec, overall, x_order, *, is_rate,
-                unit_axis):
+def _draw_panel(ax, cells, model, mat_or_rec, overall, x_order, *, is_rate, unit_axis):
     for cell in cells:
         color = color_for_cell(cell)
         pts = [
@@ -57,26 +56,44 @@ def _draw_panel(ax, cells, model, mat_or_rec, overall, x_order, *, is_rate,
         ys = [p[1] for p in pts]
         if len(pts) >= 2:
             ax.plot(
-                xs, ys, color=color, lw=2, marker=_DEFAULT_MARKER,
-                markersize=7, markerfacecolor=color, markeredgecolor=_SURFACE,
+                xs,
+                ys,
+                color=color,
+                lw=2,
+                marker=_DEFAULT_MARKER,
+                markersize=7,
+                markerfacecolor=color,
+                markeredgecolor=_SURFACE,
                 zorder=3,
             )
         else:
             ax.scatter(
-                xs, ys, color=color, marker=_DEFAULT_MARKER, s=50,
-                edgecolors=_SURFACE, linewidths=1.0, zorder=3,
+                xs,
+                ys,
+                color=color,
+                marker=_DEFAULT_MARKER,
+                s=50,
+                edgecolors=_SURFACE,
+                linewidths=1.0,
+                zorder=3,
             )
 
     overall_pts = [
-        (i, overall[(model, x)]) for i, x in enumerate(x_order)
-        if (model, x) in overall
+        (i, overall[(model, x)]) for i, x in enumerate(x_order) if (model, x) in overall
     ]
     if len(overall_pts) >= 2:
         ox = [p[0] for p in overall_pts]
         oy = [p[1] for p in overall_pts]
         ax.plot(
-            ox, oy, color=_OVERALL, lw=2.5, linestyle="--", marker="D",
-            markersize=6, zorder=4, alpha=0.85,
+            ox,
+            oy,
+            color=_OVERALL,
+            lw=2.5,
+            linestyle="--",
+            marker="D",
+            markersize=6,
+            zorder=4,
+            alpha=0.85,
         )
 
     ax.set_xlim(-0.35, len(x_order) - 1 + 0.35)
@@ -101,8 +118,13 @@ def _legend(fig, cells, *, y, ncol):
 
     handles = [
         Line2D(
-            [], [], marker=_DEFAULT_MARKER, linestyle="none", markersize=8,
-            markerfacecolor=color_for_cell(c), markeredgecolor=_SURFACE,
+            [],
+            [],
+            marker=_DEFAULT_MARKER,
+            linestyle="none",
+            markersize=8,
+            markerfacecolor=color_for_cell(c),
+            markeredgecolor=_SURFACE,
             label=c,
         )
         for c in cells
@@ -111,20 +133,41 @@ def _legend(fig, cells, *, y, ncol):
         return
     handles.append(
         Line2D(
-            [], [], color=_OVERALL, lw=2.5, linestyle="--", marker="D",
-            markersize=6, alpha=0.85, label="overall mean",
+            [],
+            [],
+            color=_OVERALL,
+            lw=2.5,
+            linestyle="--",
+            marker="D",
+            markersize=6,
+            alpha=0.85,
+            label="overall mean",
         )
     )
     leg = fig.legend(
-        handles=handles, title="Strategy (cell)", loc="lower center",
-        bbox_to_anchor=(0.5, y), ncol=ncol, labelcolor=_INK, frameon=False,
-        fontsize=_LEGEND_FONTSIZE, columnspacing=1.6, handletextpad=0.5,
+        handles=handles,
+        title="Strategy (cell)",
+        loc="lower center",
+        bbox_to_anchor=(0.5, y),
+        ncol=ncol,
+        labelcolor=_INK,
+        frameon=False,
+        fontsize=_LEGEND_FONTSIZE,
+        columnspacing=1.6,
+        handletextpad=0.5,
     )
     leg.get_title().set_color(_INK)
 
 
 def _slope_figure(
-    records, out_dir, filename, salt, attr, x_order, x_labels, title,
+    records,
+    out_dir,
+    filename,
+    salt,
+    attr,
+    x_order,
+    x_labels,
+    title,
     cost_by_model=None,
 ):
     import matplotlib as mpl
@@ -142,14 +185,30 @@ def _slope_figure(
     # Four stacked metric rows sharing the lever x-axis. Recall, field accuracy
     # and materialization rate sit on a [0,1] axis; tokens on an absolute axis.
     metrics = [
-        ("Recall", group_mean(filtered, key, lambda r: r.recall),
-         group_mean(filtered, model_x_key, lambda r: r.recall), True),
-        ("Field accuracy", group_mean(filtered, key, lambda r: r.field_acc),
-         group_mean(filtered, model_x_key, lambda r: r.field_acc), True),
-        ("Mat. rate", materialization_rate(filtered, key),
-         materialization_rate(filtered, model_x_key), True),
-        ("Mean tokens/run (in+out)", group_mean(filtered, key, _total_tokens),
-         group_mean(filtered, model_x_key, _total_tokens), False),
+        (
+            "Recall",
+            group_mean(filtered, key, lambda r: r.recall),
+            group_mean(filtered, model_x_key, lambda r: r.recall),
+            True,
+        ),
+        (
+            "Field accuracy",
+            group_mean(filtered, key, lambda r: r.field_acc),
+            group_mean(filtered, model_x_key, lambda r: r.field_acc),
+            True,
+        ),
+        (
+            "Mat. rate",
+            materialization_rate(filtered, key),
+            materialization_rate(filtered, model_x_key),
+            True,
+        ),
+        (
+            "Mean tokens/run (in+out)",
+            group_mean(filtered, key, _total_tokens),
+            group_mean(filtered, model_x_key, _total_tokens),
+            False,
+        ),
     ]
 
     models = sorted({r.model for r in filtered})
@@ -170,15 +229,26 @@ def _slope_figure(
     fig_h = top_in + row_in * len(metrics) + legend_in
 
     fig, axes = plt.subplots(
-        nrows=len(metrics), ncols=n_cols, sharex=True, squeeze=False,
+        nrows=len(metrics),
+        ncols=n_cols,
+        sharex=True,
+        squeeze=False,
         figsize=(fig_w, fig_h),
     )
 
     for j, model in enumerate(models):
         for i, (ylabel, values, overall, unit_axis) in enumerate(metrics):
             ax = axes[i][j]
-            _draw_panel(ax, cells, model, values, overall, x_order,
-                        is_rate=False, unit_axis=unit_axis)
+            _draw_panel(
+                ax,
+                cells,
+                model,
+                values,
+                overall,
+                x_order,
+                is_rate=False,
+                unit_axis=unit_axis,
+            )
             ax.set_ylabel(ylabel)
         top = axes[0][j]
         # Model header (multi-model only); the ctx cost delta is scoped to THIS
@@ -195,8 +265,11 @@ def _slope_figure(
 
     _legend(fig, cells, y=0.005, ncol=2)
     fig.subplots_adjust(
-        left=left_in / fig_w, right=(left_in + plot_in * n_cols) / fig_w,
-        top=1 - top_in / fig_h, bottom=legend_in / fig_h, hspace=0.2,
+        left=left_in / fig_w,
+        right=(left_in + plot_in * n_cols) / fig_w,
+        top=1 - top_in / fig_h,
+        bottom=legend_in / fig_h,
+        hspace=0.2,
     )
 
     out = out_dir / filename
@@ -207,8 +280,13 @@ def _slope_figure(
 
 def fig_lever_sc(records, out_dir) -> Path:
     return _slope_figure(
-        records, out_dir, "lever_sc.svg", "aidmi-lever-sc",
-        attr="sc", x_order=_SC_ORDER, x_labels=_SC_LABELS,
+        records,
+        out_dir,
+        "lever_sc.svg",
+        "aidmi-lever-sc",
+        attr="sc",
+        x_order=_SC_ORDER,
+        x_labels=_SC_LABELS,
         title="Lever: self-correction (off -> on)",
     )
 
@@ -229,15 +307,24 @@ def _ctx_slope(records, out_dir, filename, salt, title) -> Path:
             f"live-query ${live:.3f} (Δ {sign}${abs(delta):.3f})"
         )
     return _slope_figure(
-        records, out_dir, filename, salt,
-        attr="ctx", x_order=_CTX_ORDER, x_labels=_CTX_LABELS,
-        title=title, cost_by_model=cost_by_model,
+        records,
+        out_dir,
+        filename,
+        salt,
+        attr="ctx",
+        x_order=_CTX_ORDER,
+        x_labels=_CTX_LABELS,
+        title=title,
+        cost_by_model=cost_by_model,
     )
 
 
 def fig_lever_ctx(records, out_dir) -> Path:
     return _ctx_slope(
-        records, out_dir, "lever_ctx.svg", "aidmi-lever-ctx",
+        records,
+        out_dir,
+        "lever_ctx.svg",
+        "aidmi-lever-ctx",
         "Lever: context mode (metadata-only -> live-query)",
     )
 
@@ -248,6 +335,9 @@ def fig_lever_ctx_sc_on(records, out_dir) -> Path:
     self-correction lever."""
     on = [r for r in records if r.sc is True]
     return _ctx_slope(
-        on, out_dir, "lever_ctx_sc_on.svg", "aidmi-lever-ctx-sc-on",
+        on,
+        out_dir,
+        "lever_ctx_sc_on.svg",
+        "aidmi-lever-ctx-sc-on",
         "Lever: context mode, self-correction on (metadata-only -> live-query)",
     )

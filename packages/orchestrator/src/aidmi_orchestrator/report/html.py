@@ -24,6 +24,7 @@ entirely (from both nav and body) when `multi_model` is False, so the
 "Cross-campaign" entry is guaranteed conditional even if a caller
 forgets to omit it.
 """
+
 from __future__ import annotations
 
 import html as _html
@@ -78,16 +79,14 @@ def _render_section(section: Section, tables: dict[str, str]) -> str:
     title = _esc(section.title)
     caption = _esc(section.caption)
     figures_html = "".join(_render_figure(f, alt=title) for f in section.figures)
-    tables_html = "".join(
-        tables[key] for key in section.table_keys if key in tables
-    )
+    tables_html = "".join(tables[key] for key in section.table_keys if key in tables)
     figures_class = "figures figures--stacked" if section.stacked else "figures"
     caption_html = f'<p class="caption">{caption}</p>' if section.caption else ""
     flat_figures_html = (
         f'<div class="{figures_class}">{figures_html}</div>' if section.figures else ""
     )
     subsections_html = "".join(
-        f'<h3>{_esc(sub.title)}</h3>'
+        f"<h3>{_esc(sub.title)}</h3>"
         f'<div class="{figures_class}">'
         + "".join(_render_figure(f, alt=title) for f in sub.figures)
         + "</div>"
@@ -151,11 +150,7 @@ th { background: #f5f5f7; }
 def render_gallery(
     *, title: str, sections: list[Section], tables: dict[str, str], multi_model: bool
 ) -> str:
-    visible = [
-        s
-        for s in sections
-        if s.id != _CROSS_CAMPAIGN_ID or multi_model
-    ]
+    visible = [s for s in sections if s.id != _CROSS_CAMPAIGN_ID or multi_model]
     escaped_title = _esc(title)
     body_sections = "".join(_render_section(s, tables) for s in visible)
     return (

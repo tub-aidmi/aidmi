@@ -4,7 +4,12 @@ from unittest.mock import AsyncMock, patch
 import pytest
 from pydantic import BaseModel
 
-from aidmi_orchestrator.benchmark import Benchmark, expand_grid, parse_strategy_spec, sweep_job_status
+from aidmi_orchestrator.benchmark import (
+    Benchmark,
+    expand_grid,
+    parse_strategy_spec,
+    sweep_job_status,
+)
 from aidmi_orchestrator.domain import BenchmarkResult, StrategyResult
 from aidmi_orchestrator.fixtures.base import Fixture
 
@@ -23,6 +28,7 @@ class _StandinStrategy:
 
 def _dummy_fixture() -> Fixture:
     from pathlib import Path
+
     return Fixture(
         name="dummy",
         description="",
@@ -36,9 +42,20 @@ def _dummy_fixture() -> Fixture:
 
 
 def test_run_records_harness_errors_instead_of_raising(tmp_path):
-    bench = Benchmark(_dummy_fixture(), workspace=tmp_path, staging_db_url="postgresql://nope", evaluators=[])
-    with patch("aidmi_orchestrator.benchmark.run_orchestrator", new_callable=AsyncMock, side_effect=OSError("disk full")):
-        result = asyncio.run(bench.run(_StandinStrategy(), strategy_spec_name="s", rep_index=2))
+    bench = Benchmark(
+        _dummy_fixture(),
+        workspace=tmp_path,
+        staging_db_url="postgresql://nope",
+        evaluators=[],
+    )
+    with patch(
+        "aidmi_orchestrator.benchmark.run_orchestrator",
+        new_callable=AsyncMock,
+        side_effect=OSError("disk full"),
+    ):
+        result = asyncio.run(
+            bench.run(_StandinStrategy(), strategy_spec_name="s", rep_index=2)
+        )
     assert result.error is not None
     assert "disk full" in result.error
     assert result.rep_index == 2
@@ -48,45 +65,76 @@ def test_run_records_harness_errors_instead_of_raising(tmp_path):
 def test_evaluator_crash_is_isolated(tmp_path):
     class _BoomEvaluator:
         name = "boom"
-        def applies_to(self, artifacts): return True
-        def evaluate(self, artifacts): raise ValueError("metric exploded")
+
+        def applies_to(self, artifacts):
+            return True
+
+        def evaluate(self, artifacts):
+            raise ValueError("metric exploded")
 
     class _OkEvaluator:
         name = "ok"
-        def applies_to(self, artifacts): return True
-        def evaluate(self, artifacts): return {"fine": 1}
+
+        def applies_to(self, artifacts):
+            return True
+
+        def evaluate(self, artifacts):
+            return {"fine": 1}
 
     from aidmi_orchestrator.domain import StrategyResult
     from aidmi_orchestrator.evaluator.base import FixtureMetadata, RunArtifacts
+
     artifacts = RunArtifacts(
-        run_id="r", dbt_project_path=tmp_path, dlt_pipelines_dir=tmp_path,
-        staging_db_url="postgresql://", source_schema="raw", out_schema="out",
-        trace=[], strategy_result=StrategyResult(target_tables_written=[], self_reported_status="complete"),
+        run_id="r",
+        dbt_project_path=tmp_path,
+        dlt_pipelines_dir=tmp_path,
+        staging_db_url="postgresql://",
+        source_schema="raw",
+        out_schema="out",
+        trace=[],
+        strategy_result=StrategyResult(
+            target_tables_written=[], self_reported_status="complete"
+        ),
         target_schema_input=None,
-        fixture=FixtureMetadata(name="f", description="", reference_dbt_path=None, applicable_evaluators=[]),
-        wall_clock_seconds=0.0, final_transform_result=None,
+        fixture=FixtureMetadata(
+            name="f", description="", reference_dbt_path=None, applicable_evaluators=[]
+        ),
+        wall_clock_seconds=0.0,
+        final_transform_result=None,
     )
-    bench = Benchmark(_dummy_fixture(), workspace=tmp_path, staging_db_url="postgresql://",
-                      evaluators=[_BoomEvaluator(), _OkEvaluator()])
-    with patch("aidmi_orchestrator.benchmark.run_orchestrator", new_callable=AsyncMock, return_value=artifacts):
+    bench = Benchmark(
+        _dummy_fixture(),
+        workspace=tmp_path,
+        staging_db_url="postgresql://",
+        evaluators=[_BoomEvaluator(), _OkEvaluator()],
+    )
+    with patch(
+        "aidmi_orchestrator.benchmark.run_orchestrator",
+        new_callable=AsyncMock,
+        return_value=artifacts,
+    ):
         result = asyncio.run(bench.run(_StandinStrategy(), strategy_spec_name="s"))
     assert result.metrics["fine"] == 1
     assert "metric exploded" in result.metrics["evaluator_error_boom"]
 
 
 def test_parse_strategy_spec_round_trip_fields():
-    registry, name, cfg = parse_strategy_spec({
-        "name": "my_variant",
-        "strategy": "structured_per_table",
-        "config": {"samples_per_table": 2},
-    })
+    registry, name, cfg = parse_strategy_spec(
+        {
+            "name": "my_variant",
+            "strategy": "structured_per_table",
+            "config": {"samples_per_table": 2},
+        }
+    )
     assert registry == "structured_per_table"
     assert name == "my_variant"
     assert cfg == {"samples_per_table": 2}
 
 
 def test_parse_strategy_spec_strips_name_whitespace():
-    _, name, _ = parse_strategy_spec({"name": "  x  ", "strategy": "mock", "config": {}})
+    _, name, _ = parse_strategy_spec(
+        {"name": "  x  ", "strategy": "mock", "config": {}}
+    )
     assert name == "x"
 
 
@@ -124,14 +172,16 @@ def test_expand_grid_non_expanding_fallback_to_registry():
 
 def test_expand_grid_cartesian_suffix():
     spec = {
-        "cells": [{
-            "name": "spt",
-            "strategy": "structured_per_table",
-            "config": {
-                "writer_model": {},
-                "context_mode": ["metadata_only", "metadata_plus_samples"],
-            },
-        }]
+        "cells": [
+            {
+                "name": "spt",
+                "strategy": "structured_per_table",
+                "config": {
+                    "writer_model": {},
+                    "context_mode": ["metadata_only", "metadata_plus_samples"],
+                },
+            }
+        ]
     }
     out = expand_grid(spec)
     labels = {name for _, _, name, _ in out}
@@ -143,10 +193,12 @@ def test_expand_grid_cartesian_suffix():
 
 def test_expand_grid_multi_dim_suffix():
     spec = {
-        "cells": [{
-            "strategy": "mock",
-            "config": {"a": [1, 2], "b": [False, True]},
-        }]
+        "cells": [
+            {
+                "strategy": "mock",
+                "config": {"a": [1, 2], "b": [False, True]},
+            }
+        ]
     }
     out = expand_grid(spec)
     assert len(out) == 4
@@ -161,32 +213,46 @@ def test_expand_grid_resolves_model_refs_cartesian():
             "small": {"provider": "litellm", "model_name": "ise-x/small"},
             "big": {"provider": "litellm", "model_name": "academic/big"},
         },
-        "cells": [{
-            "name": "spt",
-            "strategy": "structured_per_table",
-            "config": {"writer_model": ["small", "big"]},
-        }],
+        "cells": [
+            {
+                "name": "spt",
+                "strategy": "structured_per_table",
+                "config": {"writer_model": ["small", "big"]},
+            }
+        ],
     }
     out = expand_grid(spec)
     assert len(out) == 2
     by_name = {name: cfg for _, cfg, name, _ in out}
-    assert by_name["spt_writer_model_small"]["writer_model"]["model_name"] == "ise-x/small"
-    assert by_name["spt_writer_model_big"]["writer_model"]["model_name"] == "academic/big"
+    assert (
+        by_name["spt_writer_model_small"]["writer_model"]["model_name"] == "ise-x/small"
+    )
+    assert (
+        by_name["spt_writer_model_big"]["writer_model"]["model_name"] == "academic/big"
+    )
 
 
 def test_expand_grid_resolves_scalar_model_ref():
     spec = {
         "models": {"small": {"provider": "litellm", "model_name": "ise-x/small"}},
-        "cells": [{"strategy": "plan_then_execute", "config": {"planner_model": "small"}}],
+        "cells": [
+            {"strategy": "plan_then_execute", "config": {"planner_model": "small"}}
+        ],
     }
-    (_, cfg, _, _), = expand_grid(spec)
+    ((_, cfg, _, _),) = expand_grid(spec)
     assert cfg["planner_model"]["model_name"] == "ise-x/small"
 
 
 def test_expand_grid_inline_model_dict_untouched():
-    spec = {"cells": [{"strategy": "structured_per_table",
-                       "config": {"writer_model": {"provider": "openai", "model_name": "gpt"}}}]}
-    (_, cfg, _, _), = expand_grid(spec)
+    spec = {
+        "cells": [
+            {
+                "strategy": "structured_per_table",
+                "config": {"writer_model": {"provider": "openai", "model_name": "gpt"}},
+            }
+        ]
+    }
+    ((_, cfg, _, _),) = expand_grid(spec)
     assert cfg["writer_model"]["model_name"] == "gpt"
 
 
@@ -198,12 +264,13 @@ def test_expand_grid_unknown_model_ref_raises():
 
 def test_expand_grid_passes_cell_fixtures_through():
     spec = {"cells": [{"strategy": "mock", "fixtures": ["master"], "config": {}}]}
-    (_, _, _, fixtures), = expand_grid(spec)
+    ((_, _, _, fixtures),) = expand_grid(spec)
     assert fixtures == ["master"]
 
 
 def _bench_result(**kwargs) -> BenchmarkResult:
     from datetime import datetime
+
     defaults = dict(
         run_id="r1",
         fixture_name="master",
@@ -214,7 +281,9 @@ def _bench_result(**kwargs) -> BenchmarkResult:
         started_at=datetime.utcnow(),
         completed_at=datetime.utcnow(),
         wall_clock_seconds=1.0,
-        strategy_result=StrategyResult(target_tables_written=[], self_reported_status="complete"),
+        strategy_result=StrategyResult(
+            target_tables_written=[], self_reported_status="complete"
+        ),
         metrics={},
         error=None,
         source_schema="",
@@ -226,14 +295,35 @@ def _bench_result(**kwargs) -> BenchmarkResult:
 
 def test_sweep_job_status():
     assert sweep_job_status(_bench_result(error="boom")) == "ERROR"
-    assert sweep_job_status(_bench_result(
-        strategy_result=StrategyResult(target_tables_written=[], self_reported_status="errored"),
-    )) == "ERRORED"
-    assert sweep_job_status(_bench_result(
-        strategy_result=StrategyResult(target_tables_written=[], self_reported_status="gave_up"),
-    )) == "GAVE_UP"
-    assert sweep_job_status(_bench_result(
-        strategy_result=StrategyResult(target_tables_written=["a"], self_reported_status="partial"),
-    )) == "PARTIAL"
+    assert (
+        sweep_job_status(
+            _bench_result(
+                strategy_result=StrategyResult(
+                    target_tables_written=[], self_reported_status="errored"
+                ),
+            )
+        )
+        == "ERRORED"
+    )
+    assert (
+        sweep_job_status(
+            _bench_result(
+                strategy_result=StrategyResult(
+                    target_tables_written=[], self_reported_status="gave_up"
+                ),
+            )
+        )
+        == "GAVE_UP"
+    )
+    assert (
+        sweep_job_status(
+            _bench_result(
+                strategy_result=StrategyResult(
+                    target_tables_written=["a"], self_reported_status="partial"
+                ),
+            )
+        )
+        == "PARTIAL"
+    )
     assert sweep_job_status(_bench_result(metrics={"dbt_success": False})) == "FAIL"
     assert sweep_job_status(_bench_result(metrics={"dbt_success": True})) == "ok"

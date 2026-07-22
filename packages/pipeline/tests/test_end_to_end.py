@@ -50,7 +50,9 @@ def test_end_to_end(staging_db_url, tmp_path):
 
     rows = {
         r["user_id"]: r
-        for r in (json.loads(l) for l in output_path.read_text().splitlines() if l.strip())
+        for r in (
+            json.loads(l) for l in output_path.read_text().splitlines() if l.strip()
+        )
     }
 
     # canonical: passes through, status normalized

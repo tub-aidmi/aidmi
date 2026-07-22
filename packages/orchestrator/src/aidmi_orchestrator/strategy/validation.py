@@ -4,6 +4,7 @@ Catches parse-level malformed SQL (dangling parens, broken syntax) cheaply
 before a dbt round-trip. It does NOT catch semantically-valid-but-wrong SQL
 (e.g. a leaked `foo.sql` filename parses as schema.table) — dbt remains the
 source of truth for those."""
+
 from __future__ import annotations
 
 import re

@@ -1,4 +1,5 @@
 """SchemaEvaluator — three modes per spec Section 8.3."""
+
 from __future__ import annotations
 from collections import Counter
 from typing import Any
@@ -44,13 +45,17 @@ class SchemaEvaluator:
     def evaluate(self, artifacts: RunArtifacts) -> dict[str, Any]:
         produced_total = 0
         type_histogram: Counter[str] = Counter()
-        target = artifacts.target_schema_input or artifacts.strategy_result.target_schema
+        target = (
+            artifacts.target_schema_input or artifacts.strategy_result.target_schema
+        )
         covered = 0
         target_total = 0
         extraneous = 0
         type_mismatches = 0
 
-        target_by_table = {t.name: t for t in target.tables} if target is not None else {}
+        target_by_table = (
+            {t.name: t for t in target.tables} if target is not None else {}
+        )
 
         for tname in artifacts.strategy_result.target_tables_written:
             cols = _introspect(artifacts.staging_db_url, artifacts.out_schema, tname)
@@ -59,7 +64,9 @@ class SchemaEvaluator:
                 type_histogram[dtype] += 1
 
             if tname in target_by_table:
-                target_cols = {c.name: c.sql_type for c in target_by_table[tname].columns}
+                target_cols = {
+                    c.name: c.sql_type for c in target_by_table[tname].columns
+                }
                 produced_cols = {c: t for c, t in cols}
                 target_total += len(target_cols)
                 for tc, tt in target_cols.items():

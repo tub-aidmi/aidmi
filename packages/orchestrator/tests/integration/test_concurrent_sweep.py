@@ -1,4 +1,5 @@
 """Concurrent sweep over the mock strategy: results land, resume skips."""
+
 from __future__ import annotations
 
 import asyncio
@@ -12,7 +13,11 @@ from aidmi_orchestrator.benchmark import Benchmark
 from aidmi_orchestrator.fixtures.base import get_fixture
 from aidmi_orchestrator.scripts.init_fixtures import init_fixture
 from aidmi_orchestrator.scheduler import (
-    SweepJob, completed_keys, expand_jobs, filter_resumed, run_jobs,
+    SweepJob,
+    completed_keys,
+    expand_jobs,
+    filter_resumed,
+    run_jobs,
 )
 from aidmi_orchestrator.strategy.base import make_strategy
 
@@ -32,7 +37,9 @@ def test_concurrent_mock_sweep_and_resume(staging_db_url, tmp_path):
     async def run_job(job: SweepJob):
         strategy = make_strategy(job.registry_strategy, job.config)
         result = await bench.run(
-            strategy, strategy_spec_name=job.spec_name, rep_index=job.rep_index,
+            strategy,
+            strategy_spec_name=job.spec_name,
+            rep_index=job.rep_index,
         )
         async with lock:
             with open(results_path, "a", encoding="utf-8") as fh:

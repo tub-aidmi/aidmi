@@ -16,7 +16,9 @@ from aidmi_orchestrator.domain import BenchmarkResult, RunProvenance, StrategyRe
 from aidmi_orchestrator.persistence import record_run, scaffold_dbt_project
 
 
-def _result(run_id: str = "rabc1234_mock_master", rep_index: int = 0) -> BenchmarkResult:
+def _result(
+    run_id: str = "rabc1234_mock_master", rep_index: int = 0
+) -> BenchmarkResult:
     now = datetime.utcnow()
     return BenchmarkResult(
         run_id=run_id,
@@ -28,7 +30,9 @@ def _result(run_id: str = "rabc1234_mock_master", rep_index: int = 0) -> Benchma
         started_at=now,
         completed_at=now,
         wall_clock_seconds=1.0,
-        strategy_result=StrategyResult(target_tables_written=[], self_reported_status="complete"),
+        strategy_result=StrategyResult(
+            target_tables_written=[], self_reported_status="complete"
+        ),
         metrics={"dbt_success": True},
         source_schema="fixture_master_src",
         out_schema="rabc1234_mock_master",
@@ -59,7 +63,9 @@ def test_record_run_writes_bundle_and_jsonl(tmp_path):
     ws_run = workspace / "runs" / run_id
     ws_run.mkdir(parents=True)
     scaffold_dbt_project(ws_run / "dbt_project")
-    (ws_run / "dbt_project" / "models" / "t.sql").write_text("SELECT 1", encoding="utf-8")
+    (ws_run / "dbt_project" / "models" / "t.sql").write_text(
+        "SELECT 1", encoding="utf-8"
+    )
     (ws_run / "trace.jsonl").write_text('{"event_type":"strategy"}\n', encoding="utf-8")
     spec = tmp_path / "spec.yaml"
     spec.write_text("name: mock\nstrategy: mock\n", encoding="utf-8")

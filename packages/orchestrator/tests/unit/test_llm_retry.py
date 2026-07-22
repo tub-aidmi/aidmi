@@ -30,8 +30,7 @@ def test_retry_delay_bounded():
 
 def test_retry_delay_grows_with_attempt():
     delays = [
-        retry_delay_seconds(i, base_seconds=1.0, max_seconds=1000.0)
-        for i in range(4)
+        retry_delay_seconds(i, base_seconds=1.0, max_seconds=1000.0) for i in range(4)
     ]
     assert delays[1] >= delays[0] * 0.5
     assert delays[2] >= delays[1] * 0.5

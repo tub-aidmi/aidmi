@@ -28,7 +28,9 @@ def test_report_cli_uses_campaign_label_from_campaign_yaml(tmp_path):
     campaign_id = load_records([FIX])[0].campaign
     camp_dir = tmp_path / "camp"
     camp_dir.mkdir()
-    (camp_dir / "results.jsonl").write_text(FIX.read_text(encoding="utf-8"), encoding="utf-8")
+    (camp_dir / "results.jsonl").write_text(
+        FIX.read_text(encoding="utf-8"), encoding="utf-8"
+    )
     (camp_dir / "campaign.yaml").write_text(
         f"id: {campaign_id}\nlabel: My Campaign\n", encoding="utf-8"
     )

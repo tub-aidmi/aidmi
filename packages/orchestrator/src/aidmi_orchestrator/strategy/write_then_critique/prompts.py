@@ -1,4 +1,5 @@
 """Prompt templates for the write_then_critique strategy."""
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
@@ -34,7 +35,10 @@ def critique_user_prompt(context_prompt: str, proposal_text: str) -> str:
 
 
 def revision_user_prompt(
-    target_table_name: str, context_prompt: str, previous_sql: str, comments: str,
+    target_table_name: str,
+    context_prompt: str,
+    previous_sql: str,
+    comments: str,
 ) -> str:
     return (
         f"A reviewer rejected your dbt model for `{target_table_name}`.\n\n"
@@ -49,9 +53,14 @@ def revision_user_prompt(
 def render_proposal(mappings: dict[str, TableMapping]) -> str:
     parts = []
     for name, m in sorted(mappings.items()):
-        notes = "\n".join(
-            f"  - {c.target_column} <- {', '.join(c.source_columns) or '(none)'}: {c.explanation}"
-            for c in m.column_notes
-        ) or "  (none)"
-        parts.append(f"## {name}\n```sql\n{m.dbt_sql}\n```\nColumn notes:\n{notes}\nReasoning: {m.reasoning}")
+        notes = (
+            "\n".join(
+                f"  - {c.target_column} <- {', '.join(c.source_columns) or '(none)'}: {c.explanation}"
+                for c in m.column_notes
+            )
+            or "  (none)"
+        )
+        parts.append(
+            f"## {name}\n```sql\n{m.dbt_sql}\n```\nColumn notes:\n{notes}\nReasoning: {m.reasoning}"
+        )
     return "\n\n".join(parts)

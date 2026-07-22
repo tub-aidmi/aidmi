@@ -5,7 +5,9 @@ import pytest
 from aidmi_orchestrator.ddl_target_schema import parse_create_table, parse_ddl_file
 from aidmi_orchestrator.domain import TargetSchema
 
-FIXTURES = Path(__file__).resolve().parents[2] / "src" / "aidmi_orchestrator" / "fixtures"
+FIXTURES = (
+    Path(__file__).resolve().parents[2] / "src" / "aidmi_orchestrator" / "fixtures"
+)
 
 
 def test_parse_account_table():
@@ -27,7 +29,11 @@ def test_parse_account_table():
 
 def test_parse_opportunity_stage_enum():
     ddl = (FIXTURES / "master" / "destination.sql").read_text(encoding="utf-8")
-    opp_ddl = next(line for line in ddl.splitlines() if "Opportunity" in line and line.startswith("CREATE"))
+    opp_ddl = next(
+        line
+        for line in ddl.splitlines()
+        if "Opportunity" in line and line.startswith("CREATE")
+    )
     table = parse_create_table(opp_ddl)
 
     stage = next(c for c in table.columns if c.name == "StageName")
@@ -37,7 +43,9 @@ def test_parse_opportunity_stage_enum():
 
 
 def test_parse_full_destination_file():
-    schema = parse_ddl_file((FIXTURES / "master" / "destination.sql").read_text(encoding="utf-8"))
+    schema = parse_ddl_file(
+        (FIXTURES / "master" / "destination.sql").read_text(encoding="utf-8")
+    )
     assert isinstance(schema, TargetSchema)
     assert {t.name for t in schema.tables} == {
         "Account",

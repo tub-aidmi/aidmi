@@ -28,12 +28,20 @@ def _artifacts(trace=None, final=None):
 
 
 def test_execution_evaluator_success():
-    final = type("TR", (), {
-        "overall_status": "success",
-        "models": [
-            type("M", (), {"status": "success", "model_name": "users", "error_message": None})()
-        ],
-    })()
+    final = type(
+        "TR",
+        (),
+        {
+            "overall_status": "success",
+            "models": [
+                type(
+                    "M",
+                    (),
+                    {"status": "success", "model_name": "users", "error_message": None},
+                )()
+            ],
+        },
+    )()
     out = ExecutionEvaluator().evaluate(_artifacts(final=final))
     assert out["dbt_success"] is True
     assert out["dbt_models_succeeded"] == 1
@@ -53,15 +61,21 @@ def test_llm_usage_evaluator_aggregates_by_role():
             timestamp=datetime.utcnow(),
             role="writer",
             model_spec=ModelSpec(provider="openai", model_name="gpt-4o-mini"),
-            messages=[], response="ok",
-            usage={"input_tokens": 1000, "output_tokens": 500, "cache_read_tokens": 200},
+            messages=[],
+            response="ok",
+            usage={
+                "input_tokens": 1000,
+                "output_tokens": 500,
+                "cache_read_tokens": 200,
+            },
             latency_ms=120.0,
         ),
         LlmCallEvent(
             timestamp=datetime.utcnow(),
             role="writer",
             model_spec=ModelSpec(provider="openai", model_name="gpt-4o-mini"),
-            messages=[], response="ok",
+            messages=[],
+            response="ok",
             usage={"input_tokens": 500, "output_tokens": 200, "cache_read_tokens": 0},
             latency_ms=80.0,
         ),
@@ -93,8 +107,11 @@ def test_llm_usage_evaluator_gemini_details():
         LlmCallEvent(
             timestamp=datetime.utcnow(),
             role="writer",
-            model_spec=ModelSpec(provider="google_cloud", model_name="gemini-2.5-flash"),
-            messages=[], response="ok",
+            model_spec=ModelSpec(
+                provider="google_cloud", model_name="gemini-2.5-flash"
+            ),
+            messages=[],
+            response="ok",
             usage={
                 "input_tokens": 2000,
                 "output_tokens": 400,
@@ -111,8 +128,11 @@ def test_llm_usage_evaluator_gemini_details():
         LlmCallEvent(
             timestamp=datetime.utcnow(),
             role="planner",
-            model_spec=ModelSpec(provider="google_cloud", model_name="gemini-2.5-flash"),
-            messages=[], response="ok",
+            model_spec=ModelSpec(
+                provider="google_cloud", model_name="gemini-2.5-flash"
+            ),
+            messages=[],
+            response="ok",
             usage={
                 "input_tokens": 5000,
                 "output_tokens": 200,
@@ -140,7 +160,8 @@ def test_llm_usage_evaluator_legacy_usage_only():
             timestamp=datetime.utcnow(),
             role="writer",
             model_spec=ModelSpec(provider="openai", model_name="gpt-4o-mini"),
-            messages=[], response="ok",
+            messages=[],
+            response="ok",
             usage={"input_tokens": 100, "output_tokens": 50, "cache_read_tokens": 0},
             latency_ms=10.0,
         ),
@@ -158,7 +179,8 @@ def test_llm_usage_evaluator_malformed_details():
             timestamp=datetime.utcnow(),
             role="writer",
             model_spec=ModelSpec(provider="openai", model_name="gpt-4o-mini"),
-            messages=[], response="ok",
+            messages=[],
+            response="ok",
             usage={
                 "input_tokens": 100,
                 "output_tokens": 50,
@@ -177,21 +199,30 @@ def test_llm_usage_evaluator_auto_loads_default_pricing(monkeypatch, tmp_path):
     import aidmi_orchestrator.evaluator.llm_usage as llm_usage_mod
 
     override = tmp_path / "pricing.json"
-    override.write_text(json.dumps({
-        "litellm/ise-ollama/qwen3.6:35b-a3b": {
-            "input_cost_per_token": 5e-06,
-            "output_cost_per_token": 5e-06,
-        },
-    }))
+    override.write_text(
+        json.dumps(
+            {
+                "litellm/ise-ollama/qwen3.6:35b-a3b": {
+                    "input_cost_per_token": 5e-06,
+                    "output_cost_per_token": 5e-06,
+                },
+            }
+        )
+    )
     monkeypatch.setattr(
-        llm_usage_mod, "default_pricing_config_path", lambda: override,
+        llm_usage_mod,
+        "default_pricing_config_path",
+        lambda: override,
     )
     trace = [
         LlmCallEvent(
             timestamp=datetime.utcnow(),
             role="writer",
-            model_spec=ModelSpec(provider="litellm", model_name="ise-ollama/qwen3.6:35b-a3b"),
-            messages=[], response="ok",
+            model_spec=ModelSpec(
+                provider="litellm", model_name="ise-ollama/qwen3.6:35b-a3b"
+            ),
+            messages=[],
+            response="ok",
             usage={"input_tokens": 1000, "output_tokens": 500},
             latency_ms=100.0,
         ),
@@ -205,8 +236,11 @@ def test_llm_usage_evaluator_unknown_model_no_context_limit():
         LlmCallEvent(
             timestamp=datetime.utcnow(),
             role="writer",
-            model_spec=ModelSpec(provider="corporate", model_name="totally-fake-nonexistent-zzz"),
-            messages=[], response="ok",
+            model_spec=ModelSpec(
+                provider="corporate", model_name="totally-fake-nonexistent-zzz"
+            ),
+            messages=[],
+            response="ok",
             usage={"input_tokens": 999999, "output_tokens": 1},
             latency_ms=10.0,
         ),
@@ -231,34 +265,52 @@ def _materialize(db_url, schema, table, columns: list[tuple[str, str]]):
 
 
 def test_schema_evaluator_coverage_vs_input(staging_db_url, tmp_path):
-    _materialize(staging_db_url, "src_se1_out", "users", [
-        ("user_id", "integer"),
-        ("firstname", "text"),
-        ("email_address", "text"),
-        ("extraneous", "text"),
-    ])
-    target = TargetSchema(tables=[TargetTable(name="users", columns=[
-        TargetColumn(name="user_id", sql_type="integer"),
-        TargetColumn(name="firstname", sql_type="text"),
-        TargetColumn(name="email_address", sql_type="text"),
-        TargetColumn(name="status_enum", sql_type="text"),     # missing — uncovered
-    ])])
+    _materialize(
+        staging_db_url,
+        "src_se1_out",
+        "users",
+        [
+            ("user_id", "integer"),
+            ("firstname", "text"),
+            ("email_address", "text"),
+            ("extraneous", "text"),
+        ],
+    )
+    target = TargetSchema(
+        tables=[
+            TargetTable(
+                name="users",
+                columns=[
+                    TargetColumn(name="user_id", sql_type="integer"),
+                    TargetColumn(name="firstname", sql_type="text"),
+                    TargetColumn(name="email_address", sql_type="text"),
+                    TargetColumn(
+                        name="status_enum", sql_type="text"
+                    ),  # missing — uncovered
+                ],
+            )
+        ]
+    )
     artifacts = _artifacts()
     artifacts.target_schema_input = target
     artifacts.staging_db_url = staging_db_url
     artifacts.out_schema = "src_se1_out"
     artifacts.strategy_result.target_tables_written = ["users"]
-    artifacts.final_transform_result = type("TR", (), {"overall_status": "success", "models": []})()
+    artifacts.final_transform_result = type(
+        "TR", (), {"overall_status": "success", "models": []}
+    )()
 
     out = SchemaEvaluator().evaluate(artifacts)
-    assert out["target_columns_covered"] == 3 / 4    # 3 of 4 target columns present
+    assert out["target_columns_covered"] == 3 / 4  # 3 of 4 target columns present
     assert out["extraneous_columns"] == 1
     assert "produced_column_count" in out
     assert out["produced_column_count"] == 4
 
 
 from aidmi_orchestrator.evaluator.row_equality import (
-    RowEqualityEvaluator, ExactComparator, FuzzyComparator,
+    RowEqualityEvaluator,
+    ExactComparator,
+    FuzzyComparator,
 )
 
 

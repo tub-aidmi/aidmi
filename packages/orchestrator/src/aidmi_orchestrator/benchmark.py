@@ -1,4 +1,5 @@
 """Benchmark harness: run() with grid expansion."""
+
 from __future__ import annotations
 import asyncio
 import copy
@@ -9,7 +10,9 @@ from typing import Any, IO
 
 from aidmi_orchestrator.domain import BenchmarkResult, StrategyResult
 from aidmi_orchestrator.evaluator.base import (
-    Evaluator, RunArtifacts, make_evaluator,
+    Evaluator,
+    RunArtifacts,
+    make_evaluator,
 )
 from aidmi_orchestrator.fixtures.base import Fixture
 from aidmi_orchestrator.orchestrator import run_orchestrator, StrategyExecutionError
@@ -89,8 +92,11 @@ class Benchmark:
                     metrics[f"evaluator_error_{ev.name}"] = repr(e)
 
         strategy_result = (
-            artifacts.strategy_result if artifacts is not None
-            else StrategyResult(target_tables_written=[], self_reported_status="gave_up")
+            artifacts.strategy_result
+            if artifacts is not None
+            else StrategyResult(
+                target_tables_written=[], self_reported_status="gave_up"
+            )
         )
 
         result = BenchmarkResult(
@@ -98,7 +104,9 @@ class Benchmark:
             fixture_name=self.fixture.name,
             strategy_name=strategy.name,
             strategy_spec_name=strategy_spec_name,
-            strategy_config=strategy.config.model_dump() if strategy.config is not None else {},
+            strategy_config=strategy.config.model_dump()
+            if strategy.config is not None
+            else {},
             rep_index=rep_index,
             started_at=started_at,
             completed_at=completed_at,
@@ -106,12 +114,8 @@ class Benchmark:
             strategy_result=strategy_result,
             metrics=metrics,
             error=error,
-            source_schema=(
-                artifacts.source_schema if artifacts is not None else ""
-            ),
-            out_schema=(
-                artifacts.out_schema if artifacts is not None else ""
-            ),
+            source_schema=(artifacts.source_schema if artifacts is not None else ""),
+            out_schema=(artifacts.out_schema if artifacts is not None else ""),
         )
         write_benchmark_result(self.workspace / "runs" / run_id, result)
         return result
@@ -132,7 +136,9 @@ def sweep_job_status(result: BenchmarkResult) -> str:
     return "ok"
 
 
-def resolve_model_refs(config: dict[str, Any], models: dict[str, dict[str, Any]]) -> dict[str, Any]:
+def resolve_model_refs(
+    config: dict[str, Any], models: dict[str, dict[str, Any]]
+) -> dict[str, Any]:
     out = dict(config)
     for key, value in config.items():
         if key.endswith("_model") and isinstance(value, str):
@@ -144,7 +150,9 @@ def resolve_model_refs(config: dict[str, Any], models: dict[str, dict[str, Any]]
     return out
 
 
-def expand_grid(grid: dict[str, Any]) -> list[tuple[str, dict[str, Any], str, list[str] | None]]:
+def expand_grid(
+    grid: dict[str, Any],
+) -> list[tuple[str, dict[str, Any], str, list[str] | None]]:
     """Expand a grid YAML dict into (registry_strategy, config, spec_name, cell_fixtures) tuples.
 
     List-valued top-level scalar config fields expand cartesian-wise; suffixes
@@ -162,18 +170,27 @@ def expand_grid(grid: dict[str, Any]) -> list[tuple[str, dict[str, Any], str, li
         cfg = cell.get("config", {})
         list_keys = [k for k, v in cfg.items() if isinstance(v, list)]
         if not list_keys:
-            out.append((registry, resolve_model_refs(dict(cfg), models), base_name, cell_fixtures))
+            out.append(
+                (
+                    registry,
+                    resolve_model_refs(dict(cfg), models),
+                    base_name,
+                    cell_fixtures,
+                )
+            )
             continue
         scalar_part = {k: v for k, v in cfg.items() if k not in list_keys}
         for combo in itertools.product(*(cfg[k] for k in list_keys)):
             expanded = dict(scalar_part)
             for k, v in zip(list_keys, combo):
                 expanded[k] = v
-            suffix = "".join(
-                f"_{k}_{slug(v)}" for k, v in zip(list_keys, combo)
+            suffix = "".join(f"_{k}_{slug(v)}" for k, v in zip(list_keys, combo))
+            out.append(
+                (
+                    registry,
+                    resolve_model_refs(expanded, models),
+                    f"{base_name}{suffix}",
+                    cell_fixtures,
+                )
             )
-            out.append((
-                registry, resolve_model_refs(expanded, models),
-                f"{base_name}{suffix}", cell_fixtures,
-            ))
     return out

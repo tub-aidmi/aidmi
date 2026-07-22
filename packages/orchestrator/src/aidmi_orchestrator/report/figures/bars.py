@@ -58,8 +58,13 @@ _METRICS = [
 # (key, title fragment, attribute, state order, state labels).
 _LEVERS = [
     ("sc", "self-correction", "sc", [False, True], ["off", "on"]),
-    ("ctx", "context mode", "ctx",
-     ["metadata_only", "live_query_tool"], ["metadata-only", "live-query"]),
+    (
+        "ctx",
+        "context mode",
+        "ctx",
+        ["metadata_only", "live_query_tool"],
+        ["metadata-only", "live-query"],
+    ),
 ]
 
 
@@ -111,9 +116,24 @@ def _runs_subtitle(stat_label, counts):
     return f"{stat_label} per bar · {per} · N={total} runs"
 
 
-def _bar_figure(records, out_dir, *, filename, salt, title, attr, state_order,
-                state_labels, getter, y_label, zero_fill, unit_axis, summarise,
-                stat_label, fmt_std):
+def _bar_figure(
+    records,
+    out_dir,
+    *,
+    filename,
+    salt,
+    title,
+    attr,
+    state_order,
+    state_labels,
+    getter,
+    y_label,
+    zero_fill,
+    unit_axis,
+    summarise,
+    stat_label,
+    fmt_std,
+):
     import matplotlib as mpl
     import matplotlib.pyplot as plt
     from matplotlib.patches import Patch
@@ -158,9 +178,14 @@ def _bar_figure(records, out_dir, *, filename, salt, title, attr, state_order,
         has_err = any(el or eh for el, eh in zip(lo, hi))
         textured = si > 0
         ax.bar(
-            xs, heights, width, color=colors, linewidth=0,
+            xs,
+            heights,
+            width,
+            color=colors,
+            linewidth=0,
             edgecolor=(_HATCH_COLOR if textured else "none"),
-            hatch=(_HATCH if textured else None), zorder=3,
+            hatch=(_HATCH if textured else None),
+            zorder=3,
             yerr=([lo, hi] if has_err else None),
             error_kw=dict(ecolor=_ERR, elinewidth=0.9, capsize=2, zorder=4),
         )
@@ -168,8 +193,14 @@ def _bar_figure(records, out_dir, *, filename, salt, title, attr, state_order,
     # Std shown as a small label above each mean bar rather than as whiskers.
     for x, h, std in annotations:
         ax.annotate(
-            fmt_std(std), (x, h), textcoords="offset points",
-            xytext=(0, 2), ha="center", va="bottom", fontsize=7, color=_MUTED,
+            fmt_std(std),
+            (x, h),
+            textcoords="offset points",
+            xytext=(0, 2),
+            ha="center",
+            va="bottom",
+            fontsize=7,
+            color=_MUTED,
         )
 
     # Strip chrome: faint horizontal reference lines only, no vertical grid, no
@@ -189,17 +220,32 @@ def _bar_figure(records, out_dir, *, filename, salt, title, attr, state_order,
     else:
         ax.set_ylim(0, max_h * head if max_h else None)
     ax.set_title(title, color=_INK, fontsize=12, loc="left", pad=20)
-    ax.text(0.0, 1.015, _runs_subtitle(stat_label, bar_counts),
-            transform=ax.transAxes, ha="left", va="bottom", fontsize=9,
-            color=_MUTED)
+    ax.text(
+        0.0,
+        1.015,
+        _runs_subtitle(stat_label, bar_counts),
+        transform=ax.transAxes,
+        ha="left",
+        va="bottom",
+        fontsize=9,
+        color=_MUTED,
+    )
 
     state_handles = [
         Patch(facecolor=_MUTED, edgecolor="none", label=state_labels[0]),
-        Patch(facecolor=_MUTED, edgecolor=_HATCH_COLOR, hatch=_HATCH,
-              linewidth=0, label=state_labels[1]),
+        Patch(
+            facecolor=_MUTED,
+            edgecolor=_HATCH_COLOR,
+            hatch=_HATCH,
+            linewidth=0,
+            label=state_labels[1],
+        ),
     ]
     leg = ax.legend(
-        handles=state_handles, loc="best", frameon=False, fontsize=9,
+        handles=state_handles,
+        loc="best",
+        frameon=False,
+        fontsize=9,
         labelcolor=_INK,
     )
     if leg:
@@ -223,13 +269,20 @@ def build_bar_figures(records, out_dir) -> dict[str, list[Path]]:
         for lever_key, frag, attr, state_order, state_labels in _LEVERS:
             for metric_key, y_label, getter, zero_fill, unit_axis, fmt_std in _METRICS:
                 path = _bar_figure(
-                    records, out_dir,
+                    records,
+                    out_dir,
                     filename=f"bar_{stat}_{lever_key}_{metric_key}.svg",
                     salt=f"aidmi-bar-{stat}-{lever_key}-{metric_key}",
                     title=f"{y_label} by strategy — {frag}",
-                    attr=attr, state_order=state_order, state_labels=state_labels,
-                    getter=getter, y_label=y_label, zero_fill=zero_fill,
-                    unit_axis=unit_axis, summarise=summarise, stat_label=stat,
+                    attr=attr,
+                    state_order=state_order,
+                    state_labels=state_labels,
+                    getter=getter,
+                    y_label=y_label,
+                    zero_fill=zero_fill,
+                    unit_axis=unit_axis,
+                    summarise=summarise,
+                    stat_label=stat,
                     fmt_std=fmt_std,
                 )
                 out[stat].append(path)

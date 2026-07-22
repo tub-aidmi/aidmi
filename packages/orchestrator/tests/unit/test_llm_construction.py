@@ -1,13 +1,22 @@
 import pytest
 from aidmi_orchestrator.domain import ModelSpec
 from aidmi_orchestrator.llm import (
-    make_llm, register_provider, list_providers,
+    make_llm,
+    register_provider,
+    list_providers,
 )
 
 
 def test_builtin_providers_are_registered():
     names = list_providers()
-    for name in ("openai", "openai_compatible", "ollama", "anthropic", "litellm", "google_cloud"):
+    for name in (
+        "openai",
+        "openai_compatible",
+        "ollama",
+        "anthropic",
+        "litellm",
+        "google_cloud",
+    ):
         assert name in names
 
 
@@ -20,6 +29,7 @@ def test_unknown_provider_raises():
 def test_double_registration_raises():
     def factory(spec):
         return None  # type: ignore
+
     register_provider("custom_test_unique_xyz", factory)
     with pytest.raises(ValueError, match="already registered"):
         register_provider("custom_test_unique_xyz", factory)

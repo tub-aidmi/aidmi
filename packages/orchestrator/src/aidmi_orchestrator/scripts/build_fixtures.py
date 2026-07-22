@@ -1,4 +1,5 @@
 """Generate v2 Postgres SQL fixtures from canonical-first synthetic CRM data."""
+
 from __future__ import annotations
 
 import json
@@ -19,10 +20,34 @@ fake = Faker("de_DE")
 # ─────────────────────────────────────────────────────────────────────────────
 
 STAGE_VARIANTS = {
-    "Prospecting": ["Prospecting", "prospecting", "PROSPECTING", "Prospect", "In Kontakt"],
-    "Qualification": ["Qualification", "Qualifikation", "qualification", "Quali", "In Prüfung"],
-    "Closed Won": ["Closed Won", "closed won", "Gewonnen", "Won", "Abgeschlossen (Gewonnen)"],
-    "Closed Lost": ["Closed Lost", "Verloren", "lost", "Abgeschlossen (Verloren)", "LOST"],
+    "Prospecting": [
+        "Prospecting",
+        "prospecting",
+        "PROSPECTING",
+        "Prospect",
+        "In Kontakt",
+    ],
+    "Qualification": [
+        "Qualification",
+        "Qualifikation",
+        "qualification",
+        "Quali",
+        "In Prüfung",
+    ],
+    "Closed Won": [
+        "Closed Won",
+        "closed won",
+        "Gewonnen",
+        "Won",
+        "Abgeschlossen (Gewonnen)",
+    ],
+    "Closed Lost": [
+        "Closed Lost",
+        "Verloren",
+        "lost",
+        "Abgeschlossen (Verloren)",
+        "LOST",
+    ],
 }
 TIER_VARIANTS = {
     "Gold": ["Gold", "gold", "GOLD"],
@@ -46,7 +71,11 @@ STATUS_VARIANTS = {
 ROLE_VARIANTS = {
     "Decision Maker": ["Decision Maker", "Entscheider", "decision maker"],
     "End User": ["End User", "Endanwender", "end user"],
-    "Technical Contact": ["Technical Contact", "Technischer Ansprechpartner", "Techniker"],
+    "Technical Contact": [
+        "Technical Contact",
+        "Technischer Ansprechpartner",
+        "Techniker",
+    ],
     "Executive Sponsor": ["Executive Sponsor", "Sponsor"],
 }
 LANG_VARIANTS = {
@@ -172,12 +201,14 @@ def gen_phone(messy: bool) -> tuple[str | None, Any]:
         return canonical, canonical
     if random.random() < 0.18:
         return None, random.choice(["N/A", "", None])
-    src = random.choice([
-        digits,
-        f"+49{digits}",
-        f"+49 {digits[:4]} {digits[4:]}",
-        f"({digits[:4]}) {digits[4:]}",
-    ])
+    src = random.choice(
+        [
+            digits,
+            f"+49{digits}",
+            f"+49 {digits[:4]} {digits[4:]}",
+            f"({digits[:4]}) {digits[4:]}",
+        ]
+    )
     return canonical, src
 
 
@@ -193,12 +224,14 @@ def gen_date(
         return iso, iso
     if allow_missing and random.random() < 0.15:
         return None, random.choice(["0000-00-00", "N/A", None])
-    src = random.choice([
-        iso,
-        f"{d.day:02d}.{d.month:02d}.{d.year}",
-        f"{d.month}/{d.day}/{d.year}",
-        f"{d.year}{d.month:02d}{d.day:02d}",
-    ])
+    src = random.choice(
+        [
+            iso,
+            f"{d.day:02d}.{d.month:02d}.{d.year}",
+            f"{d.month}/{d.day}/{d.year}",
+            f"{d.year}{d.month:02d}{d.day:02d}",
+        ]
+    )
     return iso, src
 
 
@@ -259,24 +292,28 @@ def gen_dataset(
             name_src = typo(name)
             notes.append("name_typo_in_source")
         erp = uniq(lambda: f"ERP-{random.randint(10000, 99999)}", erp_seen)
-        accounts.append({
-            "did": dest_id("001"),
-            "legacy": legacy,
-            "dup_of": None,
-            "name": name,
-            "name_src": name_src,
-            "erp": erp,
-            "tier": tier,
-            "tier_src": variant(tier, TIER_VARIANTS) if messy else tier,
-            "region": random.choice(["DACH", "Nordics", "Benelux", "UK", "Southern Europe"]),
-            "industry": ind,
-            "industry_src": variant(ind, INDUSTRY_VARIANTS) if messy else ind,
-            "website": fake.url(),
-            "city": fake.city(),
-            "country": fake.country(),
-            "is_dup": False,
-            "notes": note(notes),
-        })
+        accounts.append(
+            {
+                "did": dest_id("001"),
+                "legacy": legacy,
+                "dup_of": None,
+                "name": name,
+                "name_src": name_src,
+                "erp": erp,
+                "tier": tier,
+                "tier_src": variant(tier, TIER_VARIANTS) if messy else tier,
+                "region": random.choice(
+                    ["DACH", "Nordics", "Benelux", "UK", "Southern Europe"]
+                ),
+                "industry": ind,
+                "industry_src": variant(ind, INDUSTRY_VARIANTS) if messy else ind,
+                "website": fake.url(),
+                "city": fake.city(),
+                "country": fake.country(),
+                "is_dup": False,
+                "notes": note(notes),
+            }
+        )
 
     for d in random.sample(accounts, min(dup_count, len(accounts))):
         dup = dict(d)
@@ -306,7 +343,10 @@ def gen_dataset(
             lang = random.choice(list(LANG_VARIANTS))
             email_clean, email_src = gen_email(messy)
             phone_clean, phone_src = gen_phone(messy)
-            role_clean, role_src = role, (variant(role, ROLE_VARIANTS) if messy else role)
+            role_clean, role_src = (
+                role,
+                (variant(role, ROLE_VARIANTS) if messy else role),
+            )
             notes = []
             if messy and random.random() < 0.10:
                 role_clean, role_src = None, random.choice(["", "N/A", None])
@@ -317,24 +357,26 @@ def gen_dataset(
                 notes.append("phone_unrecoverable")
             if orphan:
                 notes.append("orphan_nulled")
-            contacts.append({
-                "did": dest_id("003"),
-                "legacy": f"CON-{len(contacts) + 1:05d}",
-                "first": fake.first_name(),
-                "last": fake.last_name(),
-                "email": email_clean,
-                "email_src": email_src,
-                "phone": phone_clean,
-                "phone_src": phone_src,
-                "title": fake.job(),
-                "role": role_clean,
-                "role_src": role_src,
-                "lang": lang,
-                "lang_src": variant(lang, LANG_VARIANTS) if messy else lang,
-                "parent": parent,
-                "orphan": orphan,
-                "notes": note(notes),
-            })
+            contacts.append(
+                {
+                    "did": dest_id("003"),
+                    "legacy": f"CON-{len(contacts) + 1:05d}",
+                    "first": fake.first_name(),
+                    "last": fake.last_name(),
+                    "email": email_clean,
+                    "email_src": email_src,
+                    "phone": phone_clean,
+                    "phone_src": phone_src,
+                    "title": fake.job(),
+                    "role": role_clean,
+                    "role_src": role_src,
+                    "lang": lang,
+                    "lang_src": variant(lang, LANG_VARIANTS) if messy else lang,
+                    "parent": parent,
+                    "orphan": orphan,
+                    "notes": note(notes),
+                }
+            )
 
     for acc in accounts:
         for _ in range(random.randint(1, 4)):
@@ -348,22 +390,24 @@ def gen_dataset(
                 notes.append("amount_missing")
             if orphan:
                 notes.append("orphan_nulled")
-            opps.append({
-                "did": dest_id("006"),
-                "legacy": f"OPP-{len(opps) + 1:05d}",
-                "name": fake.bs().title(),
-                "stage": stage,
-                "stage_src": variant(stage, STAGE_VARIANTS) if messy else stage,
-                "close": date_clean,
-                "close_src": date_src,
-                "amount": amt_clean,
-                "amount_src": amt_src,
-                "cur": cur,
-                "cur_src": variant(cur, CURRENCY_VARIANTS) if messy else cur,
-                "parent": parent,
-                "orphan": orphan,
-                "notes": note(notes),
-            })
+            opps.append(
+                {
+                    "did": dest_id("006"),
+                    "legacy": f"OPP-{len(opps) + 1:05d}",
+                    "name": fake.bs().title(),
+                    "stage": stage,
+                    "stage_src": variant(stage, STAGE_VARIANTS) if messy else stage,
+                    "close": date_clean,
+                    "close_src": date_src,
+                    "amount": amt_clean,
+                    "amount_src": amt_src,
+                    "cur": cur,
+                    "cur_src": variant(cur, CURRENCY_VARIANTS) if messy else cur,
+                    "parent": parent,
+                    "orphan": orphan,
+                    "notes": note(notes),
+                }
+            )
 
     for acc in accounts:
         for _ in range(random.randint(0, 3)):
@@ -376,20 +420,22 @@ def gen_dataset(
                 notes.append("account_orphan_nulled")
             if opp_orphan:
                 notes.append("opp_orphan_nulled")
-            projs.append({
-                "did": dest_id("a00"),
-                "legacy": f"PROJ-{len(projs) + 1:05d}",
-                "name": f"{fake.company()} Impl.",
-                "status": status,
-                "status_src": variant(status, STATUS_VARIANTS) if messy else status,
-                "golive": gl_clean,
-                "golive_src": gl_src,
-                "parent": parent,
-                "orphan": orphan,
-                "opp": opp_parent,
-                "opp_orphan": opp_orphan,
-                "notes": note(notes),
-            })
+            projs.append(
+                {
+                    "did": dest_id("a00"),
+                    "legacy": f"PROJ-{len(projs) + 1:05d}",
+                    "name": f"{fake.company()} Impl.",
+                    "status": status,
+                    "status_src": variant(status, STATUS_VARIANTS) if messy else status,
+                    "golive": gl_clean,
+                    "golive_src": gl_src,
+                    "parent": parent,
+                    "orphan": orphan,
+                    "opp": opp_parent,
+                    "opp_orphan": opp_orphan,
+                    "notes": note(notes),
+                }
+            )
 
     n_assets = max(4 * n_accounts, 1)
     for _ in range(n_assets):
@@ -401,26 +447,32 @@ def gen_dataset(
             notes.append("account_orphan_nulled")
         if proj_orphan:
             notes.append("project_orphan_nulled")
-        assets.append({
-            "did": dest_id("a01"),
-            "legacy": f"AST-{len(assets) + 1:05d}",
-            "name": random.choice([
-                "CRM Seat",
-                "API Bundle",
-                "Support Package",
-                "Data Connector",
-                "Mobile App",
-                "Analytics Add-on",
-            ]),
-            "serial": uniq(lambda: f"SN-{random.randint(10000000, 99999999)}", serial_seen),
-            "warranty": wr_clean,
-            "warranty_src": wr_src,
-            "parent": parent,
-            "orphan": orphan,
-            "proj": proj_parent,
-            "proj_orphan": proj_orphan,
-            "notes": note(notes),
-        })
+        assets.append(
+            {
+                "did": dest_id("a01"),
+                "legacy": f"AST-{len(assets) + 1:05d}",
+                "name": random.choice(
+                    [
+                        "CRM Seat",
+                        "API Bundle",
+                        "Support Package",
+                        "Data Connector",
+                        "Mobile App",
+                        "Analytics Add-on",
+                    ]
+                ),
+                "serial": uniq(
+                    lambda: f"SN-{random.randint(10000000, 99999999)}", serial_seen
+                ),
+                "warranty": wr_clean,
+                "warranty_src": wr_src,
+                "parent": parent,
+                "orphan": orphan,
+                "proj": proj_parent,
+                "proj_orphan": proj_orphan,
+                "notes": note(notes),
+            }
+        )
 
     return {
         "accounts": accounts,
@@ -436,91 +488,105 @@ def _acc_of(rec: dict[str, Any]) -> str | None:
     return survivor(p)["did"] if p else None
 
 
-def write_destination_pg(data: dict[str, list[dict[str, Any]]], golden_schema: str) -> str:
+def write_destination_pg(
+    data: dict[str, list[dict[str, Any]]], golden_schema: str
+) -> str:
     gt: list[tuple[str, str, str, str, str | None]] = []
 
-    def truth(
-        tbl: str, tid: str, src_tbl: str, src_id: str, notes: str | None
-    ) -> None:
+    def truth(tbl: str, tid: str, src_tbl: str, src_id: str, notes: str | None) -> None:
         gt.append((tbl, tid, src_tbl, src_id, notes))
 
     account_rows: list[tuple[Any, ...]] = []
     for a in data["accounts"]:
         if a["is_dup"]:
             truth(
-                "Account", survivor(a)["legacy"], "source_account", a["legacy"], a["notes"]
+                "Account",
+                survivor(a)["legacy"],
+                "source_account",
+                a["legacy"],
+                a["notes"],
             )
             continue
-        account_rows.append((
-            a["did"],
-            a["name"],
-            a["erp"],
-            a["tier"],
-            a["region"] or None,
-            a["industry"],
-            a["website"],
-            a["city"] or None,
-            a["country"],
-            a["legacy"],
-        ))
+        account_rows.append(
+            (
+                a["did"],
+                a["name"],
+                a["erp"],
+                a["tier"],
+                a["region"] or None,
+                a["industry"],
+                a["website"],
+                a["city"] or None,
+                a["country"],
+                a["legacy"],
+            )
+        )
         truth("Account", a["did"], "source_account", a["legacy"], a["notes"])
 
     contact_rows: list[tuple[Any, ...]] = []
     for c in data["contacts"]:
-        contact_rows.append((
-            c["did"],
-            c["first"],
-            c["last"],
-            c["email"],
-            c["phone"],
-            c["title"],
-            c["role"],
-            c["lang"],
-            _acc_of(c),
-            c["legacy"],
-        ))
+        contact_rows.append(
+            (
+                c["did"],
+                c["first"],
+                c["last"],
+                c["email"],
+                c["phone"],
+                c["title"],
+                c["role"],
+                c["lang"],
+                _acc_of(c),
+                c["legacy"],
+            )
+        )
         truth("Contact", c["did"], "source_contact", c["legacy"], c["notes"])
 
     opp_rows: list[tuple[Any, ...]] = []
     for o in data["opps"]:
-        opp_rows.append((
-            o["did"],
-            o["name"],
-            o["stage"],
-            o["close"],
-            o["amount"],
-            o["cur"],
-            _acc_of(o),
-            o["legacy"],
-        ))
+        opp_rows.append(
+            (
+                o["did"],
+                o["name"],
+                o["stage"],
+                o["close"],
+                o["amount"],
+                o["cur"],
+                _acc_of(o),
+                o["legacy"],
+            )
+        )
         truth("Opportunity", o["did"], "source_opportunity", o["legacy"], o["notes"])
 
     proj_rows: list[tuple[Any, ...]] = []
     for p in data["projs"]:
         opp_id = p["opp"]["did"] if p["opp"] else None
-        proj_rows.append((
-            p["did"],
-            p["name"],
-            p["status"],
-            p["golive"],
-            _acc_of(p),
-            opp_id,
-            p["legacy"],
-        ))
+        proj_rows.append(
+            (
+                p["did"],
+                p["name"],
+                p["status"],
+                p["golive"],
+                _acc_of(p),
+                opp_id,
+                p["legacy"],
+            )
+        )
         truth("Project__c", p["did"], "source_project", p["legacy"], p["notes"])
 
     asset_rows: list[tuple[Any, ...]] = []
     for s in data["assets"]:
         proj_id = s["proj"]["did"] if s["proj"] else None
-        asset_rows.append((
-            s["did"],
-            s["name"],
-            s["serial"],
-            s["warranty"],
-            _acc_of(s),
-            proj_id,
-            s["legacy"],
-        ))
+        asset_rows.append(
+            (
+                s["did"],
+                s["name"],
+                s["serial"],
+                s["warranty"],
+                _acc_of(s),
+                proj_id,
+                s["legacy"],
+            )
+        )
         truth("Installed_Asset__c", s["did"], "source_asset", s["legacy"], s["notes"])
 
     parts = [
@@ -622,7 +688,9 @@ def _acc_ref(rec: dict[str, Any], by_name: bool = False) -> str:
     return p["name"] if by_name else p["legacy"]
 
 
-def write_source_p1_pg(data: dict[str, list[dict[str, Any]]], source_schema: str) -> str:
+def write_source_p1_pg(
+    data: dict[str, list[dict[str, Any]]], source_schema: str
+) -> str:
     ddl = """
 CREATE TABLE kunden (kunden_nr text PRIMARY KEY, firmenname text, erp_nummer text,
     kategorie text, gebiet text, branche text, webseite text, ort text, land text);
@@ -734,7 +802,14 @@ CREATE TABLE assets (asset_id text PRIMARY KEY, bezeichnung text, seriennr text,
         ),
         format_inserts(
             "assets",
-            ["asset_id", "bezeichnung", "seriennr", "garantie_bis", "kd_ref", "projekt_ref"],
+            [
+                "asset_id",
+                "bezeichnung",
+                "seriennr",
+                "garantie_bis",
+                "kd_ref",
+                "projekt_ref",
+            ],
             [
                 (
                     s["legacy"],
@@ -751,7 +826,9 @@ CREATE TABLE assets (asset_id text PRIMARY KEY, bezeichnung text, seriennr text,
     return "\n\n".join(p for p in parts if p) + "\n"
 
 
-def write_source_p2_pg(data: dict[str, list[dict[str, Any]]], source_schema: str) -> str:
+def write_source_p2_pg(
+    data: dict[str, list[dict[str, Any]]], source_schema: str
+) -> str:
     ddl = """
 CREATE TABLE Account (Id text PRIMARY KEY, Name text, ERP_Number__c text,
     Customer_Tier__c text, Region__c text, Industry text, Website text,
@@ -898,7 +975,9 @@ CREATE TABLE Installed_Asset__c (Id text PRIMARY KEY, Name text, Serial_Number__
     return "\n\n".join(p for p in parts if p) + "\n"
 
 
-def write_source_p3_pg(data: dict[str, list[dict[str, Any]]], source_schema: str) -> str:
+def write_source_p3_pg(
+    data: dict[str, list[dict[str, Any]]], source_schema: str
+) -> str:
     ddl = """
 CREATE TABLE Account (id text PRIMARY KEY, name text, tier text, region text, industry text);
 CREATE TABLE Contact (id text PRIMARY KEY, full_name text, email text,
@@ -923,7 +1002,9 @@ CREATE TABLE Asset (id text PRIMARY KEY, name text, serial text, warranty text,
             ref, company = None, stale(p["name"])
         else:
             ref, company = p["legacy"], stale(p["name"])
-        contact_rows.append((c["legacy"], f"{c['first']} {c['last']}", c["email"], ref, company))
+        contact_rows.append(
+            (c["legacy"], f"{c['first']} {c['last']}", c["email"], ref, company)
+        )
 
     asset_rows: list[tuple[Any, ...]] = []
     for s in data["assets"]:
@@ -932,8 +1013,14 @@ CREATE TABLE Asset (id text PRIMARY KEY, name text, serial text, warranty text,
             client = f"ACC-{random.randint(9000, 9999):04d}"
         else:
             client = p["name"] if random.random() < 0.5 else p["legacy"]
-        proj_ref = s["proj"]["legacy"] if s["proj"] else f"PROJ-{random.randint(9000, 9999):04d}"
-        asset_rows.append((s["legacy"], s["name"], s["serial"], s["warranty"], client, proj_ref))
+        proj_ref = (
+            s["proj"]["legacy"]
+            if s["proj"]
+            else f"PROJ-{random.randint(9000, 9999):04d}"
+        )
+        asset_rows.append(
+            (s["legacy"], s["name"], s["serial"], s["warranty"], client, proj_ref)
+        )
 
     parts = [
         schema_header(source_schema),
@@ -961,7 +1048,9 @@ CREATE TABLE Asset (id text PRIMARY KEY, name text, serial text, warranty text,
                     o["stage"],
                     o["amount"],
                     (
-                        o["parent"]["legacy"].replace("CUST-", "KD-").replace("ACC-", "KD-")
+                        o["parent"]["legacy"]
+                        .replace("CUST-", "KD-")
+                        .replace("ACC-", "KD-")
                         if o["parent"]
                         else f"KD-{random.randint(9000, 9999):04d}"
                     ),
@@ -979,8 +1068,12 @@ CREATE TABLE Asset (id text PRIMARY KEY, name text, serial text, warranty text,
                     p["name"],
                     p["status"],
                     p["golive"],
-                    p["parent"]["legacy"] if p["parent"] else f"ACC-{random.randint(9000, 9999):04d}",
-                    p["opp"]["legacy"] if p["opp"] else f"OPP-{random.randint(9000, 9999):04d}",
+                    p["parent"]["legacy"]
+                    if p["parent"]
+                    else f"ACC-{random.randint(9000, 9999):04d}",
+                    p["opp"]["legacy"]
+                    if p["opp"]
+                    else f"OPP-{random.randint(9000, 9999):04d}",
                 )
                 for p in data["projs"]
             ],
@@ -994,7 +1087,9 @@ CREATE TABLE Asset (id text PRIMARY KEY, name text, serial text, warranty text,
     return "\n\n".join(p for p in parts if p) + "\n"
 
 
-def write_source_p4_pg(data: dict[str, list[dict[str, Any]]], source_schema: str) -> str:
+def write_source_p4_pg(
+    data: dict[str, list[dict[str, Any]]], source_schema: str
+) -> str:
     ddl = """
 CREATE TABLE master_kunden (kundennummer text PRIMARY KEY, unternehmensname text, erp_nr text,
     kundenklasse text, vertriebsgebiet text, industrie text, homepage text, stadt text, land_region text);
@@ -1111,7 +1206,9 @@ CREATE TABLE master_assets (asset_kennung text PRIMARY KEY, asset_name text, ser
                     p["status_src"],
                     p["golive_src"],
                     _acc_ref(p),
-                    p["opp"]["legacy"] if p["opp"] else f"OPP-M-{random.randint(99000, 99999):05d}",
+                    p["opp"]["legacy"]
+                    if p["opp"]
+                    else f"OPP-M-{random.randint(99000, 99999):05d}",
                 )
                 for p in data["projs"]
             ],
@@ -1133,7 +1230,9 @@ CREATE TABLE master_assets (asset_kennung text PRIMARY KEY, asset_name text, ser
                     s["serial"],
                     s["warranty_src"],
                     _acc_ref(s),
-                    s["proj"]["legacy"] if s["proj"] else f"PROJ-M-{random.randint(99000, 99999):05d}",
+                    s["proj"]["legacy"]
+                    if s["proj"]
+                    else f"PROJ-M-{random.randint(99000, 99999):05d}",
                 )
                 for s in data["assets"]
             ],
@@ -1215,7 +1314,8 @@ def build_fixture(pkey: str) -> dict[str, int]:
 
     schema = parse_ddl_file(DEST_DDL_PG)
     (out_dir / "target_schema.json").write_text(
-        json.dumps(schema.model_dump(exclude_none=True), indent=2, ensure_ascii=False) + "\n",
+        json.dumps(schema.model_dump(exclude_none=True), indent=2, ensure_ascii=False)
+        + "\n",
         encoding="utf-8",
     )
 

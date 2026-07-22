@@ -1,4 +1,5 @@
 """GroundTruthNotesEvaluator — recall breakdown by ground-truth note category."""
+
 from __future__ import annotations
 
 from collections import defaultdict
@@ -30,7 +31,9 @@ class GroundTruthNotesEvaluator:
         golden_schema = artifacts.fixture.golden_schema
         assert golden_schema is not None
 
-        produced_indexes: dict[str, tuple[dict[str, dict[str, Any]], dict[str, dict[str, Any]]]] = {}
+        produced_indexes: dict[
+            str, tuple[dict[str, dict[str, Any]], dict[str, dict[str, Any]]]
+        ] = {}
 
         with psycopg2.connect(artifacts.staging_db_url) as conn:
             gt_rows = fetch_ground_truth_rows(conn, golden_schema)

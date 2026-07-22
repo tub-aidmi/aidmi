@@ -1,7 +1,9 @@
 import json
 from datetime import datetime
 from aidmi_orchestrator.domain import (
-    StrategyResult, MappingManifest, BenchmarkResult,
+    StrategyResult,
+    MappingManifest,
+    BenchmarkResult,
 )
 from aidmi_orchestrator.persistence import (
     scaffold_dbt_project,
@@ -22,7 +24,9 @@ def test_scaffold_creates_dbt_project_yml(tmp_path):
 def test_write_strategy_result(tmp_path):
     r = StrategyResult(target_tables_written=["users"], self_reported_status="complete")
     write_strategy_result(tmp_path, r)
-    assert json.loads((tmp_path / "strategy_result.json").read_text())["target_tables_written"] == ["users"]
+    assert json.loads((tmp_path / "strategy_result.json").read_text())[
+        "target_tables_written"
+    ] == ["users"]
 
 
 def test_write_mapping_manifest_skips_when_none(tmp_path):
@@ -40,7 +44,9 @@ def test_write_benchmark_result(tmp_path):
         started_at=datetime(2026, 5, 17),
         completed_at=datetime(2026, 5, 17),
         wall_clock_seconds=0.1,
-        strategy_result=StrategyResult(target_tables_written=[], self_reported_status="complete"),
+        strategy_result=StrategyResult(
+            target_tables_written=[], self_reported_status="complete"
+        ),
         metrics={"dbt_success": True},
     )
     write_benchmark_result(tmp_path, r)
@@ -51,9 +57,13 @@ def test_write_benchmark_result(tmp_path):
 def test_copy_dbt_project_copies_source(tmp_path):
     run_dir = tmp_path / "run"
     scaffold_dbt_project(run_dir / "dbt_project")
-    (run_dir / "dbt_project" / "models" / "users.sql").write_text("SELECT 1", encoding="utf-8")
+    (run_dir / "dbt_project" / "models" / "users.sql").write_text(
+        "SELECT 1", encoding="utf-8"
+    )
     (run_dir / "dbt_project" / "target").mkdir()
-    (run_dir / "dbt_project" / "target" / "compiled.sql").write_text("big", encoding="utf-8")
+    (run_dir / "dbt_project" / "target" / "compiled.sql").write_text(
+        "big", encoding="utf-8"
+    )
 
     dest = tmp_path / "dest"
     assert copy_dbt_project(run_dir, dest) is True

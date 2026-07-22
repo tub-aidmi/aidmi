@@ -1,9 +1,12 @@
 """ExecutionEvaluator — dbt run signals."""
+
 from __future__ import annotations
 from typing import Any
 
 from aidmi_orchestrator.evaluator.base import (
-    Evaluator, RunArtifacts, register_evaluator,
+    Evaluator,
+    RunArtifacts,
+    register_evaluator,
 )
 
 
@@ -29,7 +32,9 @@ class ExecutionEvaluator:
             "dbt_success": final.overall_status == "success",
             "dbt_models_succeeded": len(succeeded),
             "dbt_models_failed": len(failed),
-            "dbt_error_messages": [m.error_message for m in failed if getattr(m, "error_message", None)],
+            "dbt_error_messages": [
+                m.error_message for m in failed if getattr(m, "error_message", None)
+            ],
             "strategy_status": artifacts.strategy_result.self_reported_status,
         }
 

@@ -1,4 +1,5 @@
 """RowEqualityEvaluator — runs reference dbt in a sibling schema, compares row sets."""
+
 from __future__ import annotations
 import re
 from dataclasses import dataclass
@@ -120,6 +121,7 @@ class RowEqualityEvaluator:
             # first column). For v1 simplicity, sort by all keys.
             def _key(r: dict):
                 return tuple(sorted(r.items(), key=lambda kv: kv[0]))
+
             produced_sorted = sorted(produced, key=_key)
             reference_sorted = sorted(reference, key=_key)
 
@@ -144,7 +146,11 @@ class RowEqualityEvaluator:
                 column_value_match_rate = {}
                 for col in all_cols:
                     matches = sum(
-                        1 for p, r in zip(produced_sorted[:n_comparable], reference_sorted[:n_comparable])
+                        1
+                        for p, r in zip(
+                            produced_sorted[:n_comparable],
+                            reference_sorted[:n_comparable],
+                        )
                         if p.get(col) == r.get(col)
                     )
                     column_value_match_rate[col] = matches / n_comparable
@@ -159,7 +165,9 @@ class RowEqualityEvaluator:
 
         return {
             "row_count_match": all(t["row_count_match"] for t in per_table.values()),
-            "row_set_diff_count": sum(t["row_set_diff_count"] for t in per_table.values()),
+            "row_set_diff_count": sum(
+                t["row_set_diff_count"] for t in per_table.values()
+            ),
             "per_table_equality": per_table,
             "any_table_mismatch": any_mismatch,
         }

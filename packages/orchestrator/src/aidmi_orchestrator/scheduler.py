@@ -1,4 +1,5 @@
 """Sweep scheduler: exclusive-model grouping, bounded concurrency, resume bookkeeping."""
+
 from __future__ import annotations
 
 import asyncio
@@ -31,10 +32,10 @@ def model_names_in_config(config: dict[str, Any]) -> set[str]:
     return names
 
 
-def exclusive_models(config: dict[str, Any], prefixes: tuple[str, ...]) -> frozenset[str]:
-    return frozenset(
-        n for n in model_names_in_config(config) if n.startswith(prefixes)
-    )
+def exclusive_models(
+    config: dict[str, Any], prefixes: tuple[str, ...]
+) -> frozenset[str]:
+    return frozenset(n for n in model_names_in_config(config) if n.startswith(prefixes))
 
 
 def expand_jobs(
@@ -69,7 +70,8 @@ def expand_jobs(
 
 
 def group_jobs(
-    jobs: list[SweepJob], prefixes: tuple[str, ...],
+    jobs: list[SweepJob],
+    prefixes: tuple[str, ...],
 ) -> tuple[list[list[SweepJob]], list[SweepJob]]:
     groups: dict[frozenset[str], list[SweepJob]] = {}
     passthrough: list[SweepJob] = []
@@ -104,19 +106,21 @@ def completed_keys(results_path: Path) -> set[tuple[str, str, int]]:
                 scope="scheduler",
             )
             continue
-        done.add((
-            row["strategy_spec_name"], row["fixture_name"], int(row.get("rep_index", 0)),
-        ))
+        done.add(
+            (
+                row["strategy_spec_name"],
+                row["fixture_name"],
+                int(row.get("rep_index", 0)),
+            )
+        )
     return done
 
 
 def filter_resumed(
-    jobs: list[SweepJob], done: set[tuple[str, str, int]],
+    jobs: list[SweepJob],
+    done: set[tuple[str, str, int]],
 ) -> list[SweepJob]:
-    return [
-        j for j in jobs
-        if (j.spec_name, j.fixture_name, j.rep_index) not in done
-    ]
+    return [j for j in jobs if (j.spec_name, j.fixture_name, j.rep_index) not in done]
 
 
 async def run_jobs(
@@ -164,6 +168,7 @@ async def run_jobs(
         return out
 
     sequence_results, passthrough_results = await asyncio.gather(
-        run_exclusive_sequence(), run_group(passthrough),
+        run_exclusive_sequence(),
+        run_group(passthrough),
     )
     return sequence_results + passthrough_results

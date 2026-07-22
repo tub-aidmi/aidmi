@@ -1,4 +1,5 @@
 """GroundTruthRecallEvaluator — row-level recall/precision/F1 vs golden schema."""
+
 from __future__ import annotations
 
 from typing import Any

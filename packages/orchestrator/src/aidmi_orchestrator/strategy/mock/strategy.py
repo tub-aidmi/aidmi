@@ -2,19 +2,23 @@
 writes the SQL files directly. No LLM calls. Used in integration tests and
 as a baseline in benchmark sweeps.
 """
+
 from __future__ import annotations
 import json
 from pathlib import Path
 from pydantic import BaseModel
 
 from aidmi_orchestrator.domain import (
-    StrategyResult, MappingManifest, TableMappingNote, ColumnNote,
+    StrategyResult,
+    MappingManifest,
+    TableMappingNote,
+    ColumnNote,
 )
 from aidmi_orchestrator.strategy.base import write_proposal
 
 
 class MockStrategyConfig(BaseModel):
-    mapping_source: str   # path to a mapping JSON
+    mapping_source: str  # path to a mapping JSON
 
 
 class MockStrategy:
@@ -33,14 +37,20 @@ class MockStrategy:
             sql_by_table[target_table] = entry["sql"]
             for s in entry.get("source_tables", []):
                 source_tables.add(tuple(s))
-            notes.append(TableMappingNote(
-                target_table=target_table,
-                source_tables=[s[1] for s in entry.get("source_tables", [])],
-                column_notes=[ColumnNote(**c) for c in entry.get("column_notes", [])],
-                reasoning=entry.get("reasoning", ""),
-            ))
+            notes.append(
+                TableMappingNote(
+                    target_table=target_table,
+                    source_tables=[s[1] for s in entry.get("source_tables", [])],
+                    column_notes=[
+                        ColumnNote(**c) for c in entry.get("column_notes", [])
+                    ],
+                    reasoning=entry.get("reasoning", ""),
+                )
+            )
 
-        write_proposal(api.dbt_project_path, sql_by_table, sorted(source_tables), api.source_schema)
+        write_proposal(
+            api.dbt_project_path, sql_by_table, sorted(source_tables), api.source_schema
+        )
 
         manifest = MappingManifest(
             tables=notes,

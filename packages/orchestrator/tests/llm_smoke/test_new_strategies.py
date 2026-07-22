@@ -2,6 +2,7 @@
 
 Requires LITELLM_API_KEY and the SSH tunnel (localhost:4000). Skipped otherwise.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -26,8 +27,10 @@ MODEL = os.environ.get("AIDMI_SMOKE_MODEL", "ise-ollama/qwen3.6:35b-a3b")
 
 def _spec() -> dict:
     return {
-        "provider": "litellm", "model_name": MODEL,
-        "base_url": BASE_URL, "api_key_env": "LITELLM_API_KEY",
+        "provider": "litellm",
+        "model_name": MODEL,
+        "base_url": BASE_URL,
+        "api_key_env": "LITELLM_API_KEY",
     }
 
 
@@ -39,12 +42,16 @@ CASES = [
 ]
 
 
-@pytest.mark.skipif(not os.environ.get("LITELLM_API_KEY"), reason="LITELLM_API_KEY not set")
+@pytest.mark.skipif(
+    not os.environ.get("LITELLM_API_KEY"), reason="LITELLM_API_KEY not set"
+)
 @pytest.mark.parametrize("registry,config", CASES, ids=[c[0] for c in CASES])
 def test_strategy_smoke(registry, config, staging_db_url, tmp_path):
     init_fixture("mock", staging_db_url)
     strategy = make_strategy(registry, config)
-    bench = Benchmark(get_fixture("mock"), workspace=tmp_path, staging_db_url=staging_db_url)
+    bench = Benchmark(
+        get_fixture("mock"), workspace=tmp_path, staging_db_url=staging_db_url
+    )
     result = asyncio.run(bench.run(strategy, strategy_spec_name=f"smoke_{registry}"))
     assert result.error is None
     assert result.strategy_result.target_tables_written

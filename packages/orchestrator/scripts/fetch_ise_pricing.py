@@ -16,6 +16,7 @@ Usage (with the SSH tunnel up and LITELLM_API_KEY in the environment):
 By default it targets http://localhost:4000 and emits keys for provider
 `litellm` (what the ISE grids use). Override with --base-url / --provider.
 """
+
 from __future__ import annotations
 import argparse
 import json
@@ -84,7 +85,9 @@ def main() -> None:
     models = fetch_model_info(args.base_url, api_key)
     overrides = build_overrides(models, providers)
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    out_path.write_text(json.dumps(overrides, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    out_path.write_text(
+        json.dumps(overrides, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+    )
     print(f"wrote {len(overrides)} entries to {out_path}")
 
 

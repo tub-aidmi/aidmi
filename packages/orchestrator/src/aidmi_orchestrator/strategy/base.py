@@ -1,4 +1,5 @@
 """Strategy Protocol + registry + shared helpers."""
+
 from __future__ import annotations
 import asyncio
 import re
@@ -14,10 +15,16 @@ from aidmi_pipeline.sources_yaml import ensure_sources_yaml_raw_schema
 from aidmi_orchestrator.strategy.sql_sanitize import sanitize_dbt_sql
 
 from aidmi_orchestrator.domain import (
-    SourceSummary, TargetSchema, MappingManifest, TableMappingNote,
-    ColumnNote, StrategyResult,
+    SourceSummary,
+    TargetSchema,
+    MappingManifest,
+    TableMappingNote,
+    ColumnNote,
+    StrategyResult,
 )
-from aidmi_orchestrator.strategy.guidelines.compose import context_transformation_section
+from aidmi_orchestrator.strategy.guidelines.compose import (
+    context_transformation_section,
+)
 
 
 @runtime_checkable
@@ -31,7 +38,9 @@ class Strategy(Protocol):
 _STRATEGIES: dict[str, tuple[type, type[BaseModel] | None]] = {}
 
 
-def register_strategy(name: str, cls: type, config_cls: type[BaseModel] | None = None) -> None:
+def register_strategy(
+    name: str, cls: type, config_cls: type[BaseModel] | None = None
+) -> None:
     if name in _STRATEGIES:
         raise ValueError(f"strategy {name!r} already registered")
     _STRATEGIES[name] = (cls, config_cls)
@@ -73,7 +82,11 @@ async def run_named_coroutines(
     ]
     if failures:
         raise RuntimeError("parallel task(s) failed: " + "; ".join(failures))
-    return {name: result for name, result in zip(names, results) if not isinstance(result, BaseException)}
+    return {
+        name: result
+        for name, result in zip(names, results)
+        if not isinstance(result, BaseException)
+    }
 
 
 def make_strategy(name: str, config_dict: dict[str, Any] | None = None) -> Strategy:
@@ -171,6 +184,7 @@ def normalize_source_refs(
     known_tables: set[str],
 ) -> str:
     """Rewrite source() calls that use the wrong logical slug but a known table name."""
+
     def repl(match: re.Match[str]) -> str:
         slug, table = match.group(1), match.group(2)
         if table in known_tables and slug != canonical_slug:
@@ -193,7 +207,9 @@ def discover_model_sql_files(dbt_project_path: Path) -> list[Path]:
         stem = path.stem
         depth = len(path.relative_to(dbt_project_path).parts)
         existing = candidates.get(stem)
-        if existing is None or depth < len(existing.relative_to(dbt_project_path).parts):
+        if existing is None or depth < len(
+            existing.relative_to(dbt_project_path).parts
+        ):
             candidates[stem] = path
     return sorted(candidates.values(), key=lambda p: p.stem)
 
@@ -219,7 +235,9 @@ def write_proposal(
         normalized = sanitize_dbt_sql(sql)
         for schema, tables in tables_by_schema.items():
             normalized = normalize_source_refs(
-                normalized, canonical_slug=schema, known_tables=tables,
+                normalized,
+                canonical_slug=schema,
+                known_tables=tables,
             )
         (models_dir / f"{target_table}.sql").write_text(normalized, encoding="utf-8")
 
@@ -232,7 +250,9 @@ def write_proposal(
         for s, tname in source_tables:
             if s == schema:
                 src_yaml_lines.append(f"      - name: {tname}")
-    (models_dir / "sources.yml").write_text("\n".join(src_yaml_lines) + "\n", encoding="utf-8")
+    (models_dir / "sources.yml").write_text(
+        "\n".join(src_yaml_lines) + "\n", encoding="utf-8"
+    )
     ensure_sources_yaml_raw_schema(models_dir, raw_schema)
 
 
@@ -263,4 +283,3 @@ __all__ = [
     "ColumnNote",
     "TableMappingNote",
 ]
-

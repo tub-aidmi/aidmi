@@ -53,11 +53,24 @@ def _draw_grouped(ax, cells, per_cell_ctx, fmt, ylabel, *, ctxs):
                 xs.append(i + offset)
                 ys.append(v)
         if xs:
-            ax.bar(xs, ys, width=width * 0.9, color=_CTX_COLORS.get(ctx, _MUTED),
-                   zorder=3, label=_CTX_LABELS.get(ctx, ctx))
+            ax.bar(
+                xs,
+                ys,
+                width=width * 0.9,
+                color=_CTX_COLORS.get(ctx, _MUTED),
+                zorder=3,
+                label=_CTX_LABELS.get(ctx, ctx),
+            )
             for x, y in zip(xs, ys):
-                ax.text(x, y, fmt.format(y), ha="center", va="bottom",
-                        fontsize=7.5, color=_MUTED)
+                ax.text(
+                    x,
+                    y,
+                    fmt.format(y),
+                    ha="center",
+                    va="bottom",
+                    fontsize=7.5,
+                    color=_MUTED,
+                )
     ax.set_xlim(-0.5, len(cells) - 0.5)
     ax.set_xticks(range(len(cells)))
     ax.set_xticklabels(cells, rotation=25, ha="right", fontsize=9, color=_INK)
@@ -88,7 +101,9 @@ def fig_ctx_comparison(records, out_dir) -> Path:
     rows = models if len(models) > 1 else [None]
 
     fig, axes = plt.subplots(
-        nrows=len(rows), ncols=2, squeeze=False,
+        nrows=len(rows),
+        ncols=2,
+        squeeze=False,
         figsize=(max(11.0, 1.4 * len(cells) + 3.0), 3.9 * len(rows) + 0.8),
     )
 
@@ -98,7 +113,9 @@ def fig_ctx_comparison(records, out_dir) -> Path:
         tokens = group_mean(subset, _cell_ctx_key, _total_tokens)
         f1 = group_mean(subset, _cell_ctx_key, _f1_outcome)
 
-        _draw_grouped(ax_tok, cells, tokens, "{:.0f}", "Mean tokens/run (in+out)", ctxs=ctxs)
+        _draw_grouped(
+            ax_tok, cells, tokens, "{:.0f}", "Mean tokens/run (in+out)", ctxs=ctxs
+        )
         ax_tok.set_title("Token usage", color=_INK, fontsize=11, loc="left")
         _draw_grouped(ax_qual, cells, f1, "{:.2f}", "Mean f1 (null = 0)", ctxs=ctxs)
         ax_qual.set_title("Quality", color=_INK, fontsize=11, loc="left")
@@ -106,18 +123,36 @@ def fig_ctx_comparison(records, out_dir) -> Path:
         ax_qual.yaxis.set_major_formatter(PercentFormatter(xmax=1.0))
 
         if model is not None:
-            ax_tok.set_title(f"{model} — Token usage", color=_INK, fontsize=11, loc="left")
+            ax_tok.set_title(
+                f"{model} — Token usage", color=_INK, fontsize=11, loc="left"
+            )
 
     handles = [Patch(facecolor=_CTX_COLORS[c], label=_CTX_LABELS[c]) for c in ctxs]
-    fig.legend(handles=handles, loc="upper right", bbox_to_anchor=(0.98, 1.0),
-               ncol=len(handles), labelcolor=_INK, frameon=False)
+    fig.legend(
+        handles=handles,
+        loc="upper right",
+        bbox_to_anchor=(0.98, 1.0),
+        ncol=len(handles),
+        labelcolor=_INK,
+        frameon=False,
+    )
 
     fig.suptitle(
         "Context mode — extra tokens vs the quality they buy",
-        color=_INK, fontsize=12, x=0.02, ha="left", y=0.995,
+        color=_INK,
+        fontsize=12,
+        x=0.02,
+        ha="left",
+        y=0.995,
     )
-    fig.subplots_adjust(left=0.07, right=0.98, top=0.84,
-                        bottom=0.30 / len(rows) + 0.08, wspace=0.22, hspace=0.75)
+    fig.subplots_adjust(
+        left=0.07,
+        right=0.98,
+        top=0.84,
+        bottom=0.30 / len(rows) + 0.08,
+        wspace=0.22,
+        hspace=0.75,
+    )
 
     out = out_dir / "ctx_comparison.svg"
     fig.savefig(out, format="svg", metadata={"Date": None})

@@ -1,5 +1,7 @@
 from aidmi_orchestrator.strategy.validation import (
-    strip_jinja, validate_model_sql, validate_models,
+    strip_jinja,
+    validate_model_sql,
+    validate_models,
 )
 
 VALID = """\
@@ -19,29 +21,36 @@ FROM {{ source('s', 'Contact') }}
 );
 """
 
+
 def test_strip_jinja_replaces_source_with_relation():
     out = strip_jinja(VALID)
     assert "{{" not in out
     assert '"Account"' in out
     assert "depends_on" not in out
 
+
 def test_valid_model_passes():
     assert validate_model_sql(VALID) == []
+
 
 def test_dangling_paren_flagged():
     assert validate_model_sql(DANGLING_PAREN) != []
 
+
 def test_empty_after_strip_flagged():
     assert validate_model_sql("{{ config(materialized='table') }}") != []
+
 
 def test_deeply_nested_parens_flagged():
     sql = "SELECT " + "(" * 300 + "1" + ")" * 300
     assert validate_model_sql(sql) != []
 
+
 def test_validate_models_returns_only_failing():
     result = validate_models({"Account": VALID, "Opportunity": DANGLING_PAREN})
     assert "Account" not in result
     assert "Opportunity" in result
+
 
 def test_tokenizer_error_is_flagged_not_raised():
     # sqlglot raises TokenError (not ParseError) on this; the gate must catch it

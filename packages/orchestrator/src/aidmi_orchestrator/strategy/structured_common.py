@@ -1,4 +1,5 @@
 """Shared building blocks for structured per-table mapping strategies."""
+
 from __future__ import annotations
 from typing import Any
 
@@ -38,7 +39,10 @@ def per_table_user_prompt(target_table_name: str, context_prompt: str) -> str:
 
 
 def retry_user_prompt(
-    target_table_name: str, context_prompt: str, previous_sql: str, error_message: str,
+    target_table_name: str,
+    context_prompt: str,
+    previous_sql: str,
+    error_message: str,
 ) -> str:
     return (
         f"Your previous dbt model for `{target_table_name}` failed.\n\n"
@@ -75,9 +79,16 @@ def make_table_agent(
 ) -> Agent:
     tools: list[Tool] = []
     if enable_query_tool:
-        from aidmi_orchestrator.strategy.write_tools_freeform.tools import make_query_postgres
-        tools.append(Tool(make_query_postgres(api, max_query_tool_rows), name="query_postgres"))
-    return Agent(model, output_type=TableMapping, system_prompt=system_prompt, tools=tools)
+        from aidmi_orchestrator.strategy.write_tools_freeform.tools import (
+            make_query_postgres,
+        )
+
+        tools.append(
+            Tool(make_query_postgres(api, max_query_tool_rows), name="query_postgres")
+        )
+    return Agent(
+        model, output_type=TableMapping, system_prompt=system_prompt, tools=tools
+    )
 
 
 async def generate_table_mapping(
@@ -103,7 +114,10 @@ async def generate_table_mapping_safe(
 ) -> TableMapping:
     try:
         return await generate_table_mapping(
-            agent, target_table_name, context, run_kwargs=run_kwargs,
+            agent,
+            target_table_name,
+            context,
+            run_kwargs=run_kwargs,
         )
     except (UnexpectedModelBehavior, ModelHTTPError) as exc:
         return TableMapping(

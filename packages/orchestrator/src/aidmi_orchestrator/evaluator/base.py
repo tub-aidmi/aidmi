@@ -1,4 +1,5 @@
 """Evaluator Protocol + RunArtifacts + registry."""
+
 from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
@@ -30,12 +31,15 @@ class RunArtifacts:
     target_schema_input: TargetSchema | None
     fixture: FixtureMetadata
     wall_clock_seconds: float
-    final_transform_result: Any | None    # aidmi_pipeline.TransformResult or None on crash
+    final_transform_result: (
+        Any | None
+    )  # aidmi_pipeline.TransformResult or None on crash
 
 
 @runtime_checkable
 class Evaluator(Protocol):
     name: str
+
     def applies_to(self, artifacts: RunArtifacts) -> bool: ...
     def evaluate(self, artifacts: RunArtifacts) -> dict[str, Any]: ...
 

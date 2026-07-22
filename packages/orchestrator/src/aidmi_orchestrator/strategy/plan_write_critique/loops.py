@@ -1,4 +1,5 @@
 """Loop orchestration for plan_write_critique: dbt self-correction and critique rounds."""
+
 from __future__ import annotations
 
 from typing import Awaitable, Callable
@@ -59,7 +60,9 @@ async def run_critique_with_dbt_loop(
         }
 
         approved_count = len(current) - len(rejected)
-        log(f"  Critique complete: {approved_count} approved, {len(rejected)} need revision")
+        log(
+            f"  Critique complete: {approved_count} approved, {len(rejected)} need revision"
+        )
 
         if rejected:
             log(f"    Rejected tables: {', '.join(rejected.keys())}")

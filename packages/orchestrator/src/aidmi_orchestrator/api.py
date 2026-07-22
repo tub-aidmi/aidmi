@@ -1,4 +1,5 @@
 """OrchestratorAPI — the surface every strategy receives."""
+
 from __future__ import annotations
 import asyncio
 import re
@@ -28,7 +29,7 @@ class OrchestratorAPI:
     source_schema: str
     out_schema: str
     trace: TraceSink
-    _pipeline_run: Any = None      # aidmi_pipeline.MigrationRun; set by orchestrator
+    _pipeline_run: Any = None  # aidmi_pipeline.MigrationRun; set by orchestrator
 
     def make_llm(self, spec: ModelSpec, role: str = "main") -> Any:
         inner = make_llm(spec)
@@ -36,16 +37,19 @@ class OrchestratorAPI:
 
     async def run_dbt(self):
         from aidmi_pipeline.migration import transform
+
         if self._pipeline_run is None:
             raise RuntimeError("api.run_dbt() called but no pipeline_run wired in")
         start = time.perf_counter()
         result = await asyncio.to_thread(transform, self._pipeline_run)
         duration_ms = (time.perf_counter() - start) * 1000
-        self.trace.record(DbtRunEvent(
-            timestamp=datetime.utcnow(),
-            transform_result=result.model_dump(),
-            duration_ms=duration_ms,
-        ))
+        self.trace.record(
+            DbtRunEvent(
+                timestamp=datetime.utcnow(),
+                transform_result=result.model_dump(),
+                duration_ms=duration_ms,
+            )
+        )
         return result
 
     def read_table_sample(self, schema: str, table: str, n: int = 100) -> list[dict]:

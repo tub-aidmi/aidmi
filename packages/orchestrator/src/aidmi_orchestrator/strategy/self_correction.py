@@ -1,4 +1,5 @@
 """Shared dbt self-correction loop for structured mapping strategies."""
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -9,7 +10,10 @@ from pydantic_ai.exceptions import ModelHTTPError, UnexpectedModelBehavior
 
 from aidmi_orchestrator.strategy.base import write_proposal, run_coroutines
 from aidmi_orchestrator.strategy.dbt_retry import retry_failing_tables
-from aidmi_orchestrator.strategy.structured_common import TableMapping, retry_user_prompt
+from aidmi_orchestrator.strategy.structured_common import (
+    TableMapping,
+    retry_user_prompt,
+)
 from aidmi_orchestrator.strategy.validation import validate_models
 
 

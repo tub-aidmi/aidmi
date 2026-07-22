@@ -12,7 +12,10 @@ from aidmi_orchestrator.strategy.base import (
     normalize_source_refs,
     write_proposal,
 )
-from aidmi_orchestrator.strategy.write_tools_freeform.tools import make_query_postgres, make_run_dbt
+from aidmi_orchestrator.strategy.write_tools_freeform.tools import (
+    make_query_postgres,
+    make_run_dbt,
+)
 
 
 BAD_YAML = """version: 2
@@ -80,11 +83,14 @@ def test_normalize_source_refs_rewrites_wrong_slug() -> None:
 
 def test_normalize_source_refs_leaves_correct_slug() -> None:
     sql = "SELECT 1 FROM {{ source('fixture_master_src', 'master_kunden') }}"
-    assert normalize_source_refs(
-        sql,
-        canonical_slug="fixture_master_src",
-        known_tables={"master_kunden"},
-    ) == sql
+    assert (
+        normalize_source_refs(
+            sql,
+            canonical_slug="fixture_master_src",
+            known_tables={"master_kunden"},
+        )
+        == sql
+    )
 
 
 def test_write_proposal_normalizes_source_refs(tmp_path: Path) -> None:
@@ -98,7 +104,9 @@ def test_write_proposal_normalizes_source_refs(tmp_path: Path) -> None:
     assert "{{ source('fixture_master_src', 'master_kunden') }}" in written
 
 
-def test_make_query_postgres_returns_error_on_dbt_jinja(staging_db_url, tmp_path) -> None:
+def test_make_query_postgres_returns_error_on_dbt_jinja(
+    staging_db_url, tmp_path
+) -> None:
     import asyncio
 
     import psycopg2
@@ -124,15 +132,19 @@ def test_make_query_postgres_returns_error_on_dbt_jinja(staging_db_url, tmp_path
         trace=TraceSink(tmp_path / "trace.jsonl"),
     )
     tool = make_query_postgres(api, 10)
-    rows = asyncio.run(tool(
-        "SELECT DISTINCT vertriebsphase FROM {{ source('fixture_master_src', 'master_opportunities') }}"
-    ))
+    rows = asyncio.run(
+        tool(
+            "SELECT DISTINCT vertriebsphase FROM {{ source('fixture_master_src', 'master_opportunities') }}"
+        )
+    )
     assert len(rows) == 1
     assert "error" in rows[0]
     assert "plain PostgreSQL" in rows[0]["error"]
 
 
-def test_make_query_postgres_returns_error_on_non_select(staging_db_url, tmp_path) -> None:
+def test_make_query_postgres_returns_error_on_non_select(
+    staging_db_url, tmp_path
+) -> None:
     import asyncio
 
     from aidmi_orchestrator.api import OrchestratorAPI
@@ -150,4 +162,6 @@ def test_make_query_postgres_returns_error_on_non_select(staging_db_url, tmp_pat
     )
     tool = make_query_postgres(api, 10)
     rows = asyncio.run(tool("DELETE FROM t"))
-    assert rows == [{"error": "only SELECT/WITH queries are allowed via query_postgres"}]
+    assert rows == [
+        {"error": "only SELECT/WITH queries are allowed via query_postgres"}
+    ]

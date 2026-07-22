@@ -1,4 +1,5 @@
 """data_preservation: ground-truth-free lossiness signals via SQL aggregates."""
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -7,7 +8,10 @@ import psycopg2
 import pytest
 
 from aidmi_orchestrator.domain import (
-    ColumnNote, MappingManifest, StrategyResult, TableMappingNote,
+    ColumnNote,
+    MappingManifest,
+    StrategyResult,
+    TableMappingNote,
 )
 from aidmi_orchestrator.evaluator.base import FixtureMetadata, RunArtifacts
 from aidmi_orchestrator.evaluator.data_preservation import DataPreservationEvaluator
@@ -25,39 +29,64 @@ def seeded_db(staging_db_url):
             cur.execute(f'CREATE SCHEMA "{OUT}"')
             cur.execute(f'CREATE TABLE "{RAW}".contacts (id int, email text)')
             cur.execute(
-                f"INSERT INTO \"{RAW}\".contacts VALUES "
+                f'INSERT INTO "{RAW}".contacts VALUES '
                 f"(1, 'a@x.de'), (2, 'b@x.de'), (3, NULL), (4, NULL)"
             )
             cur.execute(f'CREATE TABLE "{OUT}".users (user_id int, email text)')
             cur.execute(
-                f"INSERT INTO \"{OUT}\".users VALUES "
+                f'INSERT INTO "{OUT}".users VALUES '
                 f"(1, 'a@x.de'), (2, NULL), (3, NULL), (4, NULL)"
             )
             cur.execute(f'CREATE TABLE "{OUT}".empties (x int)')
     return staging_db_url
 
 
-def _artifacts(db_url: str, manifest: MappingManifest | None, written: list[str]) -> RunArtifacts:
-    sr = StrategyResult(target_tables_written=written, manifest=manifest, self_reported_status="complete")
+def _artifacts(
+    db_url: str, manifest: MappingManifest | None, written: list[str]
+) -> RunArtifacts:
+    sr = StrategyResult(
+        target_tables_written=written,
+        manifest=manifest,
+        self_reported_status="complete",
+    )
     return RunArtifacts(
-        run_id="r", dbt_project_path=Path("/nonexistent"), dlt_pipelines_dir=Path("/nonexistent"),
-        staging_db_url=db_url, source_schema=RAW, out_schema=OUT,
-        trace=[], strategy_result=sr, target_schema_input=None,
-        fixture=FixtureMetadata(name="f", description="", reference_dbt_path=None, applicable_evaluators=[]),
-        wall_clock_seconds=1.0, final_transform_result=None,
+        run_id="r",
+        dbt_project_path=Path("/nonexistent"),
+        dlt_pipelines_dir=Path("/nonexistent"),
+        staging_db_url=db_url,
+        source_schema=RAW,
+        out_schema=OUT,
+        trace=[],
+        strategy_result=sr,
+        target_schema_input=None,
+        fixture=FixtureMetadata(
+            name="f", description="", reference_dbt_path=None, applicable_evaluators=[]
+        ),
+        wall_clock_seconds=1.0,
+        final_transform_result=None,
     )
 
 
 def _manifest(source_col: str = "contacts.email") -> MappingManifest:
-    return MappingManifest(strategy_name="x", strategy_config={}, tables=[
-        TableMappingNote(target_table="users", source_tables=["contacts"], column_notes=[
-            ColumnNote(target_column="email", source_columns=[source_col]),
-        ]),
-    ])
+    return MappingManifest(
+        strategy_name="x",
+        strategy_config={},
+        tables=[
+            TableMappingNote(
+                target_table="users",
+                source_tables=["contacts"],
+                column_notes=[
+                    ColumnNote(target_column="email", source_columns=[source_col]),
+                ],
+            ),
+        ],
+    )
 
 
 def test_manifest_mapped_mode_metrics(seeded_db) -> None:
-    metrics = DataPreservationEvaluator().evaluate(_artifacts(seeded_db, _manifest(), ["users", "empties"]))
+    metrics = DataPreservationEvaluator().evaluate(
+        _artifacts(seeded_db, _manifest(), ["users", "empties"])
+    )
     assert metrics["preservation_mode"] == "manifest_mapped"
     assert metrics["preservation_empty_tables"] == 1
     # users: 4 rows out / 4 source rows
@@ -72,19 +101,25 @@ def test_manifest_mapped_mode_metrics(seeded_db) -> None:
 
 
 def test_bare_column_name_resolves_when_unique(seeded_db) -> None:
-    metrics = DataPreservationEvaluator().evaluate(_artifacts(seeded_db, _manifest("email"), ["users"]))
+    metrics = DataPreservationEvaluator().evaluate(
+        _artifacts(seeded_db, _manifest("email"), ["users"])
+    )
     assert metrics["preservation_unresolved_mappings"] == 0
     assert metrics["preservation_null_inflation_mean"] == pytest.approx(0.25)
 
 
 def test_unresolvable_mapping_is_counted(seeded_db) -> None:
-    metrics = DataPreservationEvaluator().evaluate(_artifacts(seeded_db, _manifest("ghost.col"), ["users"]))
+    metrics = DataPreservationEvaluator().evaluate(
+        _artifacts(seeded_db, _manifest("ghost.col"), ["users"])
+    )
     assert metrics["preservation_unresolved_mappings"] == 1
     assert metrics["preservation_null_inflation_mean"] is None
 
 
 def test_aggregate_only_mode_without_manifest(seeded_db) -> None:
-    metrics = DataPreservationEvaluator().evaluate(_artifacts(seeded_db, None, ["users"]))
+    metrics = DataPreservationEvaluator().evaluate(
+        _artifacts(seeded_db, None, ["users"])
+    )
     assert metrics["preservation_mode"] == "aggregate_only"
     assert metrics["preservation_per_table"]["users"]["row_ratio"] == 1.0
     assert metrics["preservation_null_inflation_mean"] is None

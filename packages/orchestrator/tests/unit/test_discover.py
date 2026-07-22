@@ -36,7 +36,9 @@ def test_discover_skips_dlt_internal_tables(staging_db_url):
     with psycopg2.connect(staging_db_url) as conn:
         with conn.cursor() as cur:
             cur.execute('CREATE TABLE "src_test_discover2"._dlt_loads (load_id TEXT)')
-            cur.execute('CREATE TABLE "src_test_discover2"._dlt_pipeline_state (state TEXT)')
+            cur.execute(
+                'CREATE TABLE "src_test_discover2"._dlt_pipeline_state (state TEXT)'
+            )
     summary = discover(staging_db_url, "src_test_discover2", samples_per_table=2)
     table_names = {t.name for t in summary.tables}
     assert "_dlt_loads" not in table_names

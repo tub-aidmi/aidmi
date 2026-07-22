@@ -41,6 +41,7 @@ class MigrationResult(BaseModel):
 
 def _count_rows_in_dataset(db_url: str, dataset: str) -> int:
     import psycopg2
+
     with psycopg2.connect(db_url) as conn:
         with conn.cursor() as cur:
             cur.execute(
@@ -83,13 +84,17 @@ def _outcome_to_model(outcome) -> DbtModelOutcome:
     return DbtModelOutcome(
         model_name=dbt_model_table_name(getattr(outcome, "model_name", "<unknown>")),
         status=status,
-        error_message=getattr(outcome, "message", None) if status != "success" else None,
+        error_message=getattr(outcome, "message", None)
+        if status != "success"
+        else None,
         rows_affected=None,
         execution_time_seconds=float(getattr(outcome, "time", 0.0) or 0.0),
     )
 
 
-def _overall_status(models: list[DbtModelOutcome]) -> Literal["success", "partial", "error"]:
+def _overall_status(
+    models: list[DbtModelOutcome],
+) -> Literal["success", "partial", "error"]:
     if not models:
         return "error"
     statuses = {m.status for m in models}
@@ -140,6 +145,7 @@ def transform(run: MigrationRun) -> TransformResult:
 
 def _count_table_rows(db_url: str, dataset: str, table: str) -> int:
     import psycopg2
+
     try:
         with psycopg2.connect(db_url) as conn:
             with conn.cursor() as cur:

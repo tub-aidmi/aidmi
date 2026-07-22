@@ -1,20 +1,30 @@
 """Scheduler: job expansion, exclusive-model grouping, concurrency, resume."""
+
 from __future__ import annotations
 
 import asyncio
 import json
 
 from aidmi_orchestrator.scheduler import (
-    SweepJob, completed_keys, exclusive_models, expand_jobs, filter_resumed,
-    group_jobs, run_jobs,
+    SweepJob,
+    completed_keys,
+    exclusive_models,
+    expand_jobs,
+    filter_resumed,
+    group_jobs,
+    run_jobs,
 )
 
 
-def _job(spec_name: str, model: str = "academic/big", fixture: str = "fx", rep: int = 0) -> SweepJob:
+def _job(
+    spec_name: str, model: str = "academic/big", fixture: str = "fx", rep: int = 0
+) -> SweepJob:
     return SweepJob(
         registry_strategy="s",
         config={"writer_model": {"provider": "litellm", "model_name": model}},
-        spec_name=spec_name, fixture_name=fixture, rep_index=rep,
+        spec_name=spec_name,
+        fixture_name=fixture,
+        rep_index=rep,
     )
 
 
@@ -31,11 +41,15 @@ def test_expand_jobs_rep_fixture_cell_order() -> None:
     cells = [("s", {"x": 1}, "a", None), ("s", {"x": 2}, "b", None)]
     jobs = expand_jobs(cells, fixtures=["fx1", "fx2"], runs_per_cell=2)
     assert len(jobs) == 8
-    assert [
-        (j.spec_name, j.fixture_name, j.rep_index) for j in jobs
-    ] == [
-        ("a", "fx1", 0), ("b", "fx1", 0), ("a", "fx2", 0), ("b", "fx2", 0),
-        ("a", "fx1", 1), ("b", "fx1", 1), ("a", "fx2", 1), ("b", "fx2", 1),
+    assert [(j.spec_name, j.fixture_name, j.rep_index) for j in jobs] == [
+        ("a", "fx1", 0),
+        ("b", "fx1", 0),
+        ("a", "fx2", 0),
+        ("b", "fx2", 0),
+        ("a", "fx1", 1),
+        ("b", "fx1", 1),
+        ("a", "fx2", 1),
+        ("b", "fx2", 1),
     ]
 
 
@@ -48,11 +62,13 @@ def test_expand_jobs_respects_cell_fixture_restrictions() -> None:
     assert len(b_jobs) == 2  # restricted to only_fx2, 2 reps
     assert {j.fixture_name for j in b_jobs} == {"only_fx2"}
     assert {j.rep_index for j in a_jobs} == {0, 1}
-    assert [
-        (j.spec_name, j.fixture_name, j.rep_index) for j in jobs
-    ] == [
-        ("a", "fx1", 0), ("a", "fx2", 0), ("b", "only_fx2", 0),
-        ("a", "fx1", 1), ("a", "fx2", 1), ("b", "only_fx2", 1),
+    assert [(j.spec_name, j.fixture_name, j.rep_index) for j in jobs] == [
+        ("a", "fx1", 0),
+        ("a", "fx2", 0),
+        ("b", "only_fx2", 0),
+        ("a", "fx1", 1),
+        ("a", "fx2", 1),
+        ("b", "only_fx2", 1),
     ]
 
 
@@ -91,7 +107,8 @@ def test_completed_keys_skips_malformed_lines(tmp_path) -> None:
     results = tmp_path / "results.jsonl"
     results.write_text(
         json.dumps({"strategy_spec_name": "a", "fixture_name": "fx", "rep_index": 0})
-        + "\n" + '{"strategy_spec_name": "b", "fixture',
+        + "\n"
+        + '{"strategy_spec_name": "b", "fixture',
         encoding="utf-8",
     )
     done = completed_keys(results)
@@ -100,7 +117,8 @@ def test_completed_keys_skips_malformed_lines(tmp_path) -> None:
 
 def test_run_jobs_exclusive_groups_never_overlap() -> None:
     jobs = [
-        _job("a1", model="ise-ollama/a"), _job("a2", model="ise-ollama/a"),
+        _job("a1", model="ise-ollama/a"),
+        _job("a2", model="ise-ollama/a"),
         _job("b1", model="ise-ollama/b"),
         _job("p1", model="academic/big"),
     ]

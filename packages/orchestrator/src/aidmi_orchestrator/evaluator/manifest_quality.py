@@ -1,4 +1,5 @@
 """ManifestQualityEvaluator — structural scoring of the mapping explanation artifact."""
+
 from __future__ import annotations
 from typing import Any
 
@@ -13,7 +14,9 @@ class ManifestQualityEvaluator:
 
     def evaluate(self, artifacts: RunArtifacts) -> dict[str, Any]:
         manifest = artifacts.strategy_result.manifest
-        target = artifacts.target_schema_input or artifacts.strategy_result.target_schema
+        target = (
+            artifacts.target_schema_input or artifacts.strategy_result.target_schema
+        )
         written = artifacts.strategy_result.target_tables_written
 
         if manifest is None:
@@ -29,7 +32,8 @@ class ManifestQualityEvaluator:
 
         table_coverage = (
             sum(1 for t in written if t in notes_by_table) / len(written)
-            if written else None
+            if written
+            else None
         )
 
         column_coverage = None
@@ -37,8 +41,11 @@ class ManifestQualityEvaluator:
             total = 0
             covered = 0
             for t in target.tables:
-                noted = {c.target_column for c in notes_by_table[t.name].column_notes} \
-                    if t.name in notes_by_table else set()
+                noted = (
+                    {c.target_column for c in notes_by_table[t.name].column_notes}
+                    if t.name in notes_by_table
+                    else set()
+                )
                 for c in t.columns:
                     total += 1
                     if c.name in noted:
@@ -48,11 +55,14 @@ class ManifestQualityEvaluator:
         all_notes = [c for n in manifest.tables for c in n.column_notes]
         explanation_rate = (
             sum(1 for c in all_notes if c.explanation.strip()) / len(all_notes)
-            if all_notes else 0.0
+            if all_notes
+            else 0.0
         )
         reasoning_rate = (
-            sum(1 for n in manifest.tables if n.reasoning.strip()) / len(manifest.tables)
-            if manifest.tables else 0.0
+            sum(1 for n in manifest.tables if n.reasoning.strip())
+            / len(manifest.tables)
+            if manifest.tables
+            else 0.0
         )
 
         return {

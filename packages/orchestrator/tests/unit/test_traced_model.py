@@ -115,10 +115,12 @@ def test_usage_dict_gemini_like_details_and_vendor():
             "bad": "skip",
         },
     )
-    out = _usage_dict(_response(
-        usage=usage,
-        provider_details={"traffic_type": "ON_DEMAND", "service_tier": "standard"},
-    ))
+    out = _usage_dict(
+        _response(
+            usage=usage,
+            provider_details={"traffic_type": "ON_DEMAND", "service_tier": "standard"},
+        )
+    )
     assert out["input_tokens"] == 1000
     assert out["details"]["thoughts_tokens"] == 42
     assert out["details"]["tool_use_prompt_tokens"] == 30
@@ -173,10 +175,12 @@ def test_traced_model_records_full_gemini_usage(tmp_path):
         output_tokens=800,
         details={"thoughts_tokens": 128, "tool_use_prompt_tokens": 64},
     )
-    inner = _inner_model(_response(
-        usage=usage,
-        provider_details={"traffic_type": "ON_DEMAND"},
-    ))
+    inner = _inner_model(
+        _response(
+            usage=usage,
+            provider_details={"traffic_type": "ON_DEMAND"},
+        )
+    )
     events: list[LlmCallEvent] = []
     sink = TraceSink(tmp_path / "trace.jsonl")
 
@@ -202,10 +206,12 @@ def test_traced_model_records_full_gemini_usage(tmp_path):
 
 def test_traced_model_retries_transient_http_error(tmp_path):
     ok = _response(usage=RequestUsage(input_tokens=10, output_tokens=5))
-    inner = _FlakyModel([
-        ModelHTTPError(429, "gemini-2.5-flash", {"status": "RESOURCE_EXHAUSTED"}),
-        ok,
-    ])
+    inner = _FlakyModel(
+        [
+            ModelHTTPError(429, "gemini-2.5-flash", {"status": "RESOURCE_EXHAUSTED"}),
+            ok,
+        ]
+    )
     events: list[LlmCallEvent] = []
     sink = TraceSink(tmp_path / "trace.jsonl")
 
@@ -218,7 +224,9 @@ def test_traced_model_retries_transient_http_error(tmp_path):
     spec = ModelSpec(
         provider="google_cloud",
         model_name="gemini-2.5-flash",
-        extra={"llm_retry": {"max_retries": 2, "base_seconds": 0.01, "max_seconds": 0.02}},
+        extra={
+            "llm_retry": {"max_retries": 2, "base_seconds": 0.01, "max_seconds": 0.02}
+        },
     )
     traced = TracedModel(inner, spec, "writer", _CapturingSink())
 
@@ -236,9 +244,11 @@ def test_traced_model_retries_transient_http_error(tmp_path):
 
 
 def test_traced_model_does_not_retry_client_error(tmp_path):
-    inner = _FlakyModel([
-        ModelHTTPError(400, "gemini-2.5-flash", {"message": "bad request"}),
-    ])
+    inner = _FlakyModel(
+        [
+            ModelHTTPError(400, "gemini-2.5-flash", {"message": "bad request"}),
+        ]
+    )
     sink = TraceSink(tmp_path / "trace.jsonl")
     traced = TracedModel(
         inner,

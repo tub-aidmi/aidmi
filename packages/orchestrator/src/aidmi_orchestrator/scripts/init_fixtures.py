@@ -1,4 +1,5 @@
 """Load fixture source.sql files into Postgres staging schemas."""
+
 from __future__ import annotations
 
 import argparse
@@ -66,7 +67,9 @@ def main(argv: list[str] | None = None) -> None:
         nargs="*",
         help="fixture names (default: all SQL fixtures)",
     )
-    parser.add_argument("--db-url", default=None, help="Postgres URL (default: from env)")
+    parser.add_argument(
+        "--db-url", default=None, help="Postgres URL (default: from env)"
+    )
     args = parser.parse_args(argv)
 
     db_url = args.db_url or _db_url_from_env()

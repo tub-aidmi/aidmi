@@ -1,4 +1,5 @@
 """Smoke test against Google Cloud (Agent Platform). Skipped unless GOOGLE_API_KEY is set."""
+
 import os
 import asyncio
 import pytest
@@ -22,23 +23,30 @@ pytestmark = pytest.mark.requires_llm
 )
 def test_write_tools_freeform_google_cloud_smoke(staging_db_url, tmp_path):
     init_fixture("mock", staging_db_url)
-    strategy = make_strategy("write_tools_freeform", {
-        "writer_model": {
-            "provider": "google_cloud",
-            "model_name": "gemini-2.5-flash",
-            "api_key_env": "GOOGLE_API_KEY",
-            "extra": {
-                "google_thinking_config": {"thinking_budget": 2048},
+    strategy = make_strategy(
+        "write_tools_freeform",
+        {
+            "writer_model": {
+                "provider": "google_cloud",
+                "model_name": "gemini-2.5-flash",
+                "api_key_env": "GOOGLE_API_KEY",
+                "extra": {
+                    "google_thinking_config": {"thinking_budget": 2048},
+                },
             },
+            "context_mode": "metadata_plus_samples",
+            "samples_per_table": 3,
+            "max_tool_turns": 20,
+            "enable_self_correction": False,
         },
-        "context_mode": "metadata_plus_samples",
-        "samples_per_table": 3,
-        "max_tool_turns": 20,
-        "enable_self_correction": False,
-    })
-    bench = Benchmark(get_fixture("mock"), workspace=tmp_path, staging_db_url=staging_db_url)
+    )
+    bench = Benchmark(
+        get_fixture("mock"), workspace=tmp_path, staging_db_url=staging_db_url
+    )
     result = asyncio.run(
-        bench.run(strategy, strategy_spec_name="write_tools_freeform_google_cloud_smoke")
+        bench.run(
+            strategy, strategy_spec_name="write_tools_freeform_google_cloud_smoke"
+        )
     )
 
     assert result.error is None, f"orchestrator errored: {result.error}"

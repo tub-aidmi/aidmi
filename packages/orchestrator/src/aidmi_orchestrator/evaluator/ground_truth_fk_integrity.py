@@ -6,6 +6,7 @@ its parent's legacy id and compared on that stable identity: does the child poin
 at the correct parent? A produced FK pointing at a nonexistent produced parent row
 is a dangling reference and counts as a miss.
 """
+
 from __future__ import annotations
 
 from collections import defaultdict

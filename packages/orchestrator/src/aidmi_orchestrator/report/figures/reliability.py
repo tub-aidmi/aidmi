@@ -4,7 +4,11 @@ from collections import Counter
 from pathlib import Path
 
 from aidmi_orchestrator.report.aggregate import pass_rate, rep_values
-from aidmi_orchestrator.report.theme import apply_theme, color_for_cell, marker_for_model
+from aidmi_orchestrator.report.theme import (
+    apply_theme,
+    color_for_cell,
+    marker_for_model,
+)
 
 # Same tokens as pareto.py/levers.py: text stays ink/muted, data color on marks.
 _INK = "#0b0b0b"
@@ -95,12 +99,25 @@ def fig_rep_spread(records, out_dir) -> Path:
         offsets = _jitter_offsets(len(values))
         xs = [i + off for off in offsets]
         ax.scatter(
-            xs, values, marker=marker, s=16, color=color, alpha=0.6,
-            edgecolors=_SURFACE, linewidths=0.3, zorder=3,
+            xs,
+            values,
+            marker=marker,
+            s=16,
+            color=color,
+            alpha=0.6,
+            edgecolors=_SURFACE,
+            linewidths=0.3,
+            zorder=3,
         )
         ax.scatter(
-            [i], [rates[k]], marker="D", s=26, color=_MEAN_COLOR,
-            edgecolors=_SURFACE, linewidths=0.4, zorder=4,
+            [i],
+            [rates[k]],
+            marker="D",
+            s=26,
+            color=_MEAN_COLOR,
+            edgecolors=_SURFACE,
+            linewidths=0.4,
+            zorder=4,
         )
 
     # Guide lines at the partial pass-rate bands the mean diamonds cluster onto,
@@ -117,8 +134,15 @@ def fig_rep_spread(records, out_dir) -> Path:
         for level in sorted(level_counts, reverse=True)
     )
     ax.text(
-        0.012, 0.98, band_lines, transform=ax.transAxes, fontsize=8.5,
-        color=_MUTED, ha="left", va="top", linespacing=1.5,
+        0.012,
+        0.98,
+        band_lines,
+        transform=ax.transAxes,
+        fontsize=8.5,
+        color=_MUTED,
+        ha="left",
+        va="top",
+        linespacing=1.5,
     )
 
     ax.set_xlim(-0.6, len(keys) - 0.4)
@@ -136,15 +160,26 @@ def fig_rep_spread(records, out_dir) -> Path:
     cells = sorted({k[0] for k in keys})
     handles = [
         Line2D(
-            [], [], marker=_DEFAULT_MARKER, linestyle="none", markersize=8,
-            markerfacecolor=color_for_cell(c), markeredgecolor=_SURFACE, label=c,
+            [],
+            [],
+            marker=_DEFAULT_MARKER,
+            linestyle="none",
+            markersize=8,
+            markerfacecolor=color_for_cell(c),
+            markeredgecolor=_SURFACE,
+            label=c,
         )
         for c in cells
     ]
     handles.append(
         Line2D(
-            [], [], marker="D", linestyle="none", markersize=8,
-            markerfacecolor=_MEAN_COLOR, markeredgecolor=_SURFACE,
+            [],
+            [],
+            marker="D",
+            linestyle="none",
+            markersize=8,
+            markerfacecolor=_MEAN_COLOR,
+            markeredgecolor=_SURFACE,
             label="mean pass-rate",
         )
     )
@@ -152,15 +187,24 @@ def fig_rep_spread(records, out_dir) -> Path:
         for model in sorted({k[-1] for k in keys}):
             handles.append(
                 Line2D(
-                    [], [], marker=marker_for_model(model), linestyle="none",
-                    markersize=8, markerfacecolor=_MUTED,
-                    markeredgecolor=_SURFACE, label=model,
+                    [],
+                    [],
+                    marker=marker_for_model(model),
+                    linestyle="none",
+                    markersize=8,
+                    markerfacecolor=_MUTED,
+                    markeredgecolor=_SURFACE,
+                    label=model,
                 )
             )
     if handles:
         leg = ax.legend(
-            handles=handles, loc="upper left", bbox_to_anchor=(1.005, 1.0),
-            labelcolor=_INK, alignment="left", fontsize=9,
+            handles=handles,
+            loc="upper left",
+            bbox_to_anchor=(1.005, 1.0),
+            labelcolor=_INK,
+            alignment="left",
+            fontsize=9,
         )
         if leg.get_title():
             leg.get_title().set_color(_INK)
@@ -168,10 +212,14 @@ def fig_rep_spread(records, out_dir) -> Path:
     if keys:
         pct = non_unanimous / len(keys)
         fig.text(
-            0.99, 0.985,
+            0.99,
+            0.985,
             f"{non_unanimous}/{len(keys)} configs ({pct:.0%}) are "
             "non-unanimous across their 3 reps",
-            fontsize=9.5, color=_MUTED, ha="right", va="top",
+            fontsize=9.5,
+            color=_MUTED,
+            ha="right",
+            va="top",
         )
 
     right = 1.0 - legend_in / width
@@ -219,17 +267,30 @@ def fig_rep_range(records, out_dir) -> Path:
     for i, k in enumerate(keys):
         vals = reps[k]
         color = color_for_cell(k[0])
-        ax.plot([i, i], [min(vals), max(vals)], color=color, lw=2.0, alpha=0.55, zorder=2)
+        ax.plot(
+            [i, i], [min(vals), max(vals)], color=color, lw=2.0, alpha=0.55, zorder=2
+        )
         marker = marker_for_model(k[-1]) if multi_model else _DEFAULT_MARKER
         ax.scatter(
-            [i], [means[k]], marker=marker, s=20, color=color,
-            edgecolors=_SURFACE, linewidths=0.4, zorder=4,
+            [i],
+            [means[k]],
+            marker=marker,
+            s=20,
+            color=color,
+            edgecolors=_SURFACE,
+            linewidths=0.4,
+            zorder=4,
         )
 
     ax.text(
-        0.012, 0.02,
+        0.012,
+        0.02,
         f"{volatile} of {len(keys)} configs span ≥0.25 f1 across identical reps",
-        transform=ax.transAxes, fontsize=8.5, color=_MUTED, ha="left", va="bottom",
+        transform=ax.transAxes,
+        fontsize=8.5,
+        color=_MUTED,
+        ha="left",
+        va="bottom",
     )
 
     ax.set_xlim(-0.6, len(keys) - 0.4)
@@ -244,14 +305,23 @@ def fig_rep_range(records, out_dir) -> Path:
     cells = sorted({k[0] for k in keys})
     handles = [
         Line2D(
-            [], [], marker=_DEFAULT_MARKER, linestyle="none", markersize=8,
-            markerfacecolor=color_for_cell(c), markeredgecolor=_SURFACE, label=c,
+            [],
+            [],
+            marker=_DEFAULT_MARKER,
+            linestyle="none",
+            markersize=8,
+            markerfacecolor=color_for_cell(c),
+            markeredgecolor=_SURFACE,
+            label=c,
         )
         for c in cells
     ]
     ax.legend(
-        handles=handles, loc="upper left", bbox_to_anchor=(1.005, 1.0),
-        fontsize=8, labelcolor=_INK,
+        handles=handles,
+        loc="upper left",
+        bbox_to_anchor=(1.005, 1.0),
+        fontsize=8,
+        labelcolor=_INK,
     )
     fig.tight_layout()
 

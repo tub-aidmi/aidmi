@@ -1,4 +1,5 @@
 """Human-readable progress logging to stderr."""
+
 from __future__ import annotations
 
 import sys

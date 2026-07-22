@@ -1,4 +1,5 @@
 """Generate target_schema.json from a fixture destination.sql (Postgres DDL)."""
+
 from __future__ import annotations
 
 import argparse
@@ -25,7 +26,8 @@ def generate(input_path: Path, output_path: Path) -> None:
     schema = parse_ddl_file(ddl)
     output_path.parent.mkdir(parents=True, exist_ok=True)
     output_path.write_text(
-        json.dumps(schema.model_dump(exclude_none=True), indent=2, ensure_ascii=False) + "\n",
+        json.dumps(schema.model_dump(exclude_none=True), indent=2, ensure_ascii=False)
+        + "\n",
         encoding="utf-8",
     )
     print(f"wrote {output_path} ({len(schema.tables)} tables)")
@@ -34,7 +36,9 @@ def generate(input_path: Path, output_path: Path) -> None:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     group = parser.add_mutually_exclusive_group(required=True)
-    group.add_argument("--fixture", help="fixture name (reads fixtures/<name>/destination.sql)")
+    group.add_argument(
+        "--fixture", help="fixture name (reads fixtures/<name>/destination.sql)"
+    )
     group.add_argument("--input", type=Path, help="path to destination.sql")
     parser.add_argument(
         "--output",

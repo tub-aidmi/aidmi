@@ -40,20 +40,14 @@ def test_composed_respects_host_and_port(monkeypatch):
     monkeypatch.setenv("POSTGRES_DB", "db")
     monkeypatch.setenv("POSTGRES_HOST", "db.internal")
     monkeypatch.setenv("POSTGRES_PORT", "5433")
-    assert (
-        staging_db_url_from_env()
-        == "postgresql://u:p@db.internal:5433/db"
-    )
+    assert staging_db_url_from_env() == "postgresql://u:p@db.internal:5433/db"
 
 
 def test_password_special_chars_quoted(monkeypatch):
     monkeypatch.setenv("POSTGRES_USER", "u")
     monkeypatch.setenv("POSTGRES_PASSWORD", "p@ss:word")
     monkeypatch.setenv("POSTGRES_DB", "db")
-    assert (
-        staging_db_url_from_env()
-        == "postgresql://u:p%40ss%3Aword@localhost:5432/db"
-    )
+    assert staging_db_url_from_env() == "postgresql://u:p%40ss%3Aword@localhost:5432/db"
 
 
 def test_returns_none_when_incomplete(monkeypatch):

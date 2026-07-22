@@ -3,6 +3,7 @@
 Tools close over the OrchestratorAPI so they can write/read files, query
 Postgres, and call api.run_dbt() under strict containment.
 """
+
 from __future__ import annotations
 from pathlib import Path
 from typing import Any
@@ -38,11 +39,15 @@ def make_write_file(api):
         nested_err = _reject_nested_dbt_project_path(path)
         if nested_err:
             latency_ms = (time.perf_counter() - start) * 1000
-            api.trace.record(ToolCallEvent(
-                timestamp=datetime.utcnow(), tool_name="write_file",
-                args={"path": path, "size": len(content)}, result=nested_err,
-                latency_ms=latency_ms,
-            ))
+            api.trace.record(
+                ToolCallEvent(
+                    timestamp=datetime.utcnow(),
+                    tool_name="write_file",
+                    args={"path": path, "size": len(content)},
+                    result=nested_err,
+                    latency_ms=latency_ms,
+                )
+            )
             return nested_err
         if path.endswith(".sql"):
             content = sanitize_dbt_sql(content)
@@ -50,11 +55,15 @@ def make_write_file(api):
             if validation_err:
                 latency_ms = (time.perf_counter() - start) * 1000
                 msg = f"ERROR: {validation_err} Fix the SQL and try again."
-                api.trace.record(ToolCallEvent(
-                    timestamp=datetime.utcnow(), tool_name="write_file",
-                    args={"path": path, "size": len(content)}, result=msg,
-                    latency_ms=latency_ms,
-                ))
+                api.trace.record(
+                    ToolCallEvent(
+                        timestamp=datetime.utcnow(),
+                        tool_name="write_file",
+                        args={"path": path, "size": len(content)},
+                        result=msg,
+                        latency_ms=latency_ms,
+                    )
+                )
                 return msg
         try:
             target = _ensure_under(api.dbt_project_path, path)
@@ -62,18 +71,28 @@ def make_write_file(api):
             target.write_text(content, encoding="utf-8")
         except (ValueError, OSError) as e:
             latency_ms = (time.perf_counter() - start) * 1000
-            api.trace.record(ToolCallEvent(
-                timestamp=datetime.utcnow(), tool_name="write_file",
-                args={"path": path, "size": len(content)}, result=f"error: {e!r}",
-                latency_ms=latency_ms,
-            ))
+            api.trace.record(
+                ToolCallEvent(
+                    timestamp=datetime.utcnow(),
+                    tool_name="write_file",
+                    args={"path": path, "size": len(content)},
+                    result=f"error: {e!r}",
+                    latency_ms=latency_ms,
+                )
+            )
             return f"ERROR: could not write {path!r}: {e}. Use a file path like models/<name>.sql, not a directory."
         latency_ms = (time.perf_counter() - start) * 1000
-        api.trace.record(ToolCallEvent(
-            timestamp=datetime.utcnow(), tool_name="write_file",
-            args={"path": path, "size": len(content)}, result="ok", latency_ms=latency_ms,
-        ))
+        api.trace.record(
+            ToolCallEvent(
+                timestamp=datetime.utcnow(),
+                tool_name="write_file",
+                args={"path": path, "size": len(content)},
+                result="ok",
+                latency_ms=latency_ms,
+            )
+        )
         return f"wrote {len(content)} bytes to {path}"
+
     return write_file
 
 
@@ -85,17 +104,28 @@ def make_read_file(api):
             content = target.read_text(encoding="utf-8") if target.exists() else ""
         except (ValueError, OSError) as e:
             latency_ms = (time.perf_counter() - start) * 1000
-            api.trace.record(ToolCallEvent(
-                timestamp=datetime.utcnow(), tool_name="read_file",
-                args={"path": path}, result=f"error: {e!r}", latency_ms=latency_ms,
-            ))
+            api.trace.record(
+                ToolCallEvent(
+                    timestamp=datetime.utcnow(),
+                    tool_name="read_file",
+                    args={"path": path},
+                    result=f"error: {e!r}",
+                    latency_ms=latency_ms,
+                )
+            )
             return f"ERROR: could not read {path!r}: {e}. Use a file path like models/<name>.sql, not a directory."
         latency_ms = (time.perf_counter() - start) * 1000
-        api.trace.record(ToolCallEvent(
-            timestamp=datetime.utcnow(), tool_name="read_file",
-            args={"path": path}, result={"size": len(content)}, latency_ms=latency_ms,
-        ))
+        api.trace.record(
+            ToolCallEvent(
+                timestamp=datetime.utcnow(),
+                tool_name="read_file",
+                args={"path": path},
+                result={"size": len(content)},
+                latency_ms=latency_ms,
+            )
+        )
         return content
+
     return read_file
 
 
@@ -107,11 +137,15 @@ def make_query_postgres(api, row_cap: int):
         except ValueError as e:
             latency_ms = (time.perf_counter() - start) * 1000
             msg = str(e)
-            api.trace.record(ToolCallEvent(
-                timestamp=datetime.utcnow(), tool_name="query_postgres",
-                args={"sql": sql[:500], "row_cap": row_cap}, result={"error": msg},
-                latency_ms=latency_ms,
-            ))
+            api.trace.record(
+                ToolCallEvent(
+                    timestamp=datetime.utcnow(),
+                    tool_name="query_postgres",
+                    args={"sql": sql[:500], "row_cap": row_cap},
+                    result={"error": msg},
+                    latency_ms=latency_ms,
+                )
+            )
             return [{"error": msg}]
         except psycopg2.Error as e:
             latency_ms = (time.perf_counter() - start) * 1000
@@ -121,18 +155,28 @@ def make_query_postgres(api, row_cap: int):
                     " Hint: query_postgres expects plain PostgreSQL "
                     '(e.g. SELECT * FROM "schema"."table") — not dbt {{ source(...) }}.'
                 )
-            api.trace.record(ToolCallEvent(
-                timestamp=datetime.utcnow(), tool_name="query_postgres",
-                args={"sql": sql[:500], "row_cap": row_cap}, result={"error": msg},
-                latency_ms=latency_ms,
-            ))
+            api.trace.record(
+                ToolCallEvent(
+                    timestamp=datetime.utcnow(),
+                    tool_name="query_postgres",
+                    args={"sql": sql[:500], "row_cap": row_cap},
+                    result={"error": msg},
+                    latency_ms=latency_ms,
+                )
+            )
             return [{"error": msg}]
         latency_ms = (time.perf_counter() - start) * 1000
-        api.trace.record(ToolCallEvent(
-            timestamp=datetime.utcnow(), tool_name="query_postgres",
-            args={"sql": sql[:500], "row_cap": row_cap}, result={"rows": len(rows)}, latency_ms=latency_ms,
-        ))
+        api.trace.record(
+            ToolCallEvent(
+                timestamp=datetime.utcnow(),
+                tool_name="query_postgres",
+                args={"sql": sql[:500], "row_cap": row_cap},
+                result={"rows": len(rows)},
+                latency_ms=latency_ms,
+            )
+        )
         return rows
+
     return query_postgres
 
 

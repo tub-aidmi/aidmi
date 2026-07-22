@@ -1,4 +1,5 @@
 """Sanitize and validate LLM-produced dbt SQL before writing to disk."""
+
 from __future__ import annotations
 
 import re
@@ -16,7 +17,9 @@ _VALID_START_RE = re.compile(
     r"(?:^\s*--[^\n]*\n\s*)*(?:\{\{\s*config\s*\(|SELECT\b|WITH\b)",
     re.IGNORECASE | re.MULTILINE,
 )
-_INVENTED_FUNCTION_RE = re.compile(r"^\s*normalize_dbt_sql\s*\(", re.IGNORECASE | re.MULTILINE)
+_INVENTED_FUNCTION_RE = re.compile(
+    r"^\s*normalize_dbt_sql\s*\(", re.IGNORECASE | re.MULTILINE
+)
 _CONFIG_RE = re.compile(r"\{\{\s*config\s*\(\s*materialized\s*=", re.IGNORECASE)
 
 
@@ -57,7 +60,9 @@ def validate_dbt_sql(sql: str) -> str | None:
         return "model SQL is empty"
 
     if _INVENTED_FUNCTION_RE.search(sql):
-        return "model SQL must not use invented wrapper functions (e.g. normalize_dbt_sql)"
+        return (
+            "model SQL must not use invented wrapper functions (e.g. normalize_dbt_sql)"
+        )
 
     if not _CONFIG_RE.search(sql):
         return "model SQL must contain {{ config(materialized="

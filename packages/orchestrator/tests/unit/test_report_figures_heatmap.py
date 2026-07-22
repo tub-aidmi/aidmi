@@ -24,8 +24,10 @@ def test_metric_heatmap_writes_svg_for_every_metric(tmp_path):
 def test_heatmap_materialized_writes_svg(tmp_path):
     recs = load_records([FIX])
     out = fig_heatmap(
-        recs, tmp_path,
-        metric="materialized", filename="heatmap_materialized.svg",
+        recs,
+        tmp_path,
+        metric="materialized",
+        filename="heatmap_materialized.svg",
         title="Materialization rate by cell x fixture",
     )
     assert out.name == "heatmap_materialized.svg"
@@ -35,8 +37,10 @@ def test_heatmap_materialized_writes_svg(tmp_path):
 def test_heatmap_field_acc_writes_svg(tmp_path):
     recs = load_records([FIX])
     out = fig_heatmap(
-        recs, tmp_path,
-        metric="field_acc", filename="heatmap_field_acc.svg",
+        recs,
+        tmp_path,
+        metric="field_acc",
+        filename="heatmap_field_acc.svg",
         title="Field accuracy by cell x fixture",
     )
     assert out.name == "heatmap_field_acc.svg"

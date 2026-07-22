@@ -57,9 +57,7 @@ def fig_pareto(records, out_dir) -> Path:
     cost = group_mean(records, _config_key, lambda r: r.cost)
     recall = group_mean(records, _config_key, lambda r: r.recall)
     # A point needs both a mean cost and mean recall; log-x requires cost > 0.
-    keys = sorted(
-        (k for k in cost if k in recall and cost[k] > 0), key=_sort_key
-    )
+    keys = sorted((k for k in cost if k in recall and cost[k] > 0), key=_sort_key)
     # Configs that have a recall but no positive cost can't sit on a log axis;
     # they are dropped from the scatter. Count them so the loss is visible, not
     # silent (free local models report $0 cost and would otherwise vanish).
@@ -77,13 +75,25 @@ def fig_pareto(records, out_dir) -> Path:
         marker = marker_for_model(model) if multi_model else _DEFAULT_MARKER
         if sc:  # self-correction on -> filled, with a surface ring for overlap
             ax.scatter(
-                x, y, marker=marker, s=80, color=color,
-                edgecolors=_SURFACE, linewidths=1.0, zorder=3,
+                x,
+                y,
+                marker=marker,
+                s=80,
+                color=color,
+                edgecolors=_SURFACE,
+                linewidths=1.0,
+                zorder=3,
             )
         else:  # self-correction off -> hollow (open) marker
             ax.scatter(
-                x, y, marker=marker, s=80, facecolors="none",
-                edgecolors=color, linewidths=1.6, zorder=3,
+                x,
+                y,
+                marker=marker,
+                s=80,
+                facecolors="none",
+                edgecolors=color,
+                linewidths=1.6,
+                zorder=3,
             )
 
     frontier = _pareto_frontier([(cost[k], recall[k]) for k in keys])
@@ -91,8 +101,14 @@ def fig_pareto(records, out_dir) -> Path:
         fx = [p[0] for p in frontier]
         fy = [p[1] for p in frontier]
         ax.step(
-            fx, fy, where="post", color=_FRONTIER, lw=2, alpha=0.45,
-            zorder=2, solid_capstyle="round",
+            fx,
+            fy,
+            where="post",
+            color=_FRONTIER,
+            lw=2,
+            alpha=0.45,
+            zorder=2,
+            solid_capstyle="round",
         )
 
     ax.set_xscale("log")
@@ -108,9 +124,13 @@ def fig_pareto(records, out_dir) -> Path:
     if omitted:
         plural = "s" if omitted != 1 else ""
         fig.text(
-            0.07, 0.02,
+            0.07,
+            0.02,
             f"{omitted} config{plural} with $0 cost omitted (log axis)",
-            fontsize=9, color=_MUTED, ha="left", va="bottom",
+            fontsize=9,
+            color=_MUTED,
+            ha="left",
+            va="bottom",
         )
     out = out_dir / "pareto.svg"
     fig.savefig(out, format="svg", metadata={"Date": None})
@@ -123,9 +143,7 @@ def _format_cost_axis(ax):
 
     dollars = FuncFormatter(lambda v, _pos: f"${v:g}")
     ax.xaxis.set_major_locator(LogLocator(base=10, subs=(1.0,), numticks=12))
-    ax.xaxis.set_minor_locator(
-        LogLocator(base=10, subs=(0.2, 0.3, 0.5), numticks=12)
-    )
+    ax.xaxis.set_minor_locator(LogLocator(base=10, subs=(0.2, 0.3, 0.5), numticks=12))
     ax.xaxis.set_major_formatter(dollars)
     ax.xaxis.set_minor_formatter(dollars)
     ax.tick_params(axis="x", which="minor", labelsize=9)
@@ -136,17 +154,25 @@ def _add_legends(fig, ax, keys, multi_model, Line2D):
     cells = ordered_cells({k[0] for k in keys})
     cell_handles = [
         Line2D(
-            [], [], marker=_DEFAULT_MARKER, linestyle="none", markersize=9,
-            markerfacecolor=color_for_cell(c), markeredgecolor=_SURFACE,
+            [],
+            [],
+            marker=_DEFAULT_MARKER,
+            linestyle="none",
+            markersize=9,
+            markerfacecolor=color_for_cell(c),
+            markeredgecolor=_SURFACE,
             label=c,
         )
         for c in cells
     ]
     if cell_handles:
         leg1 = ax.legend(
-            handles=cell_handles, title="Strategy (cell)",
-            loc="upper left", bbox_to_anchor=(1.02, 1.0),
-            labelcolor=_INK, alignment="left",
+            handles=cell_handles,
+            title="Strategy (cell)",
+            loc="upper left",
+            bbox_to_anchor=(1.02, 1.0),
+            labelcolor=_INK,
+            alignment="left",
         )
         leg1.get_title().set_color(_INK)
         ax.add_artist(leg1)
@@ -154,13 +180,23 @@ def _add_legends(fig, ax, keys, multi_model, Line2D):
     # Encoding legend: fill = self-correction, plus shape = model if multi-model.
     enc = [
         Line2D(
-            [], [], marker=_DEFAULT_MARKER, linestyle="none", markersize=9,
-            markerfacecolor=_MUTED, markeredgecolor=_SURFACE,
+            [],
+            [],
+            marker=_DEFAULT_MARKER,
+            linestyle="none",
+            markersize=9,
+            markerfacecolor=_MUTED,
+            markeredgecolor=_SURFACE,
             label="self-correction on",
         ),
         Line2D(
-            [], [], marker=_DEFAULT_MARKER, linestyle="none", markersize=9,
-            markerfacecolor="none", markeredgecolor=_MUTED,
+            [],
+            [],
+            marker=_DEFAULT_MARKER,
+            linestyle="none",
+            markersize=9,
+            markerfacecolor="none",
+            markeredgecolor=_MUTED,
             label="self-correction off",
         ),
         Line2D([], [], color=_FRONTIER, lw=2, alpha=0.6, label="Pareto frontier"),
@@ -169,14 +205,22 @@ def _add_legends(fig, ax, keys, multi_model, Line2D):
         for model in sorted({k[3] for k in keys}):
             enc.append(
                 Line2D(
-                    [], [], marker=marker_for_model(model), linestyle="none",
-                    markersize=9, markerfacecolor=_MUTED,
-                    markeredgecolor=_SURFACE, label=model,
+                    [],
+                    [],
+                    marker=marker_for_model(model),
+                    linestyle="none",
+                    markersize=9,
+                    markerfacecolor=_MUTED,
+                    markeredgecolor=_SURFACE,
+                    label=model,
                 )
             )
     leg2 = ax.legend(
-        handles=enc, title="Encoding",
-        loc="lower left", bbox_to_anchor=(1.02, 0.0),
-        labelcolor=_INK, alignment="left",
+        handles=enc,
+        title="Encoding",
+        loc="lower left",
+        bbox_to_anchor=(1.02, 0.0),
+        labelcolor=_INK,
+        alignment="left",
     )
     leg2.get_title().set_color(_INK)

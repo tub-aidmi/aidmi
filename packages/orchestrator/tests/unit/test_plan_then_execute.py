@@ -1,4 +1,5 @@
 """plan_then_execute: one global planner, per-table writers following the plan."""
+
 from __future__ import annotations
 
 import asyncio
@@ -7,20 +8,31 @@ from pydantic_ai.models.test import TestModel
 
 from aidmi_orchestrator.domain import ModelSpec
 from aidmi_orchestrator.strategy.plan_then_execute.strategy import (
-    MappingPlan, PlanThenExecute, PlanThenExecuteConfig, plan_slice_text,
+    MappingPlan,
+    PlanThenExecute,
+    PlanThenExecuteConfig,
+    plan_slice_text,
 )
 
 from .test_structured_common import MAPPING_ARGS, fake_api
 
 PLAN_ARGS = dict(
     overview="map contacts onto users",
-    tables=[{
-        "target_table": "users",
-        "source_tables": ["contacts"],
-        "join_keys": [],
-        "columns": [{"target_column": "user_id", "source_columns": ["contacts.id"], "transform_hint": "cast"}],
-        "notes": "single table",
-    }],
+    tables=[
+        {
+            "target_table": "users",
+            "source_tables": ["contacts"],
+            "join_keys": [],
+            "columns": [
+                {
+                    "target_column": "user_id",
+                    "source_columns": ["contacts.id"],
+                    "transform_hint": "cast",
+                }
+            ],
+            "notes": "single table",
+        }
+    ],
 )
 
 
@@ -34,9 +46,11 @@ def test_generate_runs_planner_then_writers(tmp_path) -> None:
         return planner if role == "planner" else writer
 
     api = fake_api(tmp_path, make_llm=make_llm)
-    strategy = PlanThenExecute(PlanThenExecuteConfig(
-        planner_model=ModelSpec(provider="litellm", model_name="m"),
-    ))
+    strategy = PlanThenExecute(
+        PlanThenExecuteConfig(
+            planner_model=ModelSpec(provider="litellm", model_name="m"),
+        )
+    )
     result = asyncio.run(strategy.generate(api))
     assert result.self_reported_status == "complete"
     assert set(roles) == {"planner", "writer"}
@@ -60,7 +74,10 @@ def test_plan_slice_text_handles_missing_table() -> None:
 
 
 def test_executor_user_prompt_contains_plan_slice() -> None:
-    from aidmi_orchestrator.strategy.plan_then_execute.prompts import executor_user_prompt
+    from aidmi_orchestrator.strategy.plan_then_execute.prompts import (
+        executor_user_prompt,
+    )
+
     prompt = executor_user_prompt("users", "CTX", "SLICE")
     assert "`users`" in prompt
     assert "CTX" in prompt
@@ -68,11 +85,17 @@ def test_executor_user_prompt_contains_plan_slice() -> None:
 
 
 def test_plan_slice_text_omits_empty_overview_and_hint() -> None:
-    plan = MappingPlan(tables=[{
-        "target_table": "users",
-        "source_tables": ["contacts"],
-        "columns": [{"target_column": "user_id", "source_columns": ["contacts.id"]}],
-    }])
+    plan = MappingPlan(
+        tables=[
+            {
+                "target_table": "users",
+                "source_tables": ["contacts"],
+                "columns": [
+                    {"target_column": "user_id", "source_columns": ["contacts.id"]}
+                ],
+            }
+        ]
+    )
     text = plan_slice_text(plan, "users")
     assert "Overview:" not in text
     assert "user_id <- contacts.id" in text

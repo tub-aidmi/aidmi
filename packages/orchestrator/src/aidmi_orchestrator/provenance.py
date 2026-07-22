@@ -1,4 +1,5 @@
 """Git, package, and artifact provenance for campaigns and runs."""
+
 from __future__ import annotations
 
 import hashlib
@@ -64,7 +65,9 @@ def dbt_project_sha256(dbt_project_path: Path) -> str | None:
     return digest.hexdigest()
 
 
-def make_campaign_provenance(*, campaign_id: str, label: str | None = None) -> CampaignProvenance:
+def make_campaign_provenance(
+    *, campaign_id: str, label: str | None = None
+) -> CampaignProvenance:
     git = collect_git_provenance()
     return CampaignProvenance(
         id=campaign_id,

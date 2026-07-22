@@ -1,4 +1,5 @@
 """run_orchestrator — sequential flow."""
+
 from __future__ import annotations
 from datetime import datetime
 from pathlib import Path
@@ -11,7 +12,9 @@ from aidmi_orchestrator.discover import discover
 from aidmi_orchestrator.domain import TargetSchema
 from aidmi_orchestrator.evaluator.base import RunArtifacts, FixtureMetadata
 from aidmi_orchestrator.persistence import (
-    scaffold_dbt_project, write_strategy_result, write_mapping_manifest,
+    scaffold_dbt_project,
+    write_strategy_result,
+    write_mapping_manifest,
 )
 from aidmi_orchestrator.progress import log_message
 from aidmi_orchestrator.trace import TraceSink, StrategyEvent
@@ -53,7 +56,9 @@ async def run_orchestrator(
     )
     target_schema = _load_target_schema(fixture.target_schema_path)
 
-    log_message(f"discovering source schema {fixture.source_schema}", scope=strategy.name)
+    log_message(
+        f"discovering source schema {fixture.source_schema}", scope=strategy.name
+    )
 
     staging = StagingConfig.for_run(staging_db_url, fixture.source_schema, run_id)
     pipeline_run = MigrationRun(
@@ -66,12 +71,16 @@ async def run_orchestrator(
         fail_fast=False,
     )
 
-    source_summary = discover(staging.db_url, staging.source_schema, samples_per_table=100)
-    trace.record(StrategyEvent(
-        timestamp=datetime.utcnow(),
-        label="discover_complete",
-        data={"table_count": len(source_summary.tables)},
-    ))
+    source_summary = discover(
+        staging.db_url, staging.source_schema, samples_per_table=100
+    )
+    trace.record(
+        StrategyEvent(
+            timestamp=datetime.utcnow(),
+            label="discover_complete",
+            data={"table_count": len(source_summary.tables)},
+        )
+    )
     log_message(
         f"discovered {len(source_summary.tables)} source tables",
         scope=strategy.name,
@@ -96,11 +105,13 @@ async def run_orchestrator(
             scope=strategy.name,
         )
     except Exception as e:
-        trace.record(StrategyEvent(
-            timestamp=datetime.utcnow(),
-            label="strategy_crashed",
-            data={"error": repr(e), "type": type(e).__name__},
-        ))
+        trace.record(
+            StrategyEvent(
+                timestamp=datetime.utcnow(),
+                label="strategy_crashed",
+                data={"error": repr(e), "type": type(e).__name__},
+            )
+        )
         trace.close()
         raise StrategyExecutionError(run_id, e) from e
 
@@ -109,11 +120,13 @@ async def run_orchestrator(
         log_message("running final dbt transform", scope=strategy.name)
         final_transform = await api.run_dbt()
     except Exception as e:
-        trace.record(StrategyEvent(
-            timestamp=datetime.utcnow(),
-            label="final_dbt_failed",
-            data={"error": repr(e), "type": type(e).__name__},
-        ))
+        trace.record(
+            StrategyEvent(
+                timestamp=datetime.utcnow(),
+                label="final_dbt_failed",
+                data={"error": repr(e), "type": type(e).__name__},
+            )
+        )
 
     write_strategy_result(run_dir, strategy_result)
     write_mapping_manifest(run_dir, strategy_result.manifest)

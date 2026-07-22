@@ -7,7 +7,10 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import MagicMock
 
-from aidmi_orchestrator.strategy.write_tools_freeform.tools import make_read_file, make_write_file
+from aidmi_orchestrator.strategy.write_tools_freeform.tools import (
+    make_read_file,
+    make_write_file,
+)
 
 
 def test_write_file_to_directory_returns_error_not_raises(tmp_path: Path) -> None:
@@ -28,7 +31,10 @@ def test_write_file_to_directory_returns_error_not_raises(tmp_path: Path) -> Non
         )
     )
     assert "wrote" in ok
-    assert "{{ config(materialized='table') }}" in (tmp_path / "models" / "users.sql").read_text()
+    assert (
+        "{{ config(materialized='table') }}"
+        in (tmp_path / "models" / "users.sql").read_text()
+    )
 
 
 def test_write_file_path_escape_returns_error_not_raises(tmp_path: Path) -> None:

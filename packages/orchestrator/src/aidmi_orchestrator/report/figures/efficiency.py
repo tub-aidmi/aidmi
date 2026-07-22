@@ -36,8 +36,9 @@ def _draw_bars(ax, cells, values, fmt, ylabel):
     if present:
         ax.bar(xs, ys, width=0.62, color=colors, zorder=3)
         for x, y in zip(xs, ys):
-            ax.text(x, y, fmt.format(y), ha="center", va="bottom",
-                    fontsize=8, color=_MUTED)
+            ax.text(
+                x, y, fmt.format(y), ha="center", va="bottom", fontsize=8, color=_MUTED
+            )
     ax.set_xticks(list(xs))
     ax.set_xticklabels(present, rotation=25, ha="right", fontsize=9, color=_INK)
     ax.set_ylabel(ylabel, color=_INK)
@@ -74,12 +75,17 @@ def fig_efficiency(records, out_dir) -> Path:
     )
     _draw_bars(ax_cost, cells, _ratio(cost, f1), "${:.3f}", "Cost per f1-point ($)")
     ax_cost.set_title("$ per unit quality", color=_INK, fontsize=11, loc="left")
-    _draw_bars(ax_tok, cells, _ratio(tokens, f1), "{:.0f}", "Output tokens per f1-point")
+    _draw_bars(
+        ax_tok, cells, _ratio(tokens, f1), "{:.0f}", "Output tokens per f1-point"
+    )
     ax_tok.set_title("Tokens per unit quality", color=_INK, fontsize=11, loc="left")
 
     fig.suptitle(
         "Efficiency — resource per unit of quality (lower is better)",
-        color=_INK, fontsize=12, x=0.02, ha="left",
+        color=_INK,
+        fontsize=12,
+        x=0.02,
+        ha="left",
     )
     fig.subplots_adjust(left=0.07, right=0.98, top=0.86, bottom=0.26, wspace=0.24)
 
@@ -120,7 +126,10 @@ def fig_cost_drivers(records, out_dir) -> Path:
 
     fig.suptitle(
         "Cost drivers — retries add billed work, cache hits discount it",
-        color=_INK, fontsize=12, x=0.02, ha="left",
+        color=_INK,
+        fontsize=12,
+        x=0.02,
+        ha="left",
     )
     fig.subplots_adjust(left=0.07, right=0.98, top=0.86, bottom=0.26, wspace=0.24)
 

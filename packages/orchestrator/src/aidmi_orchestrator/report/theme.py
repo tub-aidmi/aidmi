@@ -54,14 +54,23 @@ EXCLUDED_STRATEGIES = {
 }
 
 MODEL_MARKERS = {"gemini25flash": "o", "qwen35b": "s", "mistral128b": "^"}
-_FALLBACK_C = "#888888"; _FALLBACK_M = "D"
+_FALLBACK_C = "#888888"
+_FALLBACK_M = "D"
 
 # Single brand sequential ramp (near-white -> orange -> red -> deep maroon),
 # used by every heatmap regardless of metric. Both brand colors sit inside it
 # (#ff6c00 mid, #c40d1e upper).
 BRAND_ORRD = [
-    "#fff7f2", "#fddccb", "#fcbfa0", "#fb9d6b", "#ff7a1f",
-    "#ff6c00", "#e8471a", "#c40d1e", "#9c0a17", "#6f040d",
+    "#fff7f2",
+    "#fddccb",
+    "#fcbfa0",
+    "#fb9d6b",
+    "#ff7a1f",
+    "#ff6c00",
+    "#e8471a",
+    "#c40d1e",
+    "#9c0a17",
+    "#6f040d",
 ]
 
 
@@ -78,8 +87,12 @@ def strip_common_version(labels):
     return labels
 
 
-def color_for_cell(cell): return STRATEGY_COLORS.get(cell, _FALLBACK_C)
-def marker_for_model(model): return MODEL_MARKERS.get(model, _FALLBACK_M)
+def color_for_cell(cell):
+    return STRATEGY_COLORS.get(cell, _FALLBACK_C)
+
+
+def marker_for_model(model):
+    return MODEL_MARKERS.get(model, _FALLBACK_M)
 
 
 def ordered_cells(cells):
@@ -123,16 +136,26 @@ def ordered_fixtures(fixtures):
 
 def sequential_cmap():
     from matplotlib.colors import LinearSegmentedColormap
+
     return LinearSegmentedColormap.from_list("aidmi_brand_orrd", BRAND_ORRD)
 
 
 def apply_theme():
-    mpl.rcParams.update({
-        "figure.figsize": (7, 4.5), "figure.dpi": 100,
-        "svg.fonttype": "none", "font.size": 11,
-        "axes.spines.top": False, "axes.spines.right": False,
-        "axes.grid": True, "grid.alpha": 0.3, "axes.axisbelow": True,
-        "legend.frameon": False,
-        "figure.facecolor": "none", "axes.facecolor": "none",
-        "savefig.facecolor": "none", "savefig.edgecolor": "none",
-    })
+    mpl.rcParams.update(
+        {
+            "figure.figsize": (7, 4.5),
+            "figure.dpi": 100,
+            "svg.fonttype": "none",
+            "font.size": 11,
+            "axes.spines.top": False,
+            "axes.spines.right": False,
+            "axes.grid": True,
+            "grid.alpha": 0.3,
+            "axes.axisbelow": True,
+            "legend.frameon": False,
+            "figure.facecolor": "none",
+            "axes.facecolor": "none",
+            "savefig.facecolor": "none",
+            "savefig.edgecolor": "none",
+        }
+    )

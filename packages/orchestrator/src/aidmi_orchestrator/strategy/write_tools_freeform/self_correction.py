@@ -1,4 +1,5 @@
 """Post-agent dbt validation loop for write_tools_freeform."""
+
 from __future__ import annotations
 
 from typing import Any, Protocol
@@ -26,7 +27,9 @@ def format_dbt_errors(result: Any) -> str:
     for model in getattr(result, "models", []) or []:
         if getattr(model, "status", None) != "success":
             name = getattr(model, "model_name", "?")
-            msg = getattr(model, "error_message", None) or getattr(model, "status", "error")
+            msg = getattr(model, "error_message", None) or getattr(
+                model, "status", "error"
+            )
             lines.append(f"- {name}: {msg}")
     return "\n".join(lines) if lines else "dbt run failed with no model details"
 
@@ -70,7 +73,9 @@ async def run_post_agent_dbt_loop(
             errors = validate_models(sql_by_file)
             if not errors:
                 break
-            detail = "\n".join(f"- {name}: {'; '.join(errs)}" for name, errs in errors.items())
+            detail = "\n".join(
+                f"- {name}: {'; '.join(errs)}" for name, errs in errors.items()
+            )
             try:
                 await fixer.run(
                     f"Some models have SQL syntax errors before dbt even runs. "

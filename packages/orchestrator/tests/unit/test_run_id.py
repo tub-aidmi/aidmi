@@ -11,7 +11,7 @@ def test_make_run_id_format():
     assert hash8.isalnum()
     assert hash8 == hash8.lower()
     assert run_id.endswith("_master")
-    assert run_id[10:-len("_master")] == "write_tools_freeform"
+    assert run_id[10 : -len("_master")] == "write_tools_freeform"
 
 
 def test_slug_sanitizes_special_chars():
@@ -25,7 +25,7 @@ def test_make_run_id_sanitizes_inputs():
     hash8 = run_id[1:9]
     assert len(hash8) == 8
     assert run_id.endswith("_my_fixture")
-    assert run_id[10:-len("_my_fixture")] == "plan_then_execute"
+    assert run_id[10 : -len("_my_fixture")] == "plan_then_execute"
 
 
 def test_truncation_when_names_exceed_postgres_limit():

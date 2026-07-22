@@ -1,4 +1,5 @@
 """HTML report tables: best-config, silent-failure, and per-config appendix."""
+
 from __future__ import annotations
 
 import html
@@ -71,7 +72,9 @@ def _header(cells: list[str]) -> str:
     return "<tr>" + "".join(f"<th>{c}</th>" for c in cells) + "</tr>"
 
 
-def _table(header_cells: list[str], body_rows: list[str], caption: str | None = None) -> str:
+def _table(
+    header_cells: list[str], body_rows: list[str], caption: str | None = None
+) -> str:
     caption_html = f"<caption>{caption}</caption>" if caption else ""
     return (
         "<table>"
@@ -94,30 +97,61 @@ def best_config_table(records: list[RunRecord]) -> str:
 
     if recall_by_config:
         (cell, ctx, sc, model), value = _best(recall_by_config, largest=True)
-        rows.append(_row([
-            "Highest mean recall", _esc(cell), _esc(ctx), _fmt_sc(sc), _esc(model),
-            _fmt_rate3(value),
-        ]))
+        rows.append(
+            _row(
+                [
+                    "Highest mean recall",
+                    _esc(cell),
+                    _esc(ctx),
+                    _fmt_sc(sc),
+                    _esc(model),
+                    _fmt_rate3(value),
+                ]
+            )
+        )
 
     if cost_by_config:
         (cell, ctx, sc, model), value = _best(cost_by_config, largest=False)
-        rows.append(_row([
-            "Lowest mean cost", _esc(cell), _esc(ctx), _fmt_sc(sc), _esc(model),
-            f"${value:.4f}",
-        ]))
+        rows.append(
+            _row(
+                [
+                    "Lowest mean cost",
+                    _esc(cell),
+                    _esc(ctx),
+                    _fmt_sc(sc),
+                    _esc(model),
+                    f"${value:.4f}",
+                ]
+            )
+        )
 
     if mat_by_config:
         (cell, ctx, sc, model), value = _best(mat_by_config, largest=True)
-        rows.append(_row([
-            "Highest mean materialization rate", _esc(cell), _esc(ctx), _fmt_sc(sc), _esc(model),
-            _fmt_pct(value),
-        ]))
+        rows.append(
+            _row(
+                [
+                    "Highest mean materialization rate",
+                    _esc(cell),
+                    _esc(ctx),
+                    _fmt_sc(sc),
+                    _esc(model),
+                    _fmt_pct(value),
+                ]
+            )
+        )
 
     return _table(header, rows)
 
 
 _SUMMARY_HEADER = [
-    "Group", "n", "Recall", "Field acc", "FK integrity", "Mat rate", "Cost $", "Time (s)",
+    "Group",
+    "n",
+    "Recall",
+    "Field acc",
+    "FK integrity",
+    "Mat rate",
+    "Cost $",
+    "Time (s)",
 ]
 _SUMMARY_LEGEND = (
     "Cells: mean / median ±sd. Recall and materialization rate count a run that "
@@ -136,8 +170,9 @@ def _eval_vals(recs: list[RunRecord], metric) -> list[float]:
     return [v for r in recs if (v := metric(r)) is not None]
 
 
-def _fmt_stats(values: list[float], *, prec: int = 3, prefix: str = "",
-               integer: bool = False) -> str:
+def _fmt_stats(
+    values: list[float], *, prec: int = 3, prefix: str = "", integer: bool = False
+) -> str:
     stats = summary_stats(values)
     if stats is None:
         return "-"
@@ -180,15 +215,17 @@ def summary_overall_table(records: list[RunRecord]) -> str:
 
 
 def summary_by_sc_table(records: list[RunRecord]) -> str:
-    groups = [(_fmt_sc(sc), [r for r in records if r.sc is sc])
-              for sc in (True, False)]
+    groups = [(_fmt_sc(sc), [r for r in records if r.sc is sc]) for sc in (True, False)]
     return _summary_table(
-        groups, caption="Split by self-correction. " + _SUMMARY_LEGEND)
+        groups, caption="Split by self-correction. " + _SUMMARY_LEGEND
+    )
 
 
 def summary_by_ctx_table(records: list[RunRecord]) -> str:
-    groups = [((ctx or "n/a"), [r for r in records if r.ctx == ctx])
-              for ctx in _ctx_order(records)]
+    groups = [
+        ((ctx or "n/a"), [r for r in records if r.ctx == ctx])
+        for ctx in _ctx_order(records)
+    ]
     return _summary_table(
         groups,
         caption="Split by context mode — pooled and descriptive only; the effect "
@@ -224,7 +261,8 @@ def summary_best_config_table(records: list[RunRecord]) -> str:
         objectives.append(("Lowest mean cost", _best(cost, largest=False)[0]))
     if mat:
         objectives.append(
-            ("Highest mean materialization rate", _best(mat, largest=True)[0]))
+            ("Highest mean materialization rate", _best(mat, largest=True)[0])
+        )
 
     header = ["Objective", "Winning config"] + _SUMMARY_HEADER[1:]
     rows = [
@@ -245,8 +283,10 @@ def _mean_recall(recs: list[RunRecord]) -> float:
 
 
 def _by_attr_table(records: list[RunRecord], attr: str, caption: str) -> str:
-    groups = [(value, [r for r in records if getattr(r, attr) == value])
-              for value in sorted({getattr(r, attr) for r in records})]
+    groups = [
+        (value, [r for r in records if getattr(r, attr) == value])
+        for value in sorted({getattr(r, attr) for r in records})
+    ]
     groups.sort(key=lambda g: (-_mean_recall(g[1]), g[0]))
     return _summary_table(groups, caption=caption)
 
@@ -257,16 +297,18 @@ def summary_sc_block(records: list[RunRecord], *, sc: bool) -> str:
     subset = [r for r in records if r.sc is sc]
     state = "on" if sc else "off"
     strategy = _by_attr_table(
-        subset, "cell",
+        subset,
+        "cell",
         f"Per strategy — self-correction {state}, both context modes pooled. "
         f"Ordered by mean recall. " + _SUMMARY_LEGEND,
     )
     fixture = _by_attr_table(
-        subset, "fixture",
+        subset,
+        "fixture",
         f"Per fixture — self-correction {state}, strategies and both context "
         f"modes pooled. Ordered by mean recall. " + _SUMMARY_LEGEND,
     )
-    return f'<h3>Self-correction {state}</h3>{strategy}{fixture}'
+    return f"<h3>Self-correction {state}</h3>{strategy}{fixture}"
 
 
 def failure_accounting_table(records: list[RunRecord]) -> str:
@@ -292,16 +334,26 @@ def failure_accounting_table(records: list[RunRecord]) -> str:
     cells = sorted(runs, key=lambda c: (-f1_all.get(c, 0.0), c))
 
     header = [
-        "Strategy", "Runs", "Failed (nothing produced)",
-        "Recall incl. failed", "Recall evaluated",
-        "f1 incl. failed", "f1 evaluated",
+        "Strategy",
+        "Runs",
+        "Failed (nothing produced)",
+        "Recall incl. failed",
+        "Recall evaluated",
+        "f1 incl. failed",
+        "f1 evaluated",
     ]
     rows = [
-        _row([
-            _esc(c), _esc(runs[c]), _esc(failed[c]),
-            _fmt_rate3(recall_all.get(c)), _fmt_rate3(recall_eval.get(c)),
-            _fmt_rate3(f1_all.get(c)), _fmt_rate3(f1_eval.get(c)),
-        ])
+        _row(
+            [
+                _esc(c),
+                _esc(runs[c]),
+                _esc(failed[c]),
+                _fmt_rate3(recall_all.get(c)),
+                _fmt_rate3(recall_eval.get(c)),
+                _fmt_rate3(f1_all.get(c)),
+                _fmt_rate3(f1_eval.get(c)),
+            ]
+        )
         for c in cells
     ]
     total_failed = sum(failed.values())
@@ -323,10 +375,15 @@ def silent_failure_table(records: list[RunRecord], labels=None) -> str:
 
     header = ["Campaign", "Model", "Cell", "Fixture", "Rep"]
     rows = [
-        _row([
-            _esc((labels or {}).get(r.campaign, r.campaign)),
-            _esc(r.model), _esc(r.cell), _esc(r.fixture), _esc(r.rep),
-        ])
+        _row(
+            [
+                _esc((labels or {}).get(r.campaign, r.campaign)),
+                _esc(r.model),
+                _esc(r.cell),
+                _esc(r.fixture),
+                _esc(r.rep),
+            ]
+        )
         for r in silent
     ]
     return _table(header, rows, caption=caption)
@@ -347,9 +404,18 @@ def appendix_table(records: list[RunRecord]) -> str:
     configs = sorted({key(r) for r in records}, key=_norm)
 
     header = [
-        "Model", "Cell", "Context", "Self-correct",
-        "Recall (mean±sd)", "Materialization%", "Field acc (mean±sd)",
-        "FK integrity (mean±sd)", "Cost $", "Secs", "Tables declared", "Cols covered",
+        "Model",
+        "Cell",
+        "Context",
+        "Self-correct",
+        "Recall (mean±sd)",
+        "Materialization%",
+        "Field acc (mean±sd)",
+        "FK integrity (mean±sd)",
+        "Cost $",
+        "Secs",
+        "Tables declared",
+        "Cols covered",
     ]
     rows = []
     for model, cell, ctx, sc in configs:
@@ -367,10 +433,23 @@ def appendix_table(records: list[RunRecord]) -> str:
         cols_vals = cols_covered_values.get(cfg_key, [])
         cols_str = f"{statistics.mean(cols_vals):.3f}" if cols_vals else "-"
 
-        rows.append(_row([
-            _esc(model), _esc(cell), _esc(ctx), _fmt_sc(sc),
-            recall_str, mat_str, field_acc_str, fk_integrity_str,
-            cost_str, secs_str, tdecl_str, cols_str,
-        ]))
+        rows.append(
+            _row(
+                [
+                    _esc(model),
+                    _esc(cell),
+                    _esc(ctx),
+                    _fmt_sc(sc),
+                    recall_str,
+                    mat_str,
+                    field_acc_str,
+                    fk_integrity_str,
+                    cost_str,
+                    secs_str,
+                    tdecl_str,
+                    cols_str,
+                ]
+            )
+        )
 
     return _table(header, rows)

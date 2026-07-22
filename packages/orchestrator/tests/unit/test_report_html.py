@@ -82,7 +82,15 @@ def test_render_gallery_contains_nav_and_anchors():
         multi_model=False,
     )
     assert "<nav" in html
-    for sec_id in ("headline", "metric", "levers", "strategy", "reliability", "fixtures", "appendix"):
+    for sec_id in (
+        "headline",
+        "metric",
+        "levers",
+        "strategy",
+        "reliability",
+        "fixtures",
+        "appendix",
+    ):
         assert f'id="{sec_id}"' in html
         assert f'href="#{sec_id}"' in html
 
@@ -146,12 +154,20 @@ def test_figure_src_is_relative_to_figures_dir_using_basename():
 
 
 def test_stacked_section_uses_stacked_figures_class():
-    default_sec = Section(id="grid", title="Grid", figures=[Path("a.svg")],
-                          caption="side by side")
-    stacked_sec = Section(id="stack", title="Stack", figures=[Path("b.svg")],
-                          caption="stacked", stacked=True)
+    default_sec = Section(
+        id="grid", title="Grid", figures=[Path("a.svg")], caption="side by side"
+    )
+    stacked_sec = Section(
+        id="stack",
+        title="Stack",
+        figures=[Path("b.svg")],
+        caption="stacked",
+        stacked=True,
+    )
     html = render_gallery(
-        title="t", sections=[default_sec, stacked_sec], tables={},
+        title="t",
+        sections=[default_sec, stacked_sec],
+        tables={},
         multi_model=False,
     )
     assert '<div class="figures figures--stacked">' in html
@@ -161,8 +177,11 @@ def test_stacked_section_uses_stacked_figures_class():
 
 def test_subsections_render_h3_headings_and_own_figures_div():
     sec = Section(
-        id="strategy_by_fixture", title="Strategy by fixture", figures=[],
-        caption="", stacked=True,
+        id="strategy_by_fixture",
+        title="Strategy by fixture",
+        figures=[],
+        caption="",
+        stacked=True,
         subsections=(
             Subsection("fixture_a", [Path("dist_strategy__fixture_a.svg")]),
             Subsection("fixture_b", [Path("dist_strategy__fixture_b.svg")]),

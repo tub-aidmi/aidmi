@@ -1,4 +1,5 @@
 """Provider registry + Model construction + TracedModel wrapper."""
+
 from __future__ import annotations
 import asyncio
 import dataclasses
@@ -43,6 +44,7 @@ def make_llm(spec: ModelSpec) -> Any:
 
 # ---------- Built-in provider factories ----------
 
+
 def _resolve_api_key(spec: ModelSpec) -> str | None:
     return os.environ[spec.api_key_env] if spec.api_key_env else None
 
@@ -71,6 +73,7 @@ def _google_cloud_factory(spec: ModelSpec):
 def _openai_factory(spec: ModelSpec):
     from pydantic_ai.models.openai import OpenAIChatModel
     from pydantic_ai.providers.openai import OpenAIProvider
+
     return OpenAIChatModel(
         spec.model_name,
         provider=OpenAIProvider(base_url=spec.base_url, api_key=_resolve_api_key(spec)),
@@ -80,6 +83,7 @@ def _openai_factory(spec: ModelSpec):
 def _anthropic_factory(spec: ModelSpec):
     from pydantic_ai.models.anthropic import AnthropicModel
     from pydantic_ai.providers.anthropic import AnthropicProvider
+
     return AnthropicModel(
         spec.model_name,
         provider=AnthropicProvider(api_key=_resolve_api_key(spec)),
@@ -100,6 +104,7 @@ def _ollama_base_url(spec: ModelSpec) -> str:
 def _ollama_factory(spec: ModelSpec):
     from pydantic_ai.models.openai import OpenAIChatModel
     from pydantic_ai.providers.ollama import OllamaProvider
+
     return OpenAIChatModel(
         spec.model_name,
         provider=OllamaProvider(
@@ -197,13 +202,17 @@ class TracedModel(WrapperModel):
             start = time.perf_counter()
             try:
                 response = await self.wrapped.request(
-                    messages, model_settings, model_request_parameters,
+                    messages,
+                    model_settings,
+                    model_request_parameters,
                 )
             except ModelHTTPError as exc:
                 if attempt >= max_retries or not is_retryable_model_http_error(exc):
                     raise
                 delay = retry_delay_seconds(
-                    attempt, base_seconds=base_seconds, max_seconds=max_seconds,
+                    attempt,
+                    base_seconds=base_seconds,
+                    max_seconds=max_seconds,
                 )
                 log_message(
                     f"LLM {self._role} {self._spec.model_name} HTTP {exc.status_code}, "
@@ -217,15 +226,26 @@ class TracedModel(WrapperModel):
             usage_dict = _usage_dict(response)
             if attempt > 0:
                 usage_dict["retry_count"] = attempt
-            self._trace.record(LlmCallEvent(
-                timestamp=datetime.utcnow(),
-                role=self._role,
-                model_spec=self._spec,
-                messages=[m.model_dump() if hasattr(m, "model_dump") else {"raw": str(m)} for m in messages],
-                response=(response.model_dump() if hasattr(response, "model_dump") else str(response)),
-                usage=usage_dict,
-                latency_ms=latency_ms,
-            ))
+            self._trace.record(
+                LlmCallEvent(
+                    timestamp=datetime.utcnow(),
+                    role=self._role,
+                    model_spec=self._spec,
+                    messages=[
+                        m.model_dump() if hasattr(m, "model_dump") else {"raw": str(m)}
+                        for m in messages
+                    ],
+                    response=(
+                        response.model_dump()
+                        if hasattr(response, "model_dump")
+                        else str(response)
+                    ),
+                    usage=usage_dict,
+                    latency_ms=latency_ms,
+                )
+            )
             return response
 
-        raise RuntimeError("unreachable: LLM retry loop exhausted without response or exception")
+        raise RuntimeError(
+            "unreachable: LLM retry loop exhausted without response or exception"
+        )

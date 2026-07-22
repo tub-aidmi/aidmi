@@ -1,11 +1,14 @@
 """Compose modular guideline sections into strategy prompts."""
+
 from __future__ import annotations
 
 from aidmi_orchestrator.strategy.guidelines.dbt import DBT_PROJECT_GUIDELINES
 from aidmi_orchestrator.strategy.guidelines.planning import PLANNING_GUIDELINES
 from aidmi_orchestrator.strategy.guidelines.postgres import POSTGRES_SQL_GUIDELINES
 from aidmi_orchestrator.strategy.guidelines.query_tool import QUERY_TOOL_GUIDELINES
-from aidmi_orchestrator.strategy.guidelines.transformation import TRANSFORMATION_GUIDELINES
+from aidmi_orchestrator.strategy.guidelines.transformation import (
+    TRANSFORMATION_GUIDELINES,
+)
 
 FREEFORM_INLINE_SELF_CORRECTION_ADDENDUM = """\
 ## Self-correction
@@ -36,7 +39,7 @@ def context_transformation_section() -> str:
 def retry_correction_reminder() -> str:
     return join_sections(
         "When fixing errors:",
-        "- Ensure every mixed-case output column uses a double-quoted alias: `expr AS \"ColumnName\"`.",
+        '- Ensure every mixed-case output column uses a double-quoted alias: `expr AS "ColumnName"`.',
         "- Ensure every CAST includes `AS <type>`: `CAST(expr AS DOUBLE PRECISION)`, not `CAST(expr)`.",
         "- Populate every `Legacy_*__c` column from the source natural key — evaluators join on these.",
         "- `AccountId` / `Account__c` must reference the Salesforce Account `Id`, not raw source customer numbers.",
@@ -73,12 +76,12 @@ def freeform_system_prompt(
         "- (optionally) query_postgres(sql) — run a read-only SELECT against staging",
     ]
     if enable_self_correction and inline_run_dbt_tool:
-        tool_lines.append("- (optionally) run_dbt() — execute the dbt project and see the result")
+        tool_lines.append(
+            "- (optionally) run_dbt() — execute the dbt project and see the result"
+        )
     role = (
         "You are a senior data engineer producing a dbt project on disk.\n\n"
-        "You have these tools:\n"
-        + "\n".join(tool_lines)
-        + "\n\n"
+        "You have these tools:\n" + "\n".join(tool_lines) + "\n\n"
         "Layout you must produce:\n"
         "- models/<target_table>.sql — one per target table (paths are relative to the dbt project root, not dbt_project/models/)\n"
         "- models/sources.yml — declare every source used by your models\n\n"

@@ -1,4 +1,5 @@
 """File writers for run artifacts and campaign recording."""
+
 from __future__ import annotations
 
 import json
@@ -32,7 +33,9 @@ _DBT_ARCHIVE_IGNORE = shutil.ignore_patterns("target", "dbt_packages", "logs")
 
 def scaffold_dbt_project(dbt_project_path: Path) -> None:
     dbt_project_path.mkdir(parents=True, exist_ok=True)
-    (dbt_project_path / "dbt_project.yml").write_text(_DBT_PROJECT_TEMPLATE, encoding="utf-8")
+    (dbt_project_path / "dbt_project.yml").write_text(
+        _DBT_PROJECT_TEMPLATE, encoding="utf-8"
+    )
     (dbt_project_path / "models").mkdir(exist_ok=True)
 
 
@@ -125,14 +128,22 @@ def load_result_json(bundle_or_legacy_dir: Path) -> BenchmarkResult:
         parent = bundle_or_legacy_dir.parent
         if (parent / "runs" / bundle_or_legacy_dir.name / "result.json").is_file():
             path = parent / "runs" / bundle_or_legacy_dir.name / "result.json"
-        elif (parent / "results" / "dbt" / bundle_or_legacy_dir.name / "result.json").is_file():
-            path = parent / "results" / "dbt" / bundle_or_legacy_dir.name / "result.json"
+        elif (
+            parent / "results" / "dbt" / bundle_or_legacy_dir.name / "result.json"
+        ).is_file():
+            path = (
+                parent / "results" / "dbt" / bundle_or_legacy_dir.name / "result.json"
+            )
         else:
-            raise FileNotFoundError(f"result.json not found under {bundle_or_legacy_dir}")
+            raise FileNotFoundError(
+                f"result.json not found under {bundle_or_legacy_dir}"
+            )
     return BenchmarkResult.model_validate_json(path.read_text(encoding="utf-8"))
 
 
-def load_result_from_campaign(campaign_dir: Path, run_id: str, rep_index: int = 0) -> BenchmarkResult:
+def load_result_from_campaign(
+    campaign_dir: Path, run_id: str, rep_index: int = 0
+) -> BenchmarkResult:
     bundle = bundle_dir_for_run(campaign_dir, run_id, rep_index)
     if (bundle / "result.json").is_file():
         return load_result_json(bundle)
@@ -151,4 +162,6 @@ def load_result_from_campaign(campaign_dir: Path, run_id: str, rep_index: int = 
             if row.get("run_id") == run_id and row.get("rep_index", 0) == rep_index:
                 return BenchmarkResult.model_validate(row)
 
-    raise FileNotFoundError(f"no result for run_id={run_id!r} rep={rep_index} in {campaign_dir}")
+    raise FileNotFoundError(
+        f"no result for run_id={run_id!r} rep={rep_index} in {campaign_dir}"
+    )

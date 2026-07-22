@@ -1,4 +1,5 @@
 """Integration test: full orchestrator end-to-end with MockStrategy."""
+
 import json
 import asyncio
 
@@ -44,7 +45,10 @@ def test_mock_strategy_full_pipeline(staging_db_url, tmp_path):
                 """,
                 (fixture.source_schema, out_expect, "\\_dlt%", "\\"),
             )
-            by_schema: dict[str, set[str]] = {fixture.source_schema: set(), out_expect: set()}
+            by_schema: dict[str, set[str]] = {
+                fixture.source_schema: set(),
+                out_expect: set(),
+            }
             for sch, tbl in cur.fetchall():
                 by_schema.setdefault(sch, set()).add(tbl)
     assert "contacts" in by_schema.get(fixture.source_schema, set())
@@ -59,6 +63,10 @@ def test_mock_strategy_full_pipeline(staging_db_url, tmp_path):
     assert (run_dir / "result.json").exists()
 
     trace_text = (run_dir / "trace.jsonl").read_text()
-    event_types = {json.loads(line)["event_type"] for line in trace_text.splitlines() if line.strip()}
+    event_types = {
+        json.loads(line)["event_type"]
+        for line in trace_text.splitlines()
+        if line.strip()
+    }
     assert "strategy" in event_types
     assert "dbt_run" in event_types

@@ -1,4 +1,5 @@
 """Pure-function tests for FK legacy-resolution helpers."""
+
 from __future__ import annotations
 
 from aidmi_orchestrator.evaluator._ground_truth_utils import (

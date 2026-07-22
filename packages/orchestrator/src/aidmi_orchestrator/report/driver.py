@@ -1,4 +1,5 @@
 """Report driver: assembles all figures + tables into the gallery."""
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -92,7 +93,16 @@ def _build_core_figures(records: list[RunRecord], figdir: Path) -> dict[str, Pat
             f"heatmap_{key}": fig_metric_heatmap(
                 [r for r in records if r.sc is True], figdir, key=key
             )
-            for key in ("recall", "field_acc", "fk_integrity", "mat_rate", "cost", "tokens", "time", "retries")
+            for key in (
+                "recall",
+                "field_acc",
+                "fk_integrity",
+                "mat_rate",
+                "cost",
+                "tokens",
+                "time",
+                "retries",
+            )
         },
     }
 
@@ -107,8 +117,9 @@ def _build_dist_facets(
     cells = ordered_cells({r.cell for r in on})
     fixture_titles = dict(zip(fixtures, strip_common_version(fixtures)))
     by_fixture = [
-        Subsection(fixture_titles[fx],
-                   [fig_dist_by_strategy_for_fixture(records, figdir, fx)])
+        Subsection(
+            fixture_titles[fx], [fig_dist_by_strategy_for_fixture(records, figdir, fx)]
+        )
         for fx in fixtures
     ]
     by_strategy = [
@@ -125,8 +136,10 @@ def _build_per_model_heatmaps(records: list[RunRecord], figdir: Path) -> list[Pa
         model_records = [r for r in records if r.model == model]
         paths.append(
             fig_heatmap(
-                model_records, figdir,
-                metric="materialized", filename=f"heatmap_materialized_{model}.svg",
+                model_records,
+                figdir,
+                metric="materialized",
+                filename=f"heatmap_materialized_{model}.svg",
                 title=f"Materialization % — {model}",
             )
         )
@@ -144,82 +157,134 @@ def _build_sections(
 ) -> list[Section]:
     sections = [
         Section(
-            "summary", "Summary", [], "",
-            ("summary_overall", "summary_sc", "summary_ctx",
-             "summary_best_config", "summary_sc_on", "summary_sc_off"),
+            "summary",
+            "Summary",
+            [],
+            "",
+            (
+                "summary_overall",
+                "summary_sc",
+                "summary_ctx",
+                "summary_best_config",
+                "summary_sc_on",
+                "summary_sc_off",
+            ),
         ),
         Section(
-            "levers", "Levers",
+            "levers",
+            "Levers",
             [figs["lever_ctx"], figs["lever_ctx_sc_on"], figs["lever_sc"]],
             "",
         ),
         Section(
-            "bar_plots", "Bar plots", [], "",
+            "bar_plots",
+            "Bar plots",
+            [],
+            "",
             subsections=(
                 Subsection("Mean", bar_figs["mean"]),
                 Subsection("Median (with IQR whiskers)", bar_figs["median"]),
             ),
         ),
         Section(
-            "correlation", "Correlation",
-            [figs["recall_field_acc"], figs["recall_mat_rate"]], "",
+            "correlation",
+            "Correlation",
+            [figs["recall_field_acc"], figs["recall_mat_rate"]],
+            "",
             subsections=(
                 Subsection(
                     "Correlation with total token usage (self-correction on)",
-                    [figs["corr_tokens_recall"], figs["corr_tokens_field_acc"],
-                     figs["corr_tokens_mat_rate"]],
+                    [
+                        figs["corr_tokens_recall"],
+                        figs["corr_tokens_field_acc"],
+                        figs["corr_tokens_mat_rate"],
+                    ],
                 ),
             ),
         ),
         Section(
-            "heatmaps", "Heatmaps",
+            "heatmaps",
+            "Heatmaps",
             # Row-major 2-column flow: quality (recall, field acc, fk integrity,
             # mat rate) down the left, cost/effort (cost, tokens, time) down the
             # right.
-            [figs["heatmap_recall"], figs["heatmap_cost"],
-             figs["heatmap_field_acc"], figs["heatmap_tokens"],
-             figs["heatmap_fk_integrity"], figs["heatmap_time"],
-             figs["heatmap_mat_rate"], figs["heatmap_retries"]],
+            [
+                figs["heatmap_recall"],
+                figs["heatmap_cost"],
+                figs["heatmap_field_acc"],
+                figs["heatmap_tokens"],
+                figs["heatmap_fk_integrity"],
+                figs["heatmap_time"],
+                figs["heatmap_mat_rate"],
+                figs["heatmap_retries"],
+            ],
             "",
         ),
         Section(
-            "distribution", "Distribution",
-            [figs["dist_by_strategy"], figs["fk_iqr_by_strategy"],
-             figs["dist_by_fixture"], figs["fk_iqr_by_fixture"]],
+            "distribution",
+            "Distribution",
+            [
+                figs["dist_by_strategy"],
+                figs["fk_iqr_by_strategy"],
+                figs["dist_by_fixture"],
+                figs["fk_iqr_by_fixture"],
+            ],
             "",
             stacked=True,
         ),
         Section(
-            "violin", "Violin",
-            [figs["violin_by_strategy"], figs["fk_violin_by_strategy"],
-             figs["violin_by_fixture"], figs["fk_violin_by_fixture"]],
+            "violin",
+            "Violin",
+            [
+                figs["violin_by_strategy"],
+                figs["fk_violin_by_strategy"],
+                figs["violin_by_fixture"],
+                figs["fk_violin_by_fixture"],
+            ],
             "",
             stacked=True,
         ),
         Section(
-            "strategy_by_fixture", "Strategy by fixture", [], "",
-            stacked=True, subsections=tuple(strategy_by_fixture),
+            "strategy_by_fixture",
+            "Strategy by fixture",
+            [],
+            "",
+            stacked=True,
+            subsections=tuple(strategy_by_fixture),
         ),
         Section(
-            "fixture_by_strategy", "Fixture by strategy", [], "",
-            stacked=True, subsections=tuple(fixture_by_strategy),
+            "fixture_by_strategy",
+            "Fixture by strategy",
+            [],
+            "",
+            stacked=True,
+            subsections=tuple(fixture_by_strategy),
         ),
         Section(
-            "wip", "WIP", [figs["thinking_tokens"], figs["recall_violin_sc"]], "",
+            "wip",
+            "WIP",
+            [figs["thinking_tokens"], figs["recall_violin_sc"]],
+            "",
         ),
     ]
     if multi_model:
         sections.append(
             Section(
-                "cross_campaign", "Cross-campaign", per_model_heatmaps, "",
+                "cross_campaign",
+                "Cross-campaign",
+                per_model_heatmaps,
+                "",
             )
         )
     return sections
 
 
 def build_report(
-    records: list[RunRecord], out_dir: Path, *,
-    exclude: set[str] | None = None, labels: dict[str, str] | None = None,
+    records: list[RunRecord],
+    out_dir: Path,
+    *,
+    exclude: set[str] | None = None,
+    labels: dict[str, str] | None = None,
 ) -> list[Path]:
     apply_theme()
     out_dir = Path(out_dir)
@@ -235,7 +300,9 @@ def build_report(
 
     figs = _build_core_figures(records, figdir)
     bar_figs = build_bar_figures(records, figdir)
-    per_model_heatmaps = _build_per_model_heatmaps(records, figdir) if multi_model else []
+    per_model_heatmaps = (
+        _build_per_model_heatmaps(records, figdir) if multi_model else []
+    )
     strategy_by_fixture, fixture_by_strategy = _build_dist_facets(records, figdir)
 
     tables = {
@@ -252,7 +319,11 @@ def build_report(
     }
 
     sections = _build_sections(
-        figs, bar_figs, per_model_heatmaps, strategy_by_fixture, fixture_by_strategy,
+        figs,
+        bar_figs,
+        per_model_heatmaps,
+        strategy_by_fixture,
+        fixture_by_strategy,
         multi_model=multi_model,
     )
 
@@ -260,7 +331,9 @@ def build_report(
     display = [(labels or {}).get(c, c) for c in campaigns]
     title = f"aidmi benchmark report — {', '.join(display)}"
 
-    html = render_gallery(title=title, sections=sections, tables=tables, multi_model=multi_model)
+    html = render_gallery(
+        title=title, sections=sections, tables=tables, multi_model=multi_model
+    )
     index_path = out_dir / "index.html"
     index_path.write_text(html)
 
@@ -272,7 +345,10 @@ def build_report(
     ]
     bar_paths = [p for paths in bar_figs.values() for p in paths]
     written = (
-        list(figs.values()) + bar_paths + per_model_heatmaps + facet_paths
+        list(figs.values())
+        + bar_paths
+        + per_model_heatmaps
+        + facet_paths
         + [index_path, tidy_path]
     )
     return written

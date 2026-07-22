@@ -1,4 +1,5 @@
 """Tests for dbt SQL sanitization and validation."""
+
 from __future__ import annotations
 
 from aidmi_orchestrator.strategy.sql_sanitize import sanitize_dbt_sql, validate_dbt_sql

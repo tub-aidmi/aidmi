@@ -1,4 +1,5 @@
 """Trace sink + event types. Streams JSONL to disk."""
+
 from __future__ import annotations
 import json
 from datetime import datetime
@@ -27,7 +28,7 @@ class LlmCallEvent(TraceEvent):
 
 class DbtRunEvent(TraceEvent):
     event_type: Literal["dbt_run"] = "dbt_run"
-    transform_result: dict[str, Any]   # serialized aidmi_pipeline.TransformResult
+    transform_result: dict[str, Any]  # serialized aidmi_pipeline.TransformResult
     duration_ms: float
 
 

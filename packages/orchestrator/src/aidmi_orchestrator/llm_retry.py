@@ -1,4 +1,5 @@
 """HTTP retry policy for transient LLM provider errors."""
+
 from __future__ import annotations
 
 import random
@@ -35,5 +36,5 @@ def retry_delay_seconds(
     base_seconds: float,
     max_seconds: float,
 ) -> float:
-    delay = min(max_seconds, base_seconds * (2 ** attempt))
+    delay = min(max_seconds, base_seconds * (2**attempt))
     return delay * (0.5 + random.random() * 0.5)

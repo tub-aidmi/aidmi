@@ -1,4 +1,5 @@
 """PlanWriteCritique: plan, write, dbt self-correction, then critique with data validation."""
+
 from __future__ import annotations
 
 from datetime import datetime
@@ -9,12 +10,20 @@ from pydantic_ai import Agent, Tool
 
 from aidmi_orchestrator.domain import ModelSpec, StrategyResult
 from aidmi_orchestrator.progress import log_message
-from aidmi_orchestrator.strategy.base import build_context_prompt, run_coroutines, run_named_coroutines, write_proposal
+from aidmi_orchestrator.strategy.base import (
+    build_context_prompt,
+    run_coroutines,
+    run_named_coroutines,
+    write_proposal,
+)
 from aidmi_orchestrator.strategy.plan_then_execute.prompts import (
     PLANNER_SYSTEM_PROMPT as PLANNER_SYSTEM_PROMPT_METADATA,
     executor_user_prompt,
 )
-from aidmi_orchestrator.strategy.plan_then_execute.strategy import MappingPlan, plan_slice_text
+from aidmi_orchestrator.strategy.plan_then_execute.strategy import (
+    MappingPlan,
+    plan_slice_text,
+)
 from aidmi_orchestrator.strategy.plan_write_critique.loops import (
     retry_failing_tables_with_progress,
     run_critique_with_dbt_loop,
@@ -49,7 +58,9 @@ class PlanWriteCritiqueConfig(BaseModel):
     max_dbt_correction_initial: int = Field(default=3, ge=0)
     max_critique_rounds: int = Field(default=2, ge=1)
     max_dbt_correction_per_critique: int = Field(default=2, ge=0)
-    context_mode: Literal["metadata_only", "metadata_plus_samples", "live_query_tool"] = "live_query_tool"
+    context_mode: Literal[
+        "metadata_only", "metadata_plus_samples", "live_query_tool"
+    ] = "live_query_tool"
     samples_per_table: int = 3
     max_query_tool_rows: int = 100
     serial_llm_calls: bool = False
@@ -70,7 +81,11 @@ class PlanWriteCritique:
 
         planner = api.make_llm(self.config.planner_model, role="planner")
         writer_spec = self.config.writer_model or self.config.planner_model
-        critic_spec = self.config.critic_model or self.config.writer_model or self.config.planner_model
+        critic_spec = (
+            self.config.critic_model
+            or self.config.writer_model
+            or self.config.planner_model
+        )
         writer = api.make_llm(writer_spec, role="writer")
         critic = api.make_llm(critic_spec, role="critic")
 
@@ -83,30 +98,47 @@ class PlanWriteCritique:
         )
 
         log_progress("Calling planner model to create mapping plan...")
-        planner_system = PLANNER_SYSTEM_PROMPT if live_query else PLANNER_SYSTEM_PROMPT_METADATA
-        planner_agent = Agent(planner, output_type=MappingPlan, system_prompt=planner_system)
+        planner_system = (
+            PLANNER_SYSTEM_PROMPT if live_query else PLANNER_SYSTEM_PROMPT_METADATA
+        )
+        planner_agent = Agent(
+            planner, output_type=MappingPlan, system_prompt=planner_system
+        )
         plan = (await planner_agent.run(planner_user_prompt(context))).output
         target_table_names = [t.name for t in api.target_schema.tables]
         planned = {t.target_table for t in plan.tables}
         missing = sorted(set(target_table_names) - planned)
         if missing:
-            log_progress(f"Plan missing {len(missing)} tables ({', '.join(missing)}), re-prompting planner...")
-            plan = (await planner_agent.run(
-                planner_user_prompt(context)
-                + f"\n\nYour MappingPlan MUST include every target table: {target_table_names}. "
-                f"Still missing: {missing}."
-            )).output
-            missing = sorted(set(target_table_names) - {t.target_table for t in plan.tables})
+            log_progress(
+                f"Plan missing {len(missing)} tables ({', '.join(missing)}), re-prompting planner..."
+            )
+            plan = (
+                await planner_agent.run(
+                    planner_user_prompt(context)
+                    + f"\n\nYour MappingPlan MUST include every target table: {target_table_names}. "
+                    f"Still missing: {missing}."
+                )
+            ).output
+            missing = sorted(
+                set(target_table_names) - {t.target_table for t in plan.tables}
+            )
             if missing:
-                log_progress(f"Warning: plan still missing tables: {', '.join(missing)}")
+                log_progress(
+                    f"Warning: plan still missing tables: {', '.join(missing)}"
+                )
         if not plan.tables:
             raise ValueError("planner returned empty MappingPlan")
         log_progress(f"Plan complete: {len(plan.tables)} tables planned")
-        api.trace.record(StrategyEvent(
-            timestamp=datetime.utcnow(),
-            label="plan_complete",
-            data={"overview": plan.overview, "tables_planned": [t.target_table for t in plan.tables]},
-        ))
+        api.trace.record(
+            StrategyEvent(
+                timestamp=datetime.utcnow(),
+                label="plan_complete",
+                data={
+                    "overview": plan.overview,
+                    "tables_planned": [t.target_table for t in plan.tables],
+                },
+            )
+        )
 
         log_progress("=== PHASE 2: INITIAL WRITE ===")
         writer_agent = make_table_agent(
@@ -136,16 +168,22 @@ class PlanWriteCritique:
         )
         log_progress(f"Initial write complete: {len(mappings)} tables generated")
 
-        source_tables = sorted({(t.db_schema, t.name) for t in api.source_summary.tables})
+        source_tables = sorted(
+            {(t.db_schema, t.name) for t in api.source_summary.tables}
+        )
 
         log_progress("=== PHASE 3: INITIAL DBT SELF-CORRECTION ===")
         sql_by_table = {name: m.dbt_sql for name, m in mappings.items()}
-        write_proposal(api.dbt_project_path, sql_by_table, source_tables, api.source_schema)
+        write_proposal(
+            api.dbt_project_path, sql_by_table, source_tables, api.source_schema
+        )
 
         async def regenerate(table_name: str, error: str) -> None:
             log_progress(f"  Regenerating table: {table_name}")
             result = await writer_agent.run(
-                retry_user_prompt(table_name, context, mappings[table_name].dbt_sql, error)
+                retry_user_prompt(
+                    table_name, context, mappings[table_name].dbt_sql, error
+                )
             )
             fixed = result.output.model_copy(update={"target_table": table_name})
             mappings[table_name] = fixed
@@ -189,13 +227,17 @@ class PlanWriteCritique:
 
         if initial_dbt_ok is False:
             log_progress("Stopping — initial dbt self-correction did not succeed")
-            api.trace.record(StrategyEvent(
-                timestamp=datetime.utcnow(),
-                label="initial_dbt_correction_complete",
-                data={"success": False},
-            ))
+            api.trace.record(
+                StrategyEvent(
+                    timestamp=datetime.utcnow(),
+                    label="initial_dbt_correction_complete",
+                    data={"success": False},
+                )
+            )
             sql_by_table = {name: m.dbt_sql for name, m in mappings.items()}
-            write_proposal(api.dbt_project_path, sql_by_table, source_tables, api.source_schema)
+            write_proposal(
+                api.dbt_project_path, sql_by_table, source_tables, api.source_schema
+            )
             manifest = manifest_from_mappings(
                 list(mappings.values()),
                 source_table_names=[t.name for t in api.source_summary.tables],
@@ -209,14 +251,23 @@ class PlanWriteCritique:
                 self_reported_status="gave_up",
             )
 
-        api.trace.record(StrategyEvent(
-            timestamp=datetime.utcnow(),
-            label="initial_dbt_correction_complete",
-            data={"success": initial_dbt_ok if initial_dbt_ok is not None else True},
-        ))
+        api.trace.record(
+            StrategyEvent(
+                timestamp=datetime.utcnow(),
+                label="initial_dbt_correction_complete",
+                data={
+                    "success": initial_dbt_ok if initial_dbt_ok is not None else True
+                },
+            )
+        )
 
         critic_tools = (
-            [Tool(make_query_postgres(api, self.config.max_query_tool_rows), name="query_postgres")]
+            [
+                Tool(
+                    make_query_postgres(api, self.config.max_query_tool_rows),
+                    name="query_postgres",
+                )
+            ]
             if live_query
             else []
         )
@@ -224,7 +275,9 @@ class PlanWriteCritique:
             critic,
             output_type=CritiqueReport,
             system_prompt=(
-                CRITIC_SYSTEM_PROMPT_WITH_QUERY_TOOL if live_query else CRITIC_SYSTEM_PROMPT
+                CRITIC_SYSTEM_PROMPT_WITH_QUERY_TOOL
+                if live_query
+                else CRITIC_SYSTEM_PROMPT
             ),
             tools=critic_tools,
         )
@@ -239,14 +292,18 @@ class PlanWriteCritique:
                     with_query_tool=live_query,
                 )
             )
-            api.trace.record(StrategyEvent(
-                timestamp=datetime.utcnow(),
-                label="critique_round_complete",
-                data={"verdicts": [v.model_dump() for v in result.output.verdicts]},
-            ))
+            api.trace.record(
+                StrategyEvent(
+                    timestamp=datetime.utcnow(),
+                    label="critique_round_complete",
+                    data={"verdicts": [v.model_dump() for v in result.output.verdicts]},
+                )
+            )
             return result.output
 
-        async def revise(name: str, previous: TableMapping, comments: str) -> TableMapping:
+        async def revise(
+            name: str, previous: TableMapping, comments: str
+        ) -> TableMapping:
             prompt = (
                 f"A reviewer rejected your dbt model for `{name}`.\n\n"
                 f"Previous SQL:\n```sql\n{previous.dbt_sql}\n```\n\n"
@@ -307,7 +364,9 @@ class PlanWriteCritique:
         )
 
         sql_by_table = {name: m.dbt_sql for name, m in mappings.items()}
-        write_proposal(api.dbt_project_path, sql_by_table, source_tables, api.source_schema)
+        write_proposal(
+            api.dbt_project_path, sql_by_table, source_tables, api.source_schema
+        )
 
         manifest = manifest_from_mappings(
             list(mappings.values()),

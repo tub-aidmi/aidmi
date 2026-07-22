@@ -15,7 +15,9 @@ def planner_user_prompt(context_prompt: str) -> str:
     return f"{context_prompt}\n\nProduce the global MappingPlan."
 
 
-def executor_user_prompt(target_table_name: str, context_prompt: str, plan_text: str) -> str:
+def executor_user_prompt(
+    target_table_name: str, context_prompt: str, plan_text: str
+) -> str:
     return (
         f"Target table: `{target_table_name}`.\n\n"
         f"{context_prompt}\n\n"

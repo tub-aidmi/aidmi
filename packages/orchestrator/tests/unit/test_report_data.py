@@ -27,17 +27,26 @@ def test_silent_fail_flagged():
 def test_silent_fail_when_dbt_success_but_nothing_materialized():
     recs = load_records([FIX])
     sf = next(
-        r for r in recs
-        if r.dbt_success and not r.materialized
-        and r.status == "complete" and r.recall is None
+        r
+        for r in recs
+        if r.dbt_success
+        and not r.materialized
+        and r.status == "complete"
+        and r.recall is None
     )
     assert sf.silent_fail is True
 
 
 def test_materialized_from_gt_tables_not_dbt_success():
     recs = load_records([FIX])
-    partial = next(r for r in recs if r.cell == "structured_per_table" and r.fixture == "master"
-                     and r.dbt_success and r.tables_materialized == 0.0)
+    partial = next(
+        r
+        for r in recs
+        if r.cell == "structured_per_table"
+        and r.fixture == "master"
+        and r.dbt_success
+        and r.tables_materialized == 0.0
+    )
     assert partial.materialized is False
     assert partial.dbt_success is True
 

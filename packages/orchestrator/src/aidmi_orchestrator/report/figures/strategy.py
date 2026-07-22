@@ -43,7 +43,12 @@ def _ranked_cells(records):
 def _bar_labels(ax, xs, ys, fmt):
     for x, y in zip(xs, ys):
         ax.text(
-            x, y, fmt.format(y), ha="center", va="bottom", fontsize=8,
+            x,
+            y,
+            fmt.format(y),
+            ha="center",
+            va="bottom",
+            fontsize=8,
             color=_MUTED,
         )
 
@@ -61,7 +66,10 @@ def _draw_scorecard_panel(ax, cells, metrics):
         if not xs:
             continue
         ax.bar(
-            xs, ys, width=width * 0.9, color=_METRIC_COLORS[metric],
+            xs,
+            ys,
+            width=width * 0.9,
+            color=_METRIC_COLORS[metric],
             zorder=3,
         )
         _bar_labels(ax, xs, ys, "{:.0%}")
@@ -81,8 +89,12 @@ def _scorecard_legend(fig):
         for m in _METRIC_ORDER
     ]
     leg = fig.legend(
-        handles=handles, loc="upper center", bbox_to_anchor=(0.5, 1.0),
-        ncol=len(handles), labelcolor=_INK, frameon=False,
+        handles=handles,
+        loc="upper center",
+        bbox_to_anchor=(0.5, 1.0),
+        ncol=len(handles),
+        labelcolor=_INK,
+        frameon=False,
     )
     return leg
 
@@ -101,7 +113,9 @@ def fig_scorecard(records, out_dir) -> Path:
     rows = models if len(models) > 1 else [None]
 
     fig, axes = plt.subplots(
-        nrows=len(rows), ncols=1, squeeze=False,
+        nrows=len(rows),
+        ncols=1,
+        squeeze=False,
         figsize=(max(9.0, 1.15 * len(cells) + 3.0), 4.1 * len(rows) + 0.5),
     )
 
@@ -119,7 +133,10 @@ def fig_scorecard(records, out_dir) -> Path:
 
     _scorecard_legend(fig)
     fig.subplots_adjust(
-        left=0.07, right=0.98, top=0.86, bottom=0.32 / len(rows) + 0.08,
+        left=0.07,
+        right=0.98,
+        top=0.86,
+        bottom=0.32 / len(rows) + 0.08,
         hspace=0.75,
     )
 
@@ -159,7 +176,9 @@ def fig_cost_latency(records, out_dir) -> Path:
     rows = models if len(models) > 1 else [None]
 
     fig, axes = plt.subplots(
-        nrows=len(rows), ncols=2, squeeze=False,
+        nrows=len(rows),
+        ncols=2,
+        squeeze=False,
         figsize=(max(11.0, 1.3 * len(cells) + 3.0), 3.9 * len(rows) + 0.5),
     )
 
@@ -178,8 +197,12 @@ def fig_cost_latency(records, out_dir) -> Path:
             ax_cost.set_title(model, loc="left", color=_INK, fontsize=12)
 
     fig.subplots_adjust(
-        left=0.07, right=0.98, top=0.9, bottom=0.34 / len(rows) + 0.08,
-        wspace=0.28, hspace=0.75,
+        left=0.07,
+        right=0.98,
+        top=0.9,
+        bottom=0.34 / len(rows) + 0.08,
+        wspace=0.28,
+        hspace=0.75,
     )
 
     out = out_dir / "cost_latency.svg"

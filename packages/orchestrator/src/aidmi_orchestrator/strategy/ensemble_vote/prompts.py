@@ -17,7 +17,9 @@ Return a JudgeChoice with chosen_index and a 1-2 sentence justification.
 JUDGE_SYSTEM_PROMPT = judge_system_prompt(_JUDGE_ROLE)
 
 
-def judge_user_prompt(target_table_name: str, context_prompt: str, candidate_sqls: list[str]) -> str:
+def judge_user_prompt(
+    target_table_name: str, context_prompt: str, candidate_sqls: list[str]
+) -> str:
     blocks = "\n\n".join(
         f"## Candidate {i}\n```sql\n{sql}\n```" for i, sql in enumerate(candidate_sqls)
     )

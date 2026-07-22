@@ -1,4 +1,5 @@
 """Critique round orchestration, separated for unit testing."""
+
 from __future__ import annotations
 
 from typing import Awaitable, Callable, Literal
@@ -44,7 +45,10 @@ async def run_critique_rounds(
             return current, True
         try:
             revised = await run_coroutines(
-                [revise(name, current[name], comments) for name, comments in rejected.items()],
+                [
+                    revise(name, current[name], comments)
+                    for name, comments in rejected.items()
+                ],
                 serial=serial,
             )
         except Exception:

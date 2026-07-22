@@ -1,4 +1,5 @@
 """Render the publishable campaigns and diff them against a committed baseline."""
+
 from __future__ import annotations
 
 import argparse
@@ -43,7 +44,9 @@ def render(campaign_dir: Path, out_dir: Path) -> None:
     build_report(records, out_dir, labels=labels)
 
 
-def _write_figures_manifest(baseline_dir: Path, out_dir: Path, names: list[str]) -> None:
+def _write_figures_manifest(
+    baseline_dir: Path, out_dir: Path, names: list[str]
+) -> None:
     lines = []
     for name in names:
         digest = _hash_svg((out_dir / "figures" / name).read_text())
@@ -108,9 +111,11 @@ def main() -> None:
     parser.add_argument("--campaign", action="append", help="campaign dir (repeatable)")
     args = parser.parse_args()
 
-    campaigns = [Path(c) for c in args.campaign] if args.campaign else [
-        Path("benchmarks") / c for c in CAMPAIGNS
-    ]
+    campaigns = (
+        [Path(c) for c in args.campaign]
+        if args.campaign
+        else [Path("benchmarks") / c for c in CAMPAIGNS]
+    )
 
     failed = False
     for campaign_dir in campaigns:

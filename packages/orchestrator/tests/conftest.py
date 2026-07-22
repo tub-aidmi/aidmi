@@ -3,6 +3,7 @@
 Reuses SP1's Podman-socket detection trick so testcontainers works on a dev
 host without Docker but with rootless Podman.
 """
+
 import os
 from pathlib import Path
 

@@ -37,8 +37,12 @@ def test_build_system_prompt_post_agent_self_correction() -> None:
 
 def test_build_initial_user_prompt_adds_self_correction_reminder() -> None:
     base = build_initial_user_prompt("ctx", enable_self_correction=False)
-    inline = build_initial_user_prompt("ctx", enable_self_correction=True, inline_run_dbt_tool=True)
-    post = build_initial_user_prompt("ctx", enable_self_correction=True, inline_run_dbt_tool=False)
+    inline = build_initial_user_prompt(
+        "ctx", enable_self_correction=True, inline_run_dbt_tool=True
+    )
+    post = build_initial_user_prompt(
+        "ctx", enable_self_correction=True, inline_run_dbt_tool=False
+    )
     assert "call run_dbt()" in inline
     assert "call run_dbt()" not in post
     assert "orchestrator" in post
@@ -49,8 +53,12 @@ def test_format_dbt_errors_lists_failed_models() -> None:
     result = SimpleNamespace(
         overall_status="error",
         models=[
-            SimpleNamespace(model_name="persons", status="error", error_message="syntax error"),
-            SimpleNamespace(model_name="organizations", status="success", error_message=None),
+            SimpleNamespace(
+                model_name="persons", status="error", error_message="syntax error"
+            ),
+            SimpleNamespace(
+                model_name="organizations", status="success", error_message=None
+            ),
         ],
     )
     text = format_dbt_errors(result)
@@ -128,7 +136,9 @@ def test_run_post_agent_dbt_loop_reprompts_agent_then_succeeds(tmp_path: Path) -
     assert "TRY_CAST" in prompt or "syntax error at TRY_CAST" in prompt
 
 
-def test_run_post_agent_dbt_loop_returns_false_when_passes_exhausted(tmp_path: Path) -> None:
+def test_run_post_agent_dbt_loop_returns_false_when_passes_exhausted(
+    tmp_path: Path,
+) -> None:
     models_dir = tmp_path / "models"
     models_dir.mkdir()
     (models_dir / "persons.sql").write_text("bad sql", encoding="utf-8")

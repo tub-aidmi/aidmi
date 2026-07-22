@@ -42,16 +42,32 @@ def fig_thinking_tokens(records, out_dir) -> Path:
 
     fig, ax = plt.subplots(figsize=(max(8.0, 1.2 * len(cells) + 2.5), 4.6))
     xs = range(len(cells))
-    ax.bar(xs, visible, width=0.62, color=_VISIBLE_COLOR, zorder=3, label="Visible output")
-    ax.bar(xs, thought, width=0.62, bottom=visible, color=_THOUGHT_COLOR, zorder=3,
-           label="Reasoning (thoughts)")
+    ax.bar(
+        xs, visible, width=0.62, color=_VISIBLE_COLOR, zorder=3, label="Visible output"
+    )
+    ax.bar(
+        xs,
+        thought,
+        width=0.62,
+        bottom=visible,
+        color=_THOUGHT_COLOR,
+        zorder=3,
+        label="Reasoning (thoughts)",
+    )
 
     for i, c in enumerate(cells):
         total = visible[i] + thought[i]
         if total > 0:
             pct = 100 * thought[i] / total
-            ax.text(i, total, f"{pct:.0f}%", ha="center", va="bottom",
-                    fontsize=8, color=_MUTED)
+            ax.text(
+                i,
+                total,
+                f"{pct:.0f}%",
+                ha="center",
+                va="bottom",
+                fontsize=8,
+                color=_MUTED,
+            )
 
     ax.set_xticks(list(xs))
     ax.set_xticklabels(cells, rotation=25, ha="right", fontsize=9, color=_INK)
@@ -59,14 +75,17 @@ def fig_thinking_tokens(records, out_dir) -> Path:
     ax.set_ylim(bottom=0)
     ax.set_title(
         "Reasoning-token tax by strategy (label = reasoning share of output)",
-        color=_INK, fontsize=12, loc="left",
+        color=_INK,
+        fontsize=12,
+        loc="left",
     )
     ax.legend(
         handles=[
             Patch(facecolor=_VISIBLE_COLOR, label="Visible output"),
             Patch(facecolor=_THOUGHT_COLOR, label="Reasoning (thoughts)"),
         ],
-        loc="upper right", labelcolor=_INK,
+        loc="upper right",
+        labelcolor=_INK,
     )
     fig.tight_layout()
 

@@ -1,4 +1,5 @@
 """Human-readable run identifiers for Postgres schemas, filesystem paths, and results."""
+
 from __future__ import annotations
 
 import string

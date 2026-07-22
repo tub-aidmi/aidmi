@@ -1,4 +1,5 @@
 """Tests for transform schema clearing."""
+
 from __future__ import annotations
 
 from pathlib import Path

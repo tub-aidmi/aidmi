@@ -1,4 +1,5 @@
 """GroundTruthFieldAccuracyEvaluator — column match rate on legacy-matched rows."""
+
 from __future__ import annotations
 
 from collections import defaultdict

@@ -24,15 +24,21 @@ def test_lookup_unknown_returns_none():
 
 def test_override_file_takes_precedence(tmp_path):
     override = tmp_path / "pricing.json"
-    override.write_text(json.dumps({
-        "openai/gpt-4o-mini": {
-            "input_cost_per_token": 0.999,
-            "output_cost_per_token": 0.998,
-            "cached_input_cost_per_token": 0.111,
-        },
-    }))
+    override.write_text(
+        json.dumps(
+            {
+                "openai/gpt-4o-mini": {
+                    "input_cost_per_token": 0.999,
+                    "output_cost_per_token": 0.998,
+                    "cached_input_cost_per_token": 0.111,
+                },
+            }
+        )
+    )
     overrides = load_overrides(override)
-    info = lookup_price(provider="openai", model_name="gpt-4o-mini", overrides=overrides)
+    info = lookup_price(
+        provider="openai", model_name="gpt-4o-mini", overrides=overrides
+    )
     assert info is not None
     assert info.input_cost_per_token == 0.999
     assert info.cached_input_cost_per_token == 0.111
@@ -40,14 +46,20 @@ def test_override_file_takes_precedence(tmp_path):
 
 def test_custom_model_only_in_override(tmp_path):
     override = tmp_path / "pricing.json"
-    override.write_text(json.dumps({
-        "corporate/internal-llm-v1": {
-            "input_cost_per_token": 0.0001,
-            "output_cost_per_token": 0.0002,
-        },
-    }))
+    override.write_text(
+        json.dumps(
+            {
+                "corporate/internal-llm-v1": {
+                    "input_cost_per_token": 0.0001,
+                    "output_cost_per_token": 0.0002,
+                },
+            }
+        )
+    )
     overrides = load_overrides(override)
-    info = lookup_price(provider="corporate", model_name="internal-llm-v1", overrides=overrides)
+    info = lookup_price(
+        provider="corporate", model_name="internal-llm-v1", overrides=overrides
+    )
     assert info is not None
     assert info.input_cost_per_token == 0.0001
 
@@ -82,5 +94,9 @@ def test_committed_pricing_covers_ise_grid_models():
     assert qwen is not None, "ISE qwen model missing from configs/pricing.json"
     assert qwen.input_cost_per_token > 0
     assert qwen.output_cost_per_token > 0
-    mistral = lookup_price("litellm", "nvidia/mistral-medium-3.5-128b", overrides=overrides)
-    assert mistral is not None, "nvidia mistral-medium missing from configs/pricing.json"
+    mistral = lookup_price(
+        "litellm", "nvidia/mistral-medium-3.5-128b", overrides=overrides
+    )
+    assert mistral is not None, (
+        "nvidia mistral-medium missing from configs/pricing.json"
+    )

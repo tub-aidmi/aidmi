@@ -1,4 +1,5 @@
 """retry_failing_tables: dbt-feedback loop for structured strategies."""
+
 from __future__ import annotations
 
 import asyncio
@@ -10,7 +11,8 @@ from pydantic_ai.models.test import TestModel
 from aidmi_orchestrator.domain import ModelSpec
 from aidmi_orchestrator.strategy.dbt_retry import retry_failing_tables
 from aidmi_orchestrator.strategy.structured_per_table.strategy import (
-    StructuredPerTable, StructuredPerTableConfig,
+    StructuredPerTable,
+    StructuredPerTableConfig,
 )
 
 from .test_structured_common import MAPPING_ARGS, fake_api
@@ -19,7 +21,10 @@ from .test_structured_common import MAPPING_ARGS, fake_api
 def _fail(*names: str) -> SimpleNamespace:
     return SimpleNamespace(
         overall_status="error",
-        models=[SimpleNamespace(model_name=n, status="error", error_message=f"{n} broke") for n in names],
+        models=[
+            SimpleNamespace(model_name=n, status="error", error_message=f"{n} broke")
+            for n in names
+        ],
     )
 
 
@@ -83,11 +88,13 @@ def test_strategy_reports_partial_when_dbt_never_succeeds(tmp_path) -> None:
     model = TestModel(custom_output_args=MAPPING_ARGS)
     api = fake_api(tmp_path, make_llm=lambda spec, role: model)
     api.run_dbt = AsyncMock(return_value=_fail("users"))
-    strategy = StructuredPerTable(StructuredPerTableConfig(
-        writer_model=ModelSpec(provider="litellm", model_name="m"),
-        enable_self_correction=True,
-        max_self_correction_passes=2,
-    ))
+    strategy = StructuredPerTable(
+        StructuredPerTableConfig(
+            writer_model=ModelSpec(provider="litellm", model_name="m"),
+            enable_self_correction=True,
+            max_self_correction_passes=2,
+        )
+    )
     result = asyncio.run(strategy.generate(api))
     assert result.self_reported_status == "partial"
     assert api.run_dbt.await_count == 2
@@ -97,9 +104,11 @@ def test_strategy_complete_when_self_correction_off(tmp_path) -> None:
     model = TestModel(custom_output_args=MAPPING_ARGS)
     api = fake_api(tmp_path, make_llm=lambda spec, role: model)
     api.run_dbt = AsyncMock()
-    strategy = StructuredPerTable(StructuredPerTableConfig(
-        writer_model=ModelSpec(provider="litellm", model_name="m"),
-    ))
+    strategy = StructuredPerTable(
+        StructuredPerTableConfig(
+            writer_model=ModelSpec(provider="litellm", model_name="m"),
+        )
+    )
     result = asyncio.run(strategy.generate(api))
     assert result.self_reported_status == "complete"
     api.run_dbt.assert_not_awaited()

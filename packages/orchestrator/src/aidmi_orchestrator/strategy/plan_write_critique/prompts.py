@@ -1,6 +1,9 @@
 """Prompt templates for the plan_write_critique strategy."""
 
-from aidmi_orchestrator.strategy.guidelines.compose import critic_system_prompt, planner_system_prompt
+from aidmi_orchestrator.strategy.guidelines.compose import (
+    critic_system_prompt,
+    planner_system_prompt,
+)
 
 _PLANNER_ROLE = """\
 You are a senior data architect planning a schema mapping before any SQL is written.
@@ -34,7 +37,9 @@ Return a structured CritiqueReport with one TableVerdict per proposed table:
 Do NOT request stylistic changes. Only flag real correctness or data quality problems.
 """
 
-CRITIC_SYSTEM_PROMPT_WITH_QUERY_TOOL = critic_system_prompt(_CRITIC_ROLE, with_query_tool=True)
+CRITIC_SYSTEM_PROMPT_WITH_QUERY_TOOL = critic_system_prompt(
+    _CRITIC_ROLE, with_query_tool=True
+)
 
 _CRITIC_ROLE_METADATA = """\
 You are a meticulous staff data engineer reviewing a dbt mapping proposal.

@@ -3,7 +3,10 @@ from __future__ import annotations
 from pathlib import Path
 
 from aidmi_orchestrator.report.theme import (
-    apply_theme, color_for_cell, marker_for_model, ordered_cells,
+    apply_theme,
+    color_for_cell,
+    marker_for_model,
+    ordered_cells,
 )
 
 # Same tokens as pareto.py/levers.py: text stays ink/muted, data color on marks.
@@ -56,8 +59,15 @@ def fig_prec_recall(records, out_dir) -> Path:
         ys = [p[1] for p in pts]
         marker = marker_for_model(model) if multi_model else _DEFAULT_MARKER
         ax.scatter(
-            xs, ys, marker=marker, s=55, color=color_for_cell(cell),
-            alpha=0.55, edgecolors=_SURFACE, linewidths=0.6, zorder=3,
+            xs,
+            ys,
+            marker=marker,
+            s=55,
+            color=color_for_cell(cell),
+            alpha=0.55,
+            edgecolors=_SURFACE,
+            linewidths=0.6,
+            zorder=3,
         )
 
     ax.axvline(1.0, color=_MUTED, linestyle="--", lw=1.5, zorder=2, alpha=0.8)
@@ -70,8 +80,14 @@ def fig_prec_recall(records, out_dir) -> Path:
     cells = ordered_cells({p[2] for p in points})
     cell_handles = [
         Line2D(
-            [], [], marker=_DEFAULT_MARKER, linestyle="none", markersize=9,
-            markerfacecolor=color_for_cell(c), markeredgecolor=_SURFACE, label=c,
+            [],
+            [],
+            marker=_DEFAULT_MARKER,
+            linestyle="none",
+            markersize=9,
+            markerfacecolor=color_for_cell(c),
+            markeredgecolor=_SURFACE,
+            label=c,
         )
         for c in cells
     ]
@@ -80,9 +96,14 @@ def fig_prec_recall(records, out_dir) -> Path:
         for model in sorted({p[3] for p in points}):
             handles.append(
                 Line2D(
-                    [], [], marker=marker_for_model(model), linestyle="none",
-                    markersize=9, markerfacecolor=_MUTED,
-                    markeredgecolor=_SURFACE, label=model,
+                    [],
+                    [],
+                    marker=marker_for_model(model),
+                    linestyle="none",
+                    markersize=9,
+                    markerfacecolor=_MUTED,
+                    markeredgecolor=_SURFACE,
+                    label=model,
                 )
             )
     handles.append(
@@ -90,8 +111,11 @@ def fig_prec_recall(records, out_dir) -> Path:
     )
     if handles:
         leg = ax.legend(
-            handles=handles, loc="upper left", bbox_to_anchor=(1.02, 1.0),
-            labelcolor=_INK, alignment="left",
+            handles=handles,
+            loc="upper left",
+            bbox_to_anchor=(1.02, 1.0),
+            labelcolor=_INK,
+            alignment="left",
         )
         if leg.get_title():
             leg.get_title().set_color(_INK)
@@ -100,10 +124,14 @@ def fig_prec_recall(records, out_dir) -> Path:
         saturated = sum(1 for p in points if p[0] >= _SATURATION_THRESHOLD)
         pct = saturated / len(points)
         fig.text(
-            0.07, 0.02,
+            0.07,
+            0.02,
             f"{pct:.0%} of runs score precision >= {_SATURATION_THRESHOLD:g} -- "
             "precision is saturated; recall is the discriminating metric",
-            fontsize=9, color=_MUTED, ha="left", va="bottom",
+            fontsize=9,
+            color=_MUTED,
+            ha="left",
+            va="bottom",
         )
 
     fig.subplots_adjust(left=0.08, right=0.62, top=0.95, bottom=0.17)

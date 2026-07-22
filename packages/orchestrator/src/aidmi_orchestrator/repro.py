@@ -1,4 +1,5 @@
 """Re-apply archived dbt and re-evaluate recorded runs."""
+
 from __future__ import annotations
 
 import asyncio
@@ -7,9 +8,17 @@ from pathlib import Path
 from aidmi_pipeline.config import MigrationRun, StagingConfig
 from aidmi_pipeline.migration import transform
 
-from aidmi_orchestrator.campaign import Campaign, resolve_dbt_project, resolve_run_bundle
+from aidmi_orchestrator.campaign import (
+    Campaign,
+    resolve_dbt_project,
+    resolve_run_bundle,
+)
 from aidmi_orchestrator.domain import BenchmarkResult
-from aidmi_orchestrator.evaluator.base import FixtureMetadata, RunArtifacts, make_evaluator
+from aidmi_orchestrator.evaluator.base import (
+    FixtureMetadata,
+    RunArtifacts,
+    make_evaluator,
+)
 from aidmi_orchestrator.fixtures.base import get_fixture
 from aidmi_orchestrator.persistence import load_result_from_campaign
 from aidmi_orchestrator.trace import TraceSink
@@ -110,7 +119,9 @@ async def evaluate_recorded_run(
         transform_result=transform_result,
     )
     metrics: dict = {}
-    for ev in [make_evaluator(name) for name in fixture_evaluators(result.fixture_name)]:
+    for ev in [
+        make_evaluator(name) for name in fixture_evaluators(result.fixture_name)
+    ]:
         if ev.applies_to(artifacts):
             part = await asyncio.to_thread(ev.evaluate, artifacts)
             metrics.update(part)

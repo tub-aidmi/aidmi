@@ -1,4 +1,5 @@
 """Ground-truth evaluators against a minimal golden + produced schema."""
+
 from __future__ import annotations
 
 from pathlib import Path

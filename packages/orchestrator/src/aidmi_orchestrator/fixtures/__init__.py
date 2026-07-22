@@ -1,4 +1,5 @@
 """Fixture sub-packages register themselves on import."""
+
 from aidmi_orchestrator.fixtures import base  # noqa: F401
 from aidmi_orchestrator.fixtures import mock  # noqa: F401
 from aidmi_orchestrator.fixtures import master  # noqa: F401

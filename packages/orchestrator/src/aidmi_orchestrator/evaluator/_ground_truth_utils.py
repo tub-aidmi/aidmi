@@ -1,4 +1,5 @@
 """Shared helpers for ground-truth evaluators."""
+
 from __future__ import annotations
 
 from typing import Any
@@ -77,7 +78,7 @@ def fetch_table_rows(conn, schema: str, table: str) -> list[dict[str, Any]]:
 def fetch_ground_truth_rows(conn, golden_schema: str) -> list[dict[str, Any]]:
     with conn.cursor(cursor_factory=RealDictCursor) as cur:
         cur.execute(
-            f'SELECT target_table, target_id, source_table, source_id, notes '
+            f"SELECT target_table, target_id, source_table, source_id, notes "
             f'FROM "{golden_schema}"._ground_truth'
         )
         return [dict(row) for row in cur.fetchall()]
@@ -95,7 +96,9 @@ def schema_has_table(conn, schema: str, table: str) -> bool:
         return cur.fetchone() is not None
 
 
-def index_by_column(rows: list[dict[str, Any]], column: str) -> dict[str, dict[str, Any]]:
+def index_by_column(
+    rows: list[dict[str, Any]], column: str
+) -> dict[str, dict[str, Any]]:
     out: dict[str, dict[str, Any]] = {}
     for row in rows:
         value = row.get(column)
@@ -197,7 +200,9 @@ def compare_matched_rows(
     golden_row: dict[str, Any],
     produced_row: dict[str, Any],
     *,
-    skip_columns: frozenset[str] = frozenset({"Id", "CreatedDate", "LastModifiedDate", "IsDeleted"}),
+    skip_columns: frozenset[str] = frozenset(
+        {"Id", "CreatedDate", "LastModifiedDate", "IsDeleted"}
+    ),
 ) -> dict[str, bool]:
     """Compare attribute columns of a matched row pair.
 

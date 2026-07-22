@@ -15,15 +15,19 @@ async def _boom() -> str:
 
 def test_run_named_coroutines_collects_all_failures() -> None:
     with pytest.raises(RuntimeError, match="parallel task\\(s\\) failed"):
-        asyncio.run(run_named_coroutines(
-            [("a", _ok("a")), ("b", _boom())],
-            serial=False,
-        ))
+        asyncio.run(
+            run_named_coroutines(
+                [("a", _ok("a")), ("b", _boom())],
+                serial=False,
+            )
+        )
 
 
 def test_run_named_coroutines_returns_mapping() -> None:
-    out = asyncio.run(run_named_coroutines(
-        [("a", _ok("a")), ("b", _ok("b"))],
-        serial=True,
-    ))
+    out = asyncio.run(
+        run_named_coroutines(
+            [("a", _ok("a")), ("b", _ok("b"))],
+            serial=True,
+        )
+    )
     assert out == {"a": "a", "b": "b"}

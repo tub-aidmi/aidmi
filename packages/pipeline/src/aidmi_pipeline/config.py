@@ -17,7 +17,9 @@ class StagingConfig:
     out_schema: str
 
     @classmethod
-    def for_run(cls, db_url: str, fixture_source_schema: str, run_id: str) -> StagingConfig:
+    def for_run(
+        cls, db_url: str, fixture_source_schema: str, run_id: str
+    ) -> StagingConfig:
         return cls(
             db_url=db_url,
             source_schema=fixture_source_schema,
@@ -58,11 +60,15 @@ def cli_config_to_run(cfg: CliMigrationConfig) -> MigrationRun:
     if cfg.source_kind == "filesystem":
         source_dir = Path(cfg.source_url)
         source = (
-            filesystem(bucket_url=source_dir.as_uri(), file_glob=cfg.source_table_or_glob)
+            filesystem(
+                bucket_url=source_dir.as_uri(), file_glob=cfg.source_table_or_glob
+            )
             | read_jsonl()
         ).with_name(Path(cfg.source_table_or_glob).stem)
     elif cfg.source_kind == "sql_database":
-        source = sql_database(credentials=cfg.source_url).with_resources(cfg.source_table_or_glob)
+        source = sql_database(credentials=cfg.source_url).with_resources(
+            cfg.source_table_or_glob
+        )
     else:
         raise ValueError(f"unknown source_kind: {cfg.source_kind}")
 

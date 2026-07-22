@@ -1,4 +1,5 @@
 """Shared dbt self-correction loop for structured strategies."""
+
 from __future__ import annotations
 
 from typing import Any, Awaitable, Callable
@@ -14,7 +15,9 @@ def extract_failing_models(result: Any) -> list[tuple[str, str]]:
         if getattr(model, "status", None) == "success":
             continue
         name = dbt_model_table_name(getattr(model, "model_name", "") or "<unknown>")
-        message = getattr(model, "error_message", None) or getattr(model, "status", "error")
+        message = getattr(model, "error_message", None) or getattr(
+            model, "status", "error"
+        )
         failing.append((name, str(message)))
     return failing
 

@@ -1,4 +1,5 @@
 """Parse Postgres CREATE TABLE DDL into TargetSchema."""
+
 from __future__ import annotations
 
 import re
@@ -48,7 +49,9 @@ def _split_column_defs(body: str) -> list[str]:
 
 
 def _parse_enum_values(check_body: str) -> list[str]:
-    return [m.group(1).replace("''", "'") for m in STRING_LITERAL_RE.finditer(check_body)]
+    return [
+        m.group(1).replace("''", "'") for m in STRING_LITERAL_RE.finditer(check_body)
+    ]
 
 
 def _extract_sql_type(rest: str) -> tuple[str, str]:

@@ -1,4 +1,7 @@
-from aidmi_orchestrator.fixtures._register_sql import DEFAULT_EVALUATORS_V2, register_sql_fixture
+from aidmi_orchestrator.fixtures._register_sql import (
+    DEFAULT_EVALUATORS_V2,
+    register_sql_fixture,
+)
 
 register_sql_fixture(
     "master_v2",

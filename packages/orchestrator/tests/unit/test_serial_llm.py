@@ -1,4 +1,5 @@
 """serial_llm_calls: run_coroutines and serial regeneration."""
+
 from __future__ import annotations
 
 import asyncio
@@ -38,15 +39,24 @@ def test_retry_failing_tables_serial_regenerates_in_order() -> None:
     fail = SimpleNamespace(
         overall_status="error",
         models=[
-            SimpleNamespace(model_name="orgs", status="error", error_message="orgs broke"),
-            SimpleNamespace(model_name="users", status="error", error_message="users broke"),
+            SimpleNamespace(
+                model_name="orgs", status="error", error_message="orgs broke"
+            ),
+            SimpleNamespace(
+                model_name="users", status="error", error_message="users broke"
+            ),
         ],
     )
     ok = SimpleNamespace(overall_status="success", models=[])
     run_dbt = AsyncMock(side_effect=[fail, ok])
 
-    result = asyncio.run(retry_failing_tables(
-        run_dbt, regenerate, max_passes=3, serial=True,
-    ))
+    result = asyncio.run(
+        retry_failing_tables(
+            run_dbt,
+            regenerate,
+            max_passes=3,
+            serial=True,
+        )
+    )
     assert result is True
     assert order == ["orgs", "users"]

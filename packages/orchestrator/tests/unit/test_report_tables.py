@@ -15,15 +15,42 @@ from aidmi_orchestrator.report.tables import (
 FIX = Path(__file__).parent / "fixtures" / "mini_results.jsonl"
 
 
-def _mk(cell, ctx, sc, model, *, recall=None, field_acc=None, cost=None,
-        materialized=True, rep=0, fixture="f"):
+def _mk(
+    cell,
+    ctx,
+    sc,
+    model,
+    *,
+    recall=None,
+    field_acc=None,
+    cost=None,
+    materialized=True,
+    rep=0,
+    fixture="f",
+):
     return RunRecord(
-        campaign="c", model=model, fixture=fixture, cell=cell, ctx=ctx, sc=sc, rep=rep,
-        dbt_success=materialized, materialized=materialized,
+        campaign="c",
+        model=model,
+        fixture=fixture,
+        cell=cell,
+        ctx=ctx,
+        sc=sc,
+        rep=rep,
+        dbt_success=materialized,
+        materialized=materialized,
         tables_materialized=1.0 if materialized else 0.0,
-        recall=recall, precision=None, field_acc=field_acc,
-        f1=None, cost=cost, secs=None, tokens_in=None, tokens_out=None,
-        status="complete", silent_fail=False, tables_declared=5, cols_covered=None,
+        recall=recall,
+        precision=None,
+        field_acc=field_acc,
+        f1=None,
+        cost=cost,
+        secs=None,
+        tokens_in=None,
+        tokens_out=None,
+        status="complete",
+        silent_fail=False,
+        tables_declared=5,
+        cols_covered=None,
     )
 
 
@@ -64,8 +91,24 @@ def test_summary_best_config_has_all_four_objectives():
 
 def test_summary_best_config_picks_distinct_winners():
     recs = [
-        _mk("recall_king", "metadata_only", True, "m", recall=1.0, field_acc=0.4, cost=0.9),
-        _mk("field_king", "live_query_tool", False, "m", recall=0.3, field_acc=0.95, cost=0.5),
+        _mk(
+            "recall_king",
+            "metadata_only",
+            True,
+            "m",
+            recall=1.0,
+            field_acc=0.4,
+            cost=0.9,
+        ),
+        _mk(
+            "field_king",
+            "live_query_tool",
+            False,
+            "m",
+            recall=0.3,
+            field_acc=0.95,
+            cost=0.5,
+        ),
         _mk("cheap", "metadata_only", True, "m", recall=0.2, field_acc=0.2, cost=0.01),
     ]
     out = summary_best_config_table(recs)
@@ -80,15 +123,33 @@ def test_summary_best_config_materialization_uses_mean_rate():
     # materialization rate must pick "full".
     full = _mk("full", "metadata_only", True, "m", recall=0.1, materialized=True)
     partial = RunRecord(
-        campaign="c", model="m", fixture="f", cell="partial", ctx="metadata_only",
-        sc=True, rep=0, dbt_success=True, materialized=True,
-        tables_materialized=0.5, recall=0.9, precision=None, field_acc=None,
-        f1=None, cost=None, secs=None, tokens_in=None,
-        tokens_out=None, status="complete", silent_fail=False,
-        tables_declared=5, cols_covered=None,
+        campaign="c",
+        model="m",
+        fixture="f",
+        cell="partial",
+        ctx="metadata_only",
+        sc=True,
+        rep=0,
+        dbt_success=True,
+        materialized=True,
+        tables_materialized=0.5,
+        recall=0.9,
+        precision=None,
+        field_acc=None,
+        f1=None,
+        cost=None,
+        secs=None,
+        tokens_in=None,
+        tokens_out=None,
+        status="complete",
+        silent_fail=False,
+        tables_declared=5,
+        cols_covered=None,
     )
     out = summary_best_config_table([full, partial])
-    mat_line = [ln for ln in out.split("<tr") if "Highest mean materialization rate" in ln][0]
+    mat_line = [
+        ln for ln in out.split("<tr") if "Highest mean materialization rate" in ln
+    ][0]
     assert "full / metadata_only / sc on" in mat_line
     assert "partial" not in mat_line
 
@@ -183,7 +244,9 @@ def test_appendix_table_sorted_deterministically():
 
 
 def test_sc_none_renders_na_in_best_config_and_appendix():
-    recs = [_mk("plan_write_critique", "metadata_only", None, "m", recall=0.9, cost=0.1)]
+    recs = [
+        _mk("plan_write_critique", "metadata_only", None, "m", recall=0.9, cost=0.1)
+    ]
     bc = best_config_table(recs)
     ap = appendix_table(recs)
     assert "n/a" in bc

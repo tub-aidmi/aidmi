@@ -1,4 +1,5 @@
 """Campaign directories: id generation, active pointer, layout resolution."""
+
 from __future__ import annotations
 
 from datetime import datetime
@@ -49,7 +50,9 @@ class Campaign:
         self.runs_dir.mkdir(parents=True, exist_ok=True)
 
     @classmethod
-    def create(cls, label: str | None = None, root: Path = DEFAULT_BENCHMARKS_ROOT) -> Campaign:
+    def create(
+        cls, label: str | None = None, root: Path = DEFAULT_BENCHMARKS_ROOT
+    ) -> Campaign:
         cid = make_campaign_id()
         camp = cls(campaign_dir(cid, root))
         camp.ensure_layout()

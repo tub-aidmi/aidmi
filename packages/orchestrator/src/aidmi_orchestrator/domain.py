@@ -2,12 +2,14 @@
 
 No I/O, no behavior beyond validation. Keep this module pure.
 """
+
 from datetime import datetime
 from typing import Any, Literal
 from pydantic import BaseModel, ConfigDict
 
 
 # ---------- Source side (produced by discover) ----------
+
 
 class ColumnInfo(BaseModel):
     name: str
@@ -31,6 +33,7 @@ class SourceSummary(BaseModel):
 
 # ---------- Target side ----------
 
+
 class TargetColumn(BaseModel):
     name: str
     sql_type: str
@@ -52,6 +55,7 @@ class TargetSchema(BaseModel):
 
 # ---------- LLM config ----------
 
+
 class ModelSpec(BaseModel):
     provider: str
     model_name: str
@@ -61,6 +65,7 @@ class ModelSpec(BaseModel):
 
 
 # ---------- Strategy outputs ----------
+
 
 class ColumnNote(BaseModel):
     target_column: str
@@ -90,6 +95,7 @@ class StrategyResult(BaseModel):
 
 # ---------- Provenance ----------
 
+
 class CampaignProvenance(BaseModel):
     id: str
     label: str | None = None
@@ -112,6 +118,7 @@ class RunProvenance(BaseModel):
 
 
 # ---------- Benchmark output ----------
+
 
 class BenchmarkResult(BaseModel):
     run_id: str

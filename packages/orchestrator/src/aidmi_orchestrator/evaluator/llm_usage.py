@@ -1,11 +1,14 @@
 """LlmUsageEvaluator — token counts, cache rate, dollar cost (LiteLLM + override)."""
+
 from __future__ import annotations
 import statistics
 from collections import defaultdict
 from typing import Any
 
 from aidmi_orchestrator.evaluator.base import (
-    Evaluator, RunArtifacts, register_evaluator,
+    Evaluator,
+    RunArtifacts,
+    register_evaluator,
 )
 from aidmi_orchestrator.trace import LlmCallEvent
 from aidmi_orchestrator.pricing import (
@@ -104,7 +107,9 @@ class LlmUsageEvaluator:
             tokens_out_by_role[ev.role] += completion
             tokens_thoughts_by_role[ev.role] += thoughts
             tokens_tool_use_prompt_by_role[ev.role] += tool_use_prompt
-            tokens_input_peak_by_role[ev.role] = max(tokens_input_peak_by_role[ev.role], prompt)
+            tokens_input_peak_by_role[ev.role] = max(
+                tokens_input_peak_by_role[ev.role], prompt
+            )
             tokens_in_total += prompt
             tokens_in_cached += cached
             tokens_out_total += completion
@@ -124,16 +129,22 @@ class LlmUsageEvaluator:
             llm_retries_total += _safe_int(usage.get("retry_count", 0))
 
             context_limit = lookup_context_limit(
-                ev.model_spec.provider, ev.model_spec.model_name,
+                ev.model_spec.provider,
+                ev.model_spec.model_name,
             )
             if context_limit and context_limit > 0:
                 context_utilization_peak = max(
-                    context_utilization_peak, prompt / context_limit,
+                    context_utilization_peak,
+                    prompt / context_limit,
                 )
 
-            price = lookup_price(ev.model_spec.provider, ev.model_spec.model_name, self._overrides)
+            price = lookup_price(
+                ev.model_spec.provider, ev.model_spec.model_name, self._overrides
+            )
             if price is not None:
-                cached_price = price.cached_input_cost_per_token or price.input_cost_per_token
+                cached_price = (
+                    price.cached_input_cost_per_token or price.input_cost_per_token
+                )
                 this_cost = (
                     uncached * price.input_cost_per_token
                     + cached * cached_price
@@ -141,8 +152,7 @@ class LlmUsageEvaluator:
                 )
                 if thoughts > 0:
                     reasoning_rate = (
-                        price.reasoning_cost_per_token
-                        or price.output_cost_per_token
+                        price.reasoning_cost_per_token or price.output_cost_per_token
                     )
                     if reasoning_rate:
                         this_cost += thoughts * reasoning_rate
@@ -180,10 +190,14 @@ class LlmUsageEvaluator:
             "llm_retries_total": llm_retries_total,
             "usage_details_total": dict(usage_details_total),
             "traffic_type_counts": dict(traffic_type_counts),
-            "cache_hit_rate": (tokens_in_cached / tokens_in_total) if tokens_in_total else 0.0,
+            "cache_hit_rate": (tokens_in_cached / tokens_in_total)
+            if tokens_in_total
+            else 0.0,
             "dollar_cost_total": cost_total,
             "dollar_cost_by_role": dict(cost_by_role),
-            "latency_ms_by_role": {r: sum(v) / len(v) for r, v in latency_by_role.items()},
+            "latency_ms_by_role": {
+                r: sum(v) / len(v) for r, v in latency_by_role.items()
+            },
             "latency_ms_sum_by_role": dict(latency_sum_by_role),
             "latency_ms_total": latency_ms_total,
             "latency_ms_p50_by_role": {r: _p50(v) for r, v in latency_by_role.items()},
