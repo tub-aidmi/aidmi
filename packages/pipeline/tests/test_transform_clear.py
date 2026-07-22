@@ -6,25 +6,9 @@ from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
 import psycopg2
-import pytest
 
 from aidmi_pipeline.config import MigrationRun, StagingConfig
 from aidmi_pipeline.migration import clear_out_schema, transform
-
-
-@pytest.fixture
-def staging_db_url():
-    import os
-
-    url = os.environ.get("AIDMI_STAGING_DB_URL")
-    if url:
-        return url
-    user = os.environ.get("POSTGRES_USER", "postgres")
-    password = os.environ.get("POSTGRES_PASSWORD", "test")
-    host = os.environ.get("POSTGRES_HOST", "localhost")
-    port = os.environ.get("POSTGRES_PORT", "5432")
-    db = os.environ.get("POSTGRES_DB", "postgres")
-    return f"postgresql://{user}:{password}@{host}:{port}/{db}"
 
 
 def test_clear_out_schema_drops_existing_tables(staging_db_url):
