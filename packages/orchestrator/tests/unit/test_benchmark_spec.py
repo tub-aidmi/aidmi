@@ -269,7 +269,7 @@ def test_expand_grid_passes_cell_fixtures_through():
 
 
 def _bench_result(**kwargs) -> BenchmarkResult:
-    from datetime import datetime
+    from aidmi_orchestrator.clock import utc_now
 
     defaults = dict(
         run_id="r1",
@@ -278,8 +278,8 @@ def _bench_result(**kwargs) -> BenchmarkResult:
         strategy_spec_name="spec",
         strategy_config={},
         rep_index=0,
-        started_at=datetime.utcnow(),
-        completed_at=datetime.utcnow(),
+        started_at=utc_now(),
+        completed_at=utc_now(),
         wall_clock_seconds=1.0,
         strategy_result=StrategyResult(
             target_tables_written=[], self_reported_status="complete"

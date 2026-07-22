@@ -1,9 +1,9 @@
-from datetime import datetime
 from pathlib import Path
 
 import psycopg2
 import pytest
 
+from aidmi_orchestrator.clock import utc_now
 from aidmi_orchestrator.domain import (
     ModelSpec,
     StrategyResult,
@@ -69,7 +69,7 @@ def test_llm_usage_evaluator_aggregates_by_role():
     # R8 spike: TracedModel records normalized usage keys (cache_read_tokens, not provider-specific).
     trace = [
         LlmCallEvent(
-            timestamp=datetime.utcnow(),
+            timestamp=utc_now(),
             role="writer",
             model_spec=ModelSpec(provider="openai", model_name="gpt-4o-mini"),
             messages=[],
@@ -82,7 +82,7 @@ def test_llm_usage_evaluator_aggregates_by_role():
             latency_ms=120.0,
         ),
         LlmCallEvent(
-            timestamp=datetime.utcnow(),
+            timestamp=utc_now(),
             role="writer",
             model_spec=ModelSpec(provider="openai", model_name="gpt-4o-mini"),
             messages=[],
@@ -116,7 +116,7 @@ def test_llm_usage_evaluator_aggregates_by_role():
 def test_llm_usage_evaluator_gemini_details():
     trace = [
         LlmCallEvent(
-            timestamp=datetime.utcnow(),
+            timestamp=utc_now(),
             role="writer",
             model_spec=ModelSpec(
                 provider="google_cloud", model_name="gemini-2.5-flash"
@@ -137,7 +137,7 @@ def test_llm_usage_evaluator_gemini_details():
             latency_ms=100.0,
         ),
         LlmCallEvent(
-            timestamp=datetime.utcnow(),
+            timestamp=utc_now(),
             role="planner",
             model_spec=ModelSpec(
                 provider="google_cloud", model_name="gemini-2.5-flash"
@@ -168,7 +168,7 @@ def test_llm_usage_evaluator_gemini_details():
 def test_llm_usage_evaluator_legacy_usage_only():
     trace = [
         LlmCallEvent(
-            timestamp=datetime.utcnow(),
+            timestamp=utc_now(),
             role="writer",
             model_spec=ModelSpec(provider="openai", model_name="gpt-4o-mini"),
             messages=[],
@@ -187,7 +187,7 @@ def test_llm_usage_evaluator_legacy_usage_only():
 def test_llm_usage_evaluator_malformed_details():
     trace = [
         LlmCallEvent(
-            timestamp=datetime.utcnow(),
+            timestamp=utc_now(),
             role="writer",
             model_spec=ModelSpec(provider="openai", model_name="gpt-4o-mini"),
             messages=[],
@@ -228,7 +228,7 @@ def test_llm_usage_evaluator_auto_loads_default_pricing(monkeypatch, tmp_path):
     )
     trace = [
         LlmCallEvent(
-            timestamp=datetime.utcnow(),
+            timestamp=utc_now(),
             role="writer",
             model_spec=ModelSpec(
                 provider="litellm", model_name="ise-ollama/qwen3.6:35b-a3b"
@@ -246,7 +246,7 @@ def test_llm_usage_evaluator_auto_loads_default_pricing(monkeypatch, tmp_path):
 def test_llm_usage_evaluator_unknown_model_no_context_limit():
     trace = [
         LlmCallEvent(
-            timestamp=datetime.utcnow(),
+            timestamp=utc_now(),
             role="writer",
             model_spec=ModelSpec(
                 provider="corporate", model_name="totally-fake-nonexistent-zzz"

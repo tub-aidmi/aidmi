@@ -6,13 +6,13 @@ import asyncio
 import re
 import time
 from dataclasses import dataclass
-from datetime import datetime
 from pathlib import Path
 from typing import Any
 
 import psycopg2
 from psycopg2.extras import RealDictCursor
 
+from aidmi_orchestrator.clock import utc_now
 from aidmi_orchestrator.domain import ModelSpec, SourceSummary, TargetSchema
 from aidmi_orchestrator.llm import TracedModel, make_llm
 from aidmi_orchestrator.trace import DbtRunEvent, TraceSink
@@ -45,7 +45,7 @@ class OrchestratorAPI:
         duration_ms = (time.perf_counter() - start) * 1000
         self.trace.record(
             DbtRunEvent(
-                timestamp=datetime.utcnow(),
+                timestamp=utc_now(),
                 transform_result=result.model_dump(),
                 duration_ms=duration_ms,
             )

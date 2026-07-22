@@ -1,5 +1,4 @@
 import json
-from datetime import datetime
 from pathlib import Path
 
 import yaml
@@ -11,6 +10,7 @@ from aidmi_orchestrator.campaign import (
     resolve_run_bundle,
     results_jsonl_for_campaign,
 )
+from aidmi_orchestrator.clock import utc_now
 from aidmi_orchestrator.domain import BenchmarkResult, StrategyResult
 from aidmi_orchestrator.persistence import record_run, scaffold_dbt_project
 
@@ -18,7 +18,7 @@ from aidmi_orchestrator.persistence import record_run, scaffold_dbt_project
 def _result(
     run_id: str = "rabc1234_mock_master", rep_index: int = 0
 ) -> BenchmarkResult:
-    now = datetime.utcnow()
+    now = utc_now()
     return BenchmarkResult(
         run_id=run_id,
         fixture_name="master",

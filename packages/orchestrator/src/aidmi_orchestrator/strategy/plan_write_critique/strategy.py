@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
-from datetime import datetime
 from typing import Literal
 
 from pydantic import BaseModel, Field
 from pydantic_ai import Agent, Tool
 
+from aidmi_orchestrator.clock import utc_now
 from aidmi_orchestrator.domain import ModelSpec, StrategyResult
 from aidmi_orchestrator.progress import log_message
 from aidmi_orchestrator.strategy.base import (
@@ -132,7 +132,7 @@ class PlanWriteCritique:
         log_progress(f"Plan complete: {len(plan.tables)} tables planned")
         api.trace.record(
             StrategyEvent(
-                timestamp=datetime.utcnow(),
+                timestamp=utc_now(),
                 label="plan_complete",
                 data={
                     "overview": plan.overview,
@@ -230,7 +230,7 @@ class PlanWriteCritique:
             log_progress("Stopping — initial dbt self-correction did not succeed")
             api.trace.record(
                 StrategyEvent(
-                    timestamp=datetime.utcnow(),
+                    timestamp=utc_now(),
                     label="initial_dbt_correction_complete",
                     data={"success": False},
                 )
@@ -254,7 +254,7 @@ class PlanWriteCritique:
 
         api.trace.record(
             StrategyEvent(
-                timestamp=datetime.utcnow(),
+                timestamp=utc_now(),
                 label="initial_dbt_correction_complete",
                 data={
                     "success": initial_dbt_ok if initial_dbt_ok is not None else True
@@ -295,7 +295,7 @@ class PlanWriteCritique:
             )
             api.trace.record(
                 StrategyEvent(
-                    timestamp=datetime.utcnow(),
+                    timestamp=utc_now(),
                     label="critique_round_complete",
                     data={"verdicts": [v.model_dump() for v in result.output.verdicts]},
                 )

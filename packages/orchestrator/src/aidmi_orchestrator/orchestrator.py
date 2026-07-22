@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
-from datetime import datetime
 from pathlib import Path
 from typing import IO
 
 from aidmi_orchestrator.api import OrchestratorAPI
+from aidmi_orchestrator.clock import utc_now
 from aidmi_orchestrator.discover import discover
 from aidmi_orchestrator.domain import TargetSchema
 from aidmi_orchestrator.evaluator.base import FixtureMetadata, RunArtifacts
@@ -41,7 +41,7 @@ async def run_orchestrator(
     staging_db_url: str,
     trace_mirror: IO[str] | None = None,
 ) -> RunArtifacts:
-    started_at = datetime.utcnow()
+    started_at = utc_now()
     run_dir = workspace / "runs" / run_id
     run_dir.mkdir(parents=True, exist_ok=True)
     dlt_pipelines_dir = run_dir / ".dlt_pipelines"
@@ -76,7 +76,7 @@ async def run_orchestrator(
     )
     trace.record(
         StrategyEvent(
-            timestamp=datetime.utcnow(),
+            timestamp=utc_now(),
             label="discover_complete",
             data={"table_count": len(source_summary.tables)},
         )
@@ -107,7 +107,7 @@ async def run_orchestrator(
     except Exception as e:
         trace.record(
             StrategyEvent(
-                timestamp=datetime.utcnow(),
+                timestamp=utc_now(),
                 label="strategy_crashed",
                 data={"error": repr(e), "type": type(e).__name__},
             )
@@ -122,7 +122,7 @@ async def run_orchestrator(
     except Exception as e:
         trace.record(
             StrategyEvent(
-                timestamp=datetime.utcnow(),
+                timestamp=utc_now(),
                 label="final_dbt_failed",
                 data={"error": repr(e), "type": type(e).__name__},
             )
@@ -132,7 +132,7 @@ async def run_orchestrator(
     write_mapping_manifest(run_dir, strategy_result.manifest)
     trace.close()
 
-    wall_clock = (datetime.utcnow() - started_at).total_seconds()
+    wall_clock = (utc_now() - started_at).total_seconds()
     fixture_meta = FixtureMetadata(
         name=fixture.name,
         description=fixture.description,

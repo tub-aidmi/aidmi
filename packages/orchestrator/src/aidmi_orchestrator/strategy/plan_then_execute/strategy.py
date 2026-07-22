@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
-from datetime import datetime
 from typing import Literal
 
 from pydantic import BaseModel, Field
 from pydantic_ai import Agent
 
+from aidmi_orchestrator.clock import utc_now
 from aidmi_orchestrator.domain import ModelSpec, StrategyResult
 from aidmi_orchestrator.strategy.base import (
     build_context_prompt,
@@ -107,7 +107,7 @@ class PlanThenExecute:
         plan = (await planner_agent.run(planner_user_prompt(context))).output
         api.trace.record(
             StrategyEvent(
-                timestamp=datetime.utcnow(),
+                timestamp=utc_now(),
                 label="plan_complete",
                 data={
                     "overview": plan.overview,

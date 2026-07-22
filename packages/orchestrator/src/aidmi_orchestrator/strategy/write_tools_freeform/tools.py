@@ -7,11 +7,11 @@ Postgres, and call api.run_dbt() under strict containment.
 from __future__ import annotations
 
 import time
-from datetime import datetime
 from pathlib import Path
 
 import psycopg2
 
+from aidmi_orchestrator.clock import utc_now
 from aidmi_orchestrator.strategy.sql_sanitize import sanitize_dbt_sql, validate_dbt_sql
 from aidmi_orchestrator.trace import ToolCallEvent
 
@@ -41,7 +41,7 @@ def make_write_file(api):
             latency_ms = (time.perf_counter() - start) * 1000
             api.trace.record(
                 ToolCallEvent(
-                    timestamp=datetime.utcnow(),
+                    timestamp=utc_now(),
                     tool_name="write_file",
                     args={"path": path, "size": len(content)},
                     result=nested_err,
@@ -57,7 +57,7 @@ def make_write_file(api):
                 msg = f"ERROR: {validation_err} Fix the SQL and try again."
                 api.trace.record(
                     ToolCallEvent(
-                        timestamp=datetime.utcnow(),
+                        timestamp=utc_now(),
                         tool_name="write_file",
                         args={"path": path, "size": len(content)},
                         result=msg,
@@ -73,7 +73,7 @@ def make_write_file(api):
             latency_ms = (time.perf_counter() - start) * 1000
             api.trace.record(
                 ToolCallEvent(
-                    timestamp=datetime.utcnow(),
+                    timestamp=utc_now(),
                     tool_name="write_file",
                     args={"path": path, "size": len(content)},
                     result=f"error: {e!r}",
@@ -84,7 +84,7 @@ def make_write_file(api):
         latency_ms = (time.perf_counter() - start) * 1000
         api.trace.record(
             ToolCallEvent(
-                timestamp=datetime.utcnow(),
+                timestamp=utc_now(),
                 tool_name="write_file",
                 args={"path": path, "size": len(content)},
                 result="ok",
@@ -106,7 +106,7 @@ def make_read_file(api):
             latency_ms = (time.perf_counter() - start) * 1000
             api.trace.record(
                 ToolCallEvent(
-                    timestamp=datetime.utcnow(),
+                    timestamp=utc_now(),
                     tool_name="read_file",
                     args={"path": path},
                     result=f"error: {e!r}",
@@ -117,7 +117,7 @@ def make_read_file(api):
         latency_ms = (time.perf_counter() - start) * 1000
         api.trace.record(
             ToolCallEvent(
-                timestamp=datetime.utcnow(),
+                timestamp=utc_now(),
                 tool_name="read_file",
                 args={"path": path},
                 result={"size": len(content)},
@@ -139,7 +139,7 @@ def make_query_postgres(api, row_cap: int):
             msg = str(e)
             api.trace.record(
                 ToolCallEvent(
-                    timestamp=datetime.utcnow(),
+                    timestamp=utc_now(),
                     tool_name="query_postgres",
                     args={"sql": sql[:500], "row_cap": row_cap},
                     result={"error": msg},
@@ -157,7 +157,7 @@ def make_query_postgres(api, row_cap: int):
                 )
             api.trace.record(
                 ToolCallEvent(
-                    timestamp=datetime.utcnow(),
+                    timestamp=utc_now(),
                     tool_name="query_postgres",
                     args={"sql": sql[:500], "row_cap": row_cap},
                     result={"error": msg},
@@ -168,7 +168,7 @@ def make_query_postgres(api, row_cap: int):
         latency_ms = (time.perf_counter() - start) * 1000
         api.trace.record(
             ToolCallEvent(
-                timestamp=datetime.utcnow(),
+                timestamp=utc_now(),
                 tool_name="query_postgres",
                 args={"sql": sql[:500], "row_cap": row_cap},
                 result={"rows": len(rows)},

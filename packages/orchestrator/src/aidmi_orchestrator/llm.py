@@ -7,7 +7,6 @@ import dataclasses
 import os
 import time
 from collections.abc import Callable
-from datetime import datetime
 from typing import Any
 
 from pydantic_ai.exceptions import ModelHTTPError
@@ -16,6 +15,7 @@ from pydantic_ai.models import ModelRequestParameters
 from pydantic_ai.models.wrapper import WrapperModel
 from pydantic_ai.settings import ModelSettings
 
+from aidmi_orchestrator.clock import utc_now
 from aidmi_orchestrator.domain import ModelSpec
 from aidmi_orchestrator.llm_retry import (
     is_retryable_model_http_error,
@@ -228,7 +228,7 @@ class TracedModel(WrapperModel):
                 usage_dict["retry_count"] = attempt
             self._trace.record(
                 LlmCallEvent(
-                    timestamp=datetime.utcnow(),
+                    timestamp=utc_now(),
                     role=self._role,
                     model_spec=self._spec,
                     messages=[

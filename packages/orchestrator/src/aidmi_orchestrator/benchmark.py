@@ -5,10 +5,10 @@ from __future__ import annotations
 import asyncio
 import copy
 import itertools
-from datetime import datetime
 from pathlib import Path
 from typing import IO, Any
 
+from aidmi_orchestrator.clock import utc_now
 from aidmi_orchestrator.domain import BenchmarkResult, StrategyResult
 from aidmi_orchestrator.evaluator.base import (
     Evaluator,
@@ -63,7 +63,7 @@ class Benchmark:
         trace_mirror: IO[str] | None = None,
     ) -> BenchmarkResult:
         run_id = run_id or make_run_id(strategy.name, self.fixture.name)
-        started_at = datetime.utcnow()
+        started_at = utc_now()
         error: str | None = None
         artifacts: RunArtifacts | None = None
         try:
@@ -80,7 +80,7 @@ class Benchmark:
         except Exception as e:
             error = f"harness: {e!r}"
 
-        completed_at = datetime.utcnow()
+        completed_at = utc_now()
         wall_clock = (completed_at - started_at).total_seconds()
 
         metrics: dict[str, Any] = {}

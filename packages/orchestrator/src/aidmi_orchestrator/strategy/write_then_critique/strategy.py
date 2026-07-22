@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
-from datetime import datetime
 from typing import Literal
 
 from pydantic import BaseModel, Field
 from pydantic_ai import Agent
 
+from aidmi_orchestrator.clock import utc_now
 from aidmi_orchestrator.domain import ModelSpec, StrategyResult
 from aidmi_orchestrator.strategy.base import (
     build_context_prompt,
@@ -107,7 +107,7 @@ class WriteThenCritique:
             )
             api.trace.record(
                 StrategyEvent(
-                    timestamp=datetime.utcnow(),
+                    timestamp=utc_now(),
                     label="critique_round_complete",
                     data={"verdicts": [v.model_dump() for v in result.output.verdicts]},
                 )

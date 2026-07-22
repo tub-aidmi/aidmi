@@ -1,5 +1,4 @@
-from datetime import datetime
-
+from aidmi_orchestrator.clock import utc_now
 from aidmi_orchestrator.domain import ModelSpec
 from aidmi_orchestrator.progress import log_message
 from aidmi_orchestrator.trace import LlmCallEvent, format_trace_progress
@@ -7,7 +6,7 @@ from aidmi_orchestrator.trace import LlmCallEvent, format_trace_progress
 
 def test_format_trace_progress_llm_call():
     event = LlmCallEvent(
-        timestamp=datetime.utcnow(),
+        timestamp=utc_now(),
         role="writer",
         model_spec=ModelSpec(provider="openai", model_name="gpt-4o-mini"),
         messages=[],
@@ -21,7 +20,7 @@ def test_format_trace_progress_llm_call():
 
 def test_format_trace_progress_includes_thoughts():
     event = LlmCallEvent(
-        timestamp=datetime.utcnow(),
+        timestamp=utc_now(),
         role="writer",
         model_spec=ModelSpec(provider="google_cloud", model_name="gemini-2.5-flash"),
         messages=[],

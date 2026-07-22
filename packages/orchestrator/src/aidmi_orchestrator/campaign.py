@@ -2,19 +2,19 @@
 
 from __future__ import annotations
 
-from datetime import datetime
 from pathlib import Path
 
 import yaml
 from ulid import ULID
 
+from aidmi_orchestrator.clock import utc_now
 from aidmi_orchestrator.provenance import make_campaign_provenance
 
 DEFAULT_BENCHMARKS_ROOT = Path("benchmarks")
 
 
 def make_campaign_id() -> str:
-    date = datetime.utcnow().strftime("%Y-%m-%d")
+    date = utc_now().strftime("%Y-%m-%d")
     suffix = str(ULID())[-4:].lower()
     return f"{date}-{suffix}"
 

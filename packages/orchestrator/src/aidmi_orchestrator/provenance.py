@@ -4,10 +4,10 @@ from __future__ import annotations
 
 import hashlib
 import subprocess
-from datetime import datetime
 from importlib.metadata import version
 from pathlib import Path
 
+from aidmi_orchestrator.clock import utc_now
 from aidmi_orchestrator.domain import CampaignProvenance, RunProvenance
 
 
@@ -72,7 +72,7 @@ def make_campaign_provenance(
     return CampaignProvenance(
         id=campaign_id,
         label=label,
-        created_at=datetime.utcnow(),
+        created_at=utc_now(),
         git_sha=str(git["git_sha"]),
         git_branch=str(git["git_branch"]),
         git_dirty=bool(git["git_dirty"]),
@@ -99,5 +99,5 @@ def make_run_provenance(
         strategy_spec_path=strategy_spec_path,
         strategy_spec_sha256=strategy_spec_sha256,
         dbt_project_sha256=dbt_hash,
-        recorded_at=datetime.utcnow(),
+        recorded_at=utc_now(),
     )
