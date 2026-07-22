@@ -2,11 +2,15 @@ import datetime as dt
 import hashlib
 from pathlib import Path
 
+import pytest
+
+from aidmi_orchestrator.scripts import build_fixtures, verify_fixtures
 from aidmi_orchestrator.scripts.verify_fixtures import (
     FROZEN_TODAY,
     digest_tree,
     format_manifest,
     frozen_today,
+    guarded_generate,
     parse_manifest,
     verify,
 )
@@ -81,3 +85,22 @@ def test_frozen_today_pins_relative_date_strings():
         assert Provider._parse_date(dt.date(2020, 1, 1)) == dt.date(2020, 1, 1)
 
     assert Provider._parse_date("today") == dt.date.today()
+
+
+def test_guarded_generate_raises_if_repo_fixtures_are_written(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+):
+    canary = build_fixtures.FIXTURES_DIR / "_guard_test_canary.sql"
+
+    def fake_generate(out_root: Path) -> None:
+        canary.write_text("this should never land in the repo")
+
+    monkeypatch.setattr(verify_fixtures, "generate", fake_generate)
+
+    try:
+        with pytest.raises(RuntimeError, match="_guard_test_canary.sql"):
+            guarded_generate(tmp_path)
+    finally:
+        canary.unlink(missing_ok=True)
+
+    assert not canary.exists()

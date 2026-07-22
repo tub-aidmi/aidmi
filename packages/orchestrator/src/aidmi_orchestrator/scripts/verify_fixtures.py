@@ -64,6 +64,30 @@ def generate(out_root: Path) -> None:
         build_fixtures.main(out_root)
 
 
+def guarded_generate(out_root: Path) -> None:
+    """Run `generate` and verify it left the repo's committed fixture tree untouched.
+
+    `generate` is only supposed to write into `out_root`; the committed fixtures
+    under `build_fixtures.FIXTURES_DIR` are the input data for published benchmark
+    campaigns and must never be rewritten by a code path that forgets to thread
+    `out_root` through. This digests that tree immediately before and after the
+    call and raises if anything changed.
+    """
+    from aidmi_orchestrator.scripts import build_fixtures
+
+    repo_fixtures = build_fixtures.FIXTURES_DIR
+    before = digest_tree(repo_fixtures)
+    generate(out_root)
+    after = digest_tree(repo_fixtures)
+    if before != after:
+        changed = sorted(set(before) | set(after))
+        offending = next(rel for rel in changed if before.get(rel) != after.get(rel))
+        raise RuntimeError(
+            "generator wrote into the repo fixture tree instead of out_root: "
+            f"{repo_fixtures / offending}"
+        )
+
+
 def digest_tree(root: Path) -> dict[str, str]:
     digests: dict[str, str] = {}
     for path in sorted(root.rglob("*")):
@@ -112,7 +136,7 @@ def verify(actual: dict[str, str], baseline_path: Path) -> list[str]:
 def snapshot(baseline_path: Path) -> None:
     with tempfile.TemporaryDirectory() as tmp:
         out = Path(tmp)
-        generate(out)
+        guarded_generate(out)
         baseline_path.parent.mkdir(parents=True, exist_ok=True)
         baseline_path.write_text(format_manifest(digest_tree(out)))
 
@@ -134,7 +158,7 @@ def main() -> None:
 
     with tempfile.TemporaryDirectory() as tmp:
         out = Path(tmp)
-        generate(out)
+        guarded_generate(out)
         drift = verify(digest_tree(out), args.baseline)
 
     if drift:

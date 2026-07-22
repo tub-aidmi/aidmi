@@ -17,7 +17,10 @@ def _acc_ref(rec: dict[str, Any], by_name: bool = False) -> str:
 
 
 def _account_fields(a: dict[str, Any]) -> tuple[Any, ...]:
-    """The nine source-side account columns every problem emits, in order."""
+    """The nine source-side account columns shared by p1, p2 and p4, in order.
+
+    p3 emits its own, different 5-column account row and does not use this helper.
+    """
     return (
         a["legacy"],
         a["name_src"],
