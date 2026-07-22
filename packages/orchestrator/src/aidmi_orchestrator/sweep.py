@@ -111,7 +111,7 @@ async def run_sweep(
     mirror: IO[str] | None = None,
 ) -> list[BenchmarkResult]:
     jobs = expand_jobs(cells, settings.fixtures, settings.runs_per_cell)
-    benches = {job.fixture_name: bench_for(job.fixture_name) for job in jobs}
+    benches = {fx: bench_for(fx) for fx in dict.fromkeys(j.fixture_name for j in jobs)}
 
     results_path = campaign.results_jsonl
     if resume:
