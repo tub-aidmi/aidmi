@@ -359,14 +359,15 @@ def report(
     ] = None,
 ):
     """Render benchmark campaign(s) into an SVG figure gallery."""
-    from aidmi_orchestrator.report.data import load_records
+    from aidmi_orchestrator.report.data import campaign_labels, load_records
     from aidmi_orchestrator.report.driver import build_report
 
     records = load_records(results)
     if not records:
         raise typer.BadParameter("no result rows found in the given paths")
+    labels = campaign_labels(results)
     out.mkdir(parents=True, exist_ok=True)
-    written = build_report(records, out, exclude=set(exclude or []))
+    written = build_report(records, out, exclude=set(exclude or []), labels=labels)
     typer.echo(f"report over {len(records)} runs -> {out}: {len(written)} files")
 
 

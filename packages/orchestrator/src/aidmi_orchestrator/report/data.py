@@ -3,6 +3,8 @@ import csv, json
 from dataclasses import dataclass, asdict
 from pathlib import Path
 
+import yaml
+
 MODEL_LABELS = {
     "gemini-2.5-flash": "gemini25flash",
     "ise-ollama/qwen3.6:35b-a3b": "qwen35b",
@@ -101,6 +103,21 @@ def load_records(paths) -> list[RunRecord]:
                 if line:
                     out.append(_record(json.loads(line), fallback))
     return out
+
+def campaign_labels(paths) -> dict[str, str]:
+    """Map campaign id -> human label, read from each campaign.yaml."""
+    labels: dict[str, str] = {}
+    for p in paths:
+        p = Path(p)
+        campaign_dir = p if p.is_dir() else p.parent
+        meta_path = campaign_dir / "campaign.yaml"
+        if not meta_path.is_file():
+            continue
+        meta = yaml.safe_load(meta_path.read_text(encoding="utf-8")) or {}
+        cid, label = meta.get("id"), meta.get("label")
+        if cid and label:
+            labels[str(cid)] = str(label)
+    return labels
 
 def write_tidy_csv(records, path) -> None:
     path = Path(path)

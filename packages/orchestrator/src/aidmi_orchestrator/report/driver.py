@@ -218,7 +218,8 @@ def _build_sections(
 
 
 def build_report(
-    records: list[RunRecord], out_dir: Path, *, exclude: set[str] | None = None
+    records: list[RunRecord], out_dir: Path, *,
+    exclude: set[str] | None = None, labels: dict[str, str] | None = None,
 ) -> list[Path]:
     apply_theme()
     out_dir = Path(out_dir)
@@ -246,7 +247,7 @@ def build_report(
         "summary_sc_off": summary_sc_block(records, sc=False),
         "best_config": best_config_table(records),
         "failure_accounting": failure_accounting_table(records),
-        "silent_failure": silent_failure_table(records),
+        "silent_failure": silent_failure_table(records, labels),
         "appendix": appendix_table(records),
     }
 
@@ -256,7 +257,8 @@ def build_report(
     )
 
     campaigns = sorted({r.campaign for r in records})
-    title = f"aidmi benchmark report — {', '.join(campaigns)}"
+    display = [(labels or {}).get(c, c) for c in campaigns]
+    title = f"aidmi benchmark report — {', '.join(display)}"
 
     html = render_gallery(title=title, sections=sections, tables=tables, multi_model=multi_model)
     index_path = out_dir / "index.html"

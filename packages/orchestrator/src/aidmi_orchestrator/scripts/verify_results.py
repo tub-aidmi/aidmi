@@ -8,7 +8,7 @@ import sys
 import tempfile
 from pathlib import Path
 
-from aidmi_orchestrator.report.data import load_records
+from aidmi_orchestrator.report.data import campaign_labels, load_records
 from aidmi_orchestrator.report.driver import build_report
 
 BASELINE_ROOT = Path("benchmarks/.baseline")
@@ -39,7 +39,8 @@ def render(campaign_dir: Path, out_dir: Path) -> None:
     if not records:
         raise SystemExit(f"no result rows under {campaign_dir}")
     out_dir.mkdir(parents=True, exist_ok=True)
-    build_report(records, out_dir)
+    labels = campaign_labels([campaign_dir])
+    build_report(records, out_dir, labels=labels)
 
 
 def _write_figures_manifest(baseline_dir: Path, out_dir: Path, names: list[str]) -> None:

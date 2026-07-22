@@ -313,7 +313,7 @@ def failure_accounting_table(records: list[RunRecord]) -> str:
     return _table(header, rows, caption=caption)
 
 
-def silent_failure_table(records: list[RunRecord]) -> str:
+def silent_failure_table(records: list[RunRecord], labels=None) -> str:
     silent = sorted(
         (r for r in records if r.silent_fail),
         key=lambda r: (r.campaign, r.model, r.cell, r.fixture, r.rep),
@@ -323,7 +323,10 @@ def silent_failure_table(records: list[RunRecord]) -> str:
 
     header = ["Campaign", "Model", "Cell", "Fixture", "Rep"]
     rows = [
-        _row([_esc(r.campaign), _esc(r.model), _esc(r.cell), _esc(r.fixture), _esc(r.rep)])
+        _row([
+            _esc((labels or {}).get(r.campaign, r.campaign)),
+            _esc(r.model), _esc(r.cell), _esc(r.fixture), _esc(r.rep),
+        ])
         for r in silent
     ]
     return _table(header, rows, caption=caption)
