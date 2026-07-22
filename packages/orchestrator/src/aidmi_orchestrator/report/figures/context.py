@@ -61,7 +61,7 @@ def _draw_grouped(ax, cells, per_cell_ctx, fmt, ylabel, *, ctxs):
                 zorder=3,
                 label=_CTX_LABELS.get(ctx, ctx),
             )
-            for x, y in zip(xs, ys):
+            for x, y in zip(xs, ys, strict=False):
                 ax.text(
                     x,
                     y,

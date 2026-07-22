@@ -7,6 +7,9 @@ from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
+from pydantic import ValidationError
+from pydantic_ai.models.test import TestModel
+
 from aidmi_orchestrator.domain import ModelSpec
 from aidmi_orchestrator.strategy.plan_write_critique.loops import (
     retry_failing_tables_with_progress,
@@ -21,8 +24,6 @@ from aidmi_orchestrator.strategy.write_then_critique.critique import (
     CritiqueReport,
     TableVerdict,
 )
-from pydantic import ValidationError
-from pydantic_ai.models.test import TestModel
 
 from .test_structured_common import MAPPING_ARGS, fake_api
 

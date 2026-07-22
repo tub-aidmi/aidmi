@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import asyncio
 
+from pydantic_ai.models.test import TestModel
+
 from aidmi_orchestrator.domain import ModelSpec
 from aidmi_orchestrator.strategy.plan_then_execute.strategy import (
     MappingPlan,
@@ -11,7 +13,6 @@ from aidmi_orchestrator.strategy.plan_then_execute.strategy import (
     PlanThenExecuteConfig,
     plan_slice_text,
 )
-from pydantic_ai.models.test import TestModel
 
 from .test_structured_common import MAPPING_ARGS, fake_api
 

@@ -5,9 +5,8 @@ from __future__ import annotations
 from collections.abc import Awaitable, Callable
 from typing import Any
 
-from aidmi_pipeline.migration import dbt_model_table_name
-
 from aidmi_orchestrator.strategy.base import run_coroutines
+from aidmi_pipeline.migration import dbt_model_table_name
 
 
 def extract_failing_models(result: Any) -> list[tuple[str, str]]:

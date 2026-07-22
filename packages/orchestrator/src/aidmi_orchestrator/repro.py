@@ -5,9 +5,6 @@ from __future__ import annotations
 import asyncio
 from pathlib import Path
 
-from aidmi_pipeline.config import MigrationRun, StagingConfig
-from aidmi_pipeline.migration import transform
-
 from aidmi_orchestrator.campaign import (
     Campaign,
     resolve_dbt_project,
@@ -22,6 +19,8 @@ from aidmi_orchestrator.evaluator.base import (
 from aidmi_orchestrator.fixtures.base import get_fixture
 from aidmi_orchestrator.persistence import load_result_from_campaign
 from aidmi_orchestrator.trace import TraceSink
+from aidmi_pipeline.config import MigrationRun, StagingConfig
+from aidmi_pipeline.migration import transform
 
 
 def apply_dbt_to_postgres(

@@ -6,8 +6,6 @@ from datetime import datetime
 from pathlib import Path
 from typing import IO
 
-from aidmi_pipeline.config import MigrationRun, StagingConfig
-
 from aidmi_orchestrator.api import OrchestratorAPI
 from aidmi_orchestrator.discover import discover
 from aidmi_orchestrator.domain import TargetSchema
@@ -19,6 +17,7 @@ from aidmi_orchestrator.persistence import (
 )
 from aidmi_orchestrator.progress import log_message
 from aidmi_orchestrator.trace import StrategyEvent, TraceSink
+from aidmi_pipeline.config import MigrationRun, StagingConfig
 
 
 class StrategyExecutionError(RuntimeError):

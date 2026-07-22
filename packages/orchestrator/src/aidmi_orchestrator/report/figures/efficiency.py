@@ -35,7 +35,7 @@ def _draw_bars(ax, cells, values, fmt, ylabel):
     colors = [color_for_cell(c) for c in present]
     if present:
         ax.bar(xs, ys, width=0.62, color=colors, zorder=3)
-        for x, y in zip(xs, ys):
+        for x, y in zip(xs, ys, strict=False):
             ax.text(
                 x, y, fmt.format(y), ha="center", va="bottom", fontsize=8, color=_MUTED
             )

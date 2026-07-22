@@ -8,7 +8,6 @@ from collections.abc import Awaitable
 from pathlib import Path
 from typing import Any, Protocol, runtime_checkable
 
-from aidmi_pipeline.sources_yaml import ensure_sources_yaml_raw_schema
 from pydantic import BaseModel
 
 from aidmi_orchestrator.domain import (
@@ -23,6 +22,7 @@ from aidmi_orchestrator.strategy.guidelines.compose import (
     context_transformation_section,
 )
 from aidmi_orchestrator.strategy.sql_sanitize import sanitize_dbt_sql
+from aidmi_pipeline.sources_yaml import ensure_sources_yaml_raw_schema
 
 
 @runtime_checkable
@@ -75,14 +75,14 @@ async def run_named_coroutines[T](
         results = list(await asyncio.gather(*coros, return_exceptions=True))
     failures = [
         f"{name}: {result!r}"
-        for name, result in zip(names, results)
+        for name, result in zip(names, results, strict=False)
         if isinstance(result, BaseException)
     ]
     if failures:
         raise RuntimeError("parallel task(s) failed: " + "; ".join(failures))
     return {
         name: result
-        for name, result in zip(names, results)
+        for name, result in zip(names, results, strict=False)
         if not isinstance(result, BaseException)
     }
 

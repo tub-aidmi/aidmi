@@ -7,6 +7,7 @@ from unittest.mock import MagicMock, patch
 
 import psycopg2
 import pytest
+
 from aidmi_pipeline.config import MigrationRun, StagingConfig
 from aidmi_pipeline.migration import clear_out_schema, transform
 

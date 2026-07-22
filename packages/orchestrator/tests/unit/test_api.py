@@ -1,5 +1,6 @@
 import psycopg2
 import pytest
+
 from aidmi_orchestrator.api import OrchestratorAPI
 from aidmi_orchestrator.domain import SourceSummary
 from aidmi_orchestrator.trace import TraceSink

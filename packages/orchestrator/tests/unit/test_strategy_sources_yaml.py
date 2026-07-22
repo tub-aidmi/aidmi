@@ -6,6 +6,7 @@ import asyncio
 from pathlib import Path
 
 import yaml
+
 from aidmi_orchestrator.strategy.base import (
     ensure_sources_yaml_raw_schema,
     normalize_source_refs,
@@ -108,6 +109,7 @@ def test_make_query_postgres_returns_error_on_dbt_jinja(
     import asyncio
 
     import psycopg2
+
     from aidmi_orchestrator.api import OrchestratorAPI
     from aidmi_orchestrator.domain import SourceSummary
     from aidmi_orchestrator.trace import TraceSink

@@ -41,7 +41,7 @@ def _ranked_cells(records):
 
 
 def _bar_labels(ax, xs, ys, fmt):
-    for x, y in zip(xs, ys):
+    for x, y in zip(xs, ys, strict=False):
         ax.text(
             x,
             y,

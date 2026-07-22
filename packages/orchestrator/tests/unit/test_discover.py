@@ -1,4 +1,5 @@
 import psycopg2
+
 from aidmi_orchestrator.discover import discover
 
 

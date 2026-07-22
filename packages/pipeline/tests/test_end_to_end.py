@@ -2,9 +2,10 @@ import json
 from pathlib import Path
 
 import dlt
+from dlt.sources.filesystem import filesystem, read_jsonl
+
 from aidmi_pipeline.config import MigrationRun, StagingConfig
 from aidmi_pipeline.migration import run_migration
-from dlt.sources.filesystem import filesystem, read_jsonl
 
 dlt.config["normalize.data_writer.disable_compression"] = True
 

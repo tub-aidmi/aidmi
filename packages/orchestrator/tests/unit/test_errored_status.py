@@ -1,11 +1,12 @@
 import asyncio
 
+from pydantic_ai.exceptions import ModelHTTPError
+
 from aidmi_orchestrator.strategy.structured_common import (
     TableMapping,
     generate_table_mapping_safe,
     resolve_structured_status,
 )
-from pydantic_ai.exceptions import ModelHTTPError
 
 
 class RaisingAgent:

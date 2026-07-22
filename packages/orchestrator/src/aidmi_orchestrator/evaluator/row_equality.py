@@ -56,6 +56,7 @@ def _run_reference_dbt(
 ) -> str:
     """Run the reference dbt project, materializing into <raw_dataset>_reference."""
     import dlt
+
     from aidmi_pipeline.sources_yaml import ensure_sources_yaml_raw_schema
 
     ref_dataset = f"{raw_dataset}_reference"
@@ -128,7 +129,7 @@ class RowEqualityEvaluator:
 
             row_count_match = len(produced_sorted) == len(reference_sorted)
             diff_count = abs(len(produced_sorted) - len(reference_sorted))
-            for p, r in zip(produced_sorted, reference_sorted):
+            for p, r in zip(produced_sorted, reference_sorted, strict=False):
                 if not self.comparator.compare_row(p, r):
                     diff_count += 1
 
@@ -151,6 +152,7 @@ class RowEqualityEvaluator:
                         for p, r in zip(
                             produced_sorted[:n_comparable],
                             reference_sorted[:n_comparable],
+                            strict=False,
                         )
                         if p.get(col) == r.get(col)
                     )

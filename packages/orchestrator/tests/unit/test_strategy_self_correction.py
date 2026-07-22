@@ -6,6 +6,8 @@ import asyncio
 from types import SimpleNamespace
 from unittest.mock import AsyncMock
 
+from pydantic_ai.models.test import TestModel
+
 from aidmi_orchestrator.domain import ModelSpec
 from aidmi_orchestrator.strategy.ensemble_vote.strategy import (
     EnsembleVote,
@@ -25,7 +27,6 @@ from aidmi_orchestrator.strategy.write_then_critique.strategy import (
     WriteThenCritique,
     WriteThenCritiqueConfig,
 )
-from pydantic_ai.models.test import TestModel
 
 from .test_structured_common import MAPPING_ARGS, fake_api, small_target_schema
 

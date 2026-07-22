@@ -1,3 +1,5 @@
+from pydantic_ai.exceptions import ModelHTTPError
+
 from aidmi_orchestrator.domain import ModelSpec
 from aidmi_orchestrator.llm_retry import (
     RETRYABLE_STATUS_CODES,
@@ -5,7 +7,6 @@ from aidmi_orchestrator.llm_retry import (
     resolve_retry_settings,
     retry_delay_seconds,
 )
-from pydantic_ai.exceptions import ModelHTTPError
 
 
 def test_is_retryable_429():

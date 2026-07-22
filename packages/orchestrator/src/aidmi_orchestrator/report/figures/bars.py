@@ -175,7 +175,7 @@ def _bar_figure(
                 annotations.append((ci + offset, h, std))
         if not xs:
             continue
-        has_err = any(el or eh for el, eh in zip(lo, hi))
+        has_err = any(el or eh for el, eh in zip(lo, hi, strict=False))
         textured = si > 0
         ax.bar(
             xs,

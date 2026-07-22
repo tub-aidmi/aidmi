@@ -4,12 +4,13 @@ from __future__ import annotations
 
 import asyncio
 
+from pydantic_ai.models.test import TestModel
+
 from aidmi_orchestrator.domain import ModelSpec
 from aidmi_orchestrator.strategy.structured_per_table.strategy import (
     StructuredPerTable,
     StructuredPerTableConfig,
 )
-from pydantic_ai.models.test import TestModel
 
 from .test_structured_common import MAPPING_ARGS, fake_api
 

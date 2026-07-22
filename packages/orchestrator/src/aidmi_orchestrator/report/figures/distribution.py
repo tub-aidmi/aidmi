@@ -90,7 +90,7 @@ def _counts_subtitle(counts, unit):
 def _draw_panel(ax, groups, colors, values, label, *, unit_axis):
     data = [values.get(g, []) for g in groups]
     positions = list(range(len(groups)))
-    non_empty = [(p, d) for p, d in zip(positions, data) if d]
+    non_empty = [(p, d) for p, d in zip(positions, data, strict=False) if d]
     if non_empty:
         bp = ax.boxplot(
             [d for _, d in non_empty],
@@ -102,9 +102,9 @@ def _draw_panel(ax, groups, colors, values, label, *, unit_axis):
             whiskerprops=dict(color=_MUTED),
             capprops=dict(color=_MUTED),
         )
-        for (p, _), box in zip(non_empty, bp["boxes"]):
+        for (p, _), box in zip(non_empty, bp["boxes"], strict=False):
             box.set(facecolor=colors[p], alpha=0.25, edgecolor=_MUTED)
-    for p, d in zip(positions, data):
+    for p, d in zip(positions, data, strict=False):
         if not d:
             continue
         xs = [p + off for off in _jitter(len(d))]
@@ -129,7 +129,7 @@ def _draw_panel(ax, groups, colors, values, label, *, unit_axis):
 def _draw_violin_panel(ax, groups, colors, values, label, *, unit_axis):
     data = [values.get(g, []) for g in groups]
     positions = list(range(len(groups)))
-    non_empty = [(p, d) for p, d in zip(positions, data) if d]
+    non_empty = [(p, d) for p, d in zip(positions, data, strict=False) if d]
 
     # Violin bodies carry the density: transparent fill + solid outline in the
     # group's colour (matches the IQR figures). A violin needs >= 2 points.
@@ -141,7 +141,7 @@ def _draw_violin_panel(ax, groups, colors, values, label, *, unit_axis):
             showextrema=False,
             widths=0.85,
         )
-        for (p, _), body in zip(violinable, parts["bodies"]):
+        for (p, _), body in zip(violinable, parts["bodies"], strict=False):
             body.set(
                 facecolor=colors[p], alpha=0.28, edgecolor=colors[p], linewidth=1.1
             )
@@ -438,7 +438,7 @@ def fig_recall_violin_sc(records, out_dir) -> Path:
 
     # Violin carries the density; a slim white boxplot inside carries the summary
     # (IQR box, median, whiskers, outliers) -- ggplot geom_violin + geom_boxplot.
-    non_empty = [(p, d) for p, d in zip(positions, data) if d]
+    non_empty = [(p, d) for p, d in zip(positions, data, strict=False) if d]
     if non_empty:
         parts = ax.violinplot(
             [d for _, d in non_empty],
@@ -468,7 +468,11 @@ def fig_recall_violin_sc(records, out_dir) -> Path:
     ax.set_ylim(-0.05, 1.08)
     ax.set_xticks(positions)
     ax.set_xticklabels(
-        [f"sc {label}\n(n={len(d)})" for (_, label), d in zip(states, data)], color=_INK
+        [
+            f"sc {label}\n(n={len(d)})"
+            for (_, label), d in zip(states, data, strict=False)
+        ],
+        color=_INK,
     )
     ax.set_ylabel("Recall", color=_INK)
     ax.grid(False)

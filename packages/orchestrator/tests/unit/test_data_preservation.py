@@ -6,6 +6,7 @@ from pathlib import Path
 
 import psycopg2
 import pytest
+
 from aidmi_orchestrator.domain import (
     ColumnNote,
     MappingManifest,

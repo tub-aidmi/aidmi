@@ -183,9 +183,11 @@ def expand_grid(
         scalar_part = {k: v for k, v in cfg.items() if k not in list_keys}
         for combo in itertools.product(*(cfg[k] for k in list_keys)):
             expanded = dict(scalar_part)
-            for k, v in zip(list_keys, combo):
+            for k, v in zip(list_keys, combo, strict=False):
                 expanded[k] = v
-            suffix = "".join(f"_{k}_{slug(v)}" for k, v in zip(list_keys, combo))
+            suffix = "".join(
+                f"_{k}_{slug(v)}" for k, v in zip(list_keys, combo, strict=False)
+            )
             out.append(
                 (
                     registry,

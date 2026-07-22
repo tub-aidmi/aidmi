@@ -6,6 +6,8 @@ import asyncio
 from types import SimpleNamespace
 from unittest.mock import MagicMock
 
+from pydantic_ai.models.test import TestModel
+
 from aidmi_orchestrator.domain import (
     ColumnInfo,
     SourceSummary,
@@ -22,7 +24,6 @@ from aidmi_orchestrator.strategy.structured_common import (
     manifest_from_mappings,
     per_table_user_prompt,
 )
-from pydantic_ai.models.test import TestModel
 
 
 def small_source_summary() -> SourceSummary:

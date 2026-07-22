@@ -3,10 +3,11 @@
 import asyncio
 import json
 
+import psycopg2
+
 import aidmi_orchestrator.evaluator  # noqa: F401
 import aidmi_orchestrator.fixtures  # noqa: F401
 import aidmi_orchestrator.strategy  # noqa: F401
-import psycopg2
 from aidmi_orchestrator.benchmark import Benchmark
 from aidmi_orchestrator.fixtures.base import get_fixture
 from aidmi_orchestrator.scripts.init_fixtures import init_fixture

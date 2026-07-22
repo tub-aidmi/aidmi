@@ -54,6 +54,6 @@ async def run_critique_rounds(
             )
         except Exception:
             return current, False
-        for name, m in zip(rejected, revised):
+        for name, m in zip(rejected, revised, strict=False):
             current[name] = m.model_copy(update={"target_table": name})
     return current, False

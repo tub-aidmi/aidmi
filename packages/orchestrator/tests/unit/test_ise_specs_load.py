@@ -1,6 +1,7 @@
 from pathlib import Path
 
 import yaml
+
 from aidmi_orchestrator.strategy.base import make_strategy
 
 SPECS = Path(__file__).parents[2] / "examples" / "strategy_specs"

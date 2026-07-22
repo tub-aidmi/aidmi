@@ -24,6 +24,13 @@ target-version = "py313"
 select = ["E", "F", "I", "UP", "B"]
 ignore = ["E501", "B008"]
 
+[tool.ruff.lint.per-file-ignores]
+# load_dotenv(override=True) must run before the registration imports below it
+"packages/orchestrator/src/aidmi_orchestrator/cli.py" = ["E402"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["aidmi_orchestrator", "aidmi_pipeline"]
+
 [tool.pytest.ini_options]
 markers = [
     "requires_llm: tests that hit a real LLM endpoint; skipped unless API keys are present",

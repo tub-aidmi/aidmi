@@ -2,6 +2,8 @@ import asyncio
 from unittest.mock import AsyncMock, patch
 
 import pytest
+from pydantic import BaseModel
+
 from aidmi_orchestrator.benchmark import (
     Benchmark,
     expand_grid,
@@ -10,7 +12,6 @@ from aidmi_orchestrator.benchmark import (
 )
 from aidmi_orchestrator.domain import BenchmarkResult, StrategyResult
 from aidmi_orchestrator.fixtures.base import Fixture
-from pydantic import BaseModel
 
 
 class _NoConfig(BaseModel):

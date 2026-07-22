@@ -6,6 +6,7 @@ from pathlib import Path
 
 import psycopg2
 import pytest
+
 from aidmi_orchestrator.domain import StrategyResult
 from aidmi_orchestrator.evaluator._ground_truth_utils import ground_truth_row_matched
 from aidmi_orchestrator.evaluator.base import FixtureMetadata, RunArtifacts

@@ -115,7 +115,7 @@ def _build_dist_facets(
     on = [r for r in records if r.sc is True]
     fixtures = ordered_fixtures({r.fixture for r in on})
     cells = ordered_cells({r.cell for r in on})
-    fixture_titles = dict(zip(fixtures, strip_common_version(fixtures)))
+    fixture_titles = dict(zip(fixtures, strip_common_version(fixtures), strict=False))
     by_fixture = [
         Subsection(
             fixture_titles[fx], [fig_dist_by_strategy_for_fixture(records, figdir, fx)]
