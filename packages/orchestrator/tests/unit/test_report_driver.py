@@ -74,6 +74,19 @@ def test_build_report_writes_gallery_and_core_figures(tmp_path):
         assert (tmp_path / "figures" / name) in paths
 
 
+def test_build_report_uses_campaign_label_in_title(tmp_path):
+    all_records = load_records([FIX])
+    single_model = all_records[0].model
+    records = [r for r in all_records if r.model == single_model]
+    campaign_id = records[0].campaign
+
+    build_report(records, tmp_path, labels={campaign_id: "My Campaign"})
+
+    title = re.search(r"<title>(.*?)</title>", (tmp_path / "index.html").read_text()).group(1)
+    assert "My Campaign" in title
+    assert campaign_id not in title
+
+
 def test_build_report_multi_model_adds_cross_campaign_section(tmp_path):
     records = load_records([FIX])
     other_model_records = [

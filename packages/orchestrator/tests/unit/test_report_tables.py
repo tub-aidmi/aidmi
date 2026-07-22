@@ -113,6 +113,21 @@ def test_silent_failure_count_matches_fixture():
     assert "master" in out
 
 
+def test_silent_failure_table_uses_campaign_label():
+    recs = load_records([FIX])
+    campaign_id = recs[0].campaign
+    out = silent_failure_table(recs, labels={campaign_id: "My Campaign"})
+    assert "My Campaign" in out
+    assert campaign_id not in out
+
+
+def test_silent_failure_table_defaults_to_campaign_id_without_labels():
+    recs = load_records([FIX])
+    campaign_id = recs[0].campaign
+    out = silent_failure_table(recs)
+    assert campaign_id in out
+
+
 def test_silent_failure_table_zero_case():
     recs = load_records([FIX])
     non_silent = [r for r in recs if not r.silent_fail]
