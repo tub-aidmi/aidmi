@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import re
 import sys
 import tempfile
@@ -18,8 +19,19 @@ _ID_RE = re.compile(r'\b(id|xlink:href|clip-path|href)="[^"]*"')
 
 
 def normalize_svg(text: str) -> str:
-    """Strip the parts matplotlib re-randomizes on every render."""
+    """Drop the `<dc:date>` element and any `id`/`xlink:href`/`clip-path`/`href`
+    attribute values from an SVG, so only its drawable structure is compared.
+
+    On this repo's figures the render is byte-stable across runs, so this
+    normalization isn't load-bearing today -- it's a safety margin in case
+    that stability regresses (e.g. a future matplotlib bump reintroducing
+    randomized ids or timestamps).
+    """
     return _ID_RE.sub("", _DATE_RE.sub("", text))
+
+
+def _hash_svg(text: str) -> str:
+    return hashlib.sha256(normalize_svg(text).encode()).hexdigest()
 
 
 def render(campaign_dir: Path, out_dir: Path) -> None:
@@ -30,6 +42,25 @@ def render(campaign_dir: Path, out_dir: Path) -> None:
     build_report(records, out_dir)
 
 
+def _write_figures_manifest(baseline_dir: Path, out_dir: Path, names: list[str]) -> None:
+    lines = []
+    for name in names:
+        digest = _hash_svg((out_dir / "figures" / name).read_text())
+        lines.append(f"{digest}  {name}")
+    (baseline_dir / "figures.sha256").write_text("\n".join(lines) + "\n")
+
+
+def _read_figures_manifest(baseline_dir: Path) -> dict[str, str]:
+    manifest_path = baseline_dir / "figures.sha256"
+    manifest: dict[str, str] = {}
+    for line in manifest_path.read_text().splitlines():
+        if not line.strip():
+            continue
+        digest, name = line.split("  ", 1)
+        manifest[name] = digest
+    return manifest
+
+
 def snapshot(campaign_dir: Path, baseline_dir: Path) -> None:
     with tempfile.TemporaryDirectory() as tmp:
         out = Path(tmp)
@@ -38,14 +69,16 @@ def snapshot(campaign_dir: Path, baseline_dir: Path) -> None:
         (baseline_dir / "tidy.csv").write_text((out / "tidy.csv").read_text())
         (baseline_dir / "index.html").write_text((out / "index.html").read_text())
         names = sorted(p.name for p in (out / "figures").glob("*.svg"))
-        (baseline_dir / "figures.txt").write_text("\n".join(names) + "\n")
-        for name in names:
-            target = baseline_dir / "figures_normalized" / f"{name}.txt"
-            target.parent.mkdir(parents=True, exist_ok=True)
-            target.write_text(normalize_svg((out / "figures" / name).read_text()))
+        _write_figures_manifest(baseline_dir, out, names)
 
 
 def verify(rendered_dir: Path, baseline_dir: Path) -> list[str]:
+    if not baseline_dir.is_dir():
+        return [
+            f"no baseline at {baseline_dir} "
+            "(run `just snapshot-results` to create one, or check --snapshot usage)"
+        ]
+
     drift: list[str] = []
     for name in ("tidy.csv", "index.html"):
         expected = (baseline_dir / name).read_text()
@@ -53,20 +86,18 @@ def verify(rendered_dir: Path, baseline_dir: Path) -> list[str]:
         if expected != actual:
             drift.append(f"{name} differs from baseline")
 
-    expected_names = (baseline_dir / "figures.txt").read_text().split()
+    expected_manifest = _read_figures_manifest(baseline_dir)
+    expected_names = sorted(expected_manifest)
     actual_names = sorted(p.name for p in (rendered_dir / "figures").glob("*.svg"))
     if expected_names != actual_names:
         missing = sorted(set(expected_names) - set(actual_names))
         added = sorted(set(actual_names) - set(expected_names))
         drift.append(f"figure set differs (missing={missing}, added={added})")
 
-    norm_dir = baseline_dir / "figures_normalized"
-    if norm_dir.is_dir():
-        for name in sorted(set(expected_names) & set(actual_names)):
-            expected_svg = (norm_dir / f"{name}.txt").read_text()
-            actual_svg = normalize_svg((rendered_dir / "figures" / name).read_text())
-            if expected_svg != actual_svg:
-                drift.append(f"figures/{name} differs structurally")
+    for name in sorted(set(expected_names) & set(actual_names)):
+        actual_digest = _hash_svg((rendered_dir / "figures" / name).read_text())
+        if expected_manifest[name] != actual_digest:
+            drift.append(f"figures/{name} differs structurally")
     return drift
 
 
