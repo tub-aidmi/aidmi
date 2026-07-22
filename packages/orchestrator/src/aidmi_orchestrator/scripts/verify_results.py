@@ -1,4 +1,9 @@
-"""Render the publishable campaigns and diff them against a committed baseline."""
+"""Render the publishable campaigns and diff them against their committed reports.
+
+`tidy.csv` and `index.html` are compared byte-for-byte against the campaign's own
+`report/` directory -- the artifacts that actually ship. Figures are compared
+structurally against the digest manifest under `benchmarks/.baseline/`.
+"""
 
 from __future__ import annotations
 
@@ -14,6 +19,7 @@ from aidmi_orchestrator.report.driver import build_report
 
 BASELINE_ROOT = Path("benchmarks/.baseline")
 CAMPAIGNS = ("v2-final-gemini", "v2-final-ise")
+COMPARED_FILES = ("tidy.csv", "index.html")
 
 _DATE_RE = re.compile(r"<dc:date>.*?</dc:date>", re.DOTALL)
 _ID_RE = re.compile(r'\b(id|xlink:href|clip-path|href)="[^"]*"')
@@ -65,18 +71,23 @@ def _read_figures_manifest(baseline_dir: Path) -> dict[str, str]:
     return manifest
 
 
-def snapshot(campaign_dir: Path, baseline_dir: Path) -> None:
+def snapshot(campaign_dir: Path, baseline_dir: Path, report_dir: Path) -> None:
     with tempfile.TemporaryDirectory() as tmp:
         out = Path(tmp)
         render(campaign_dir, out)
-        baseline_dir.mkdir(parents=True, exist_ok=True)
-        (baseline_dir / "tidy.csv").write_text((out / "tidy.csv").read_text())
-        (baseline_dir / "index.html").write_text((out / "index.html").read_text())
+        report_dir.mkdir(parents=True, exist_ok=True)
+        for name in COMPARED_FILES:
+            (report_dir / name).write_bytes((out / name).read_bytes())
+        figures_dir = report_dir / "figures"
+        figures_dir.mkdir(parents=True, exist_ok=True)
         names = sorted(p.name for p in (out / "figures").glob("*.svg"))
+        for name in names:
+            (figures_dir / name).write_bytes((out / "figures" / name).read_bytes())
+        baseline_dir.mkdir(parents=True, exist_ok=True)
         _write_figures_manifest(baseline_dir, out, names)
 
 
-def verify(rendered_dir: Path, baseline_dir: Path) -> list[str]:
+def verify(rendered_dir: Path, baseline_dir: Path, report_dir: Path) -> list[str]:
     if not baseline_dir.is_dir():
         return [
             f"no baseline at {baseline_dir} "
@@ -84,11 +95,15 @@ def verify(rendered_dir: Path, baseline_dir: Path) -> list[str]:
         ]
 
     drift: list[str] = []
-    for name in ("tidy.csv", "index.html"):
-        expected = (baseline_dir / name).read_text()
-        actual = (rendered_dir / name).read_text()
-        if expected != actual:
-            drift.append(f"{name} differs from baseline")
+    for name in COMPARED_FILES:
+        committed = report_dir / name
+        if not committed.is_file():
+            drift.append(
+                f"{name} missing from committed report {report_dir} "
+                "(run `just snapshot-results` after a reviewed output change)"
+            )
+        elif committed.read_bytes() != (rendered_dir / name).read_bytes():
+            drift.append(f"{name} differs from committed report {report_dir / name}")
 
     expected_manifest = _read_figures_manifest(baseline_dir)
     expected_names = sorted(expected_manifest)
@@ -120,14 +135,15 @@ def main() -> None:
     failed = False
     for campaign_dir in campaigns:
         baseline_dir = BASELINE_ROOT / campaign_dir.name
+        report_dir = campaign_dir / "report"
         if args.snapshot:
-            snapshot(campaign_dir, baseline_dir)
-            print(f"snapshot {campaign_dir.name} -> {baseline_dir}")
+            snapshot(campaign_dir, baseline_dir, report_dir)
+            print(f"snapshot {campaign_dir.name} -> {report_dir}, {baseline_dir}")
             continue
         with tempfile.TemporaryDirectory() as tmp:
             out = Path(tmp)
             render(campaign_dir, out)
-            drift = verify(out, baseline_dir)
+            drift = verify(out, baseline_dir, report_dir)
         if drift:
             failed = True
             print(f"DRIFT {campaign_dir.name}:")

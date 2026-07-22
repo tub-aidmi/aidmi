@@ -90,17 +90,15 @@ def test_frozen_today_pins_relative_date_strings():
 def test_guarded_generate_raises_if_repo_fixtures_are_written(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ):
-    canary = build_fixtures.FIXTURES_DIR / "_guard_test_canary.sql"
+    fixtures_dir = tmp_path / "fixtures"
+    fixtures_dir.mkdir()
+    monkeypatch.setattr(build_fixtures, "FIXTURES_DIR", fixtures_dir)
+    canary = fixtures_dir / "_guard_test_canary.sql"
 
     def fake_generate(out_root: Path) -> None:
         canary.write_text("this should never land in the repo")
 
     monkeypatch.setattr(verify_fixtures, "generate", fake_generate)
 
-    try:
-        with pytest.raises(RuntimeError, match="_guard_test_canary.sql"):
-            guarded_generate(tmp_path)
-    finally:
-        canary.unlink(missing_ok=True)
-
-    assert not canary.exists()
+    with pytest.raises(RuntimeError, match="_guard_test_canary.sql"):
+        guarded_generate(tmp_path / "out")
