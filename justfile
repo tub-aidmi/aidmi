@@ -18,17 +18,6 @@ env:
 install:
   uv sync --all-packages --extra plots
 
-setup: install
-
-# --- Lint/Format ---
-
-lint:
-  uv run ruff check .
-  uv run ruff format --check .
-
-format:
-  uv run ruff format .
-
 # --- Postgres ---
 
 up:
@@ -61,10 +50,14 @@ gen-target-schema-file input output:
 build-fixtures:
   {{orch-py}} python -m aidmi_orchestrator.scripts.build_fixtures
 
-verify-fixtures *ARGS:
-  {{orch-py}} python -m aidmi_orchestrator.scripts.verify_fixtures {{ARGS}}
+# --- Quality ---
 
-# --- Tests ---
+lint:
+  uv run ruff check .
+  uv run ruff format --check .
+
+format:
+  uv run ruff format .
 
 test-pipeline:
   uv run --package aidmi-pipeline pytest packages/pipeline/tests/
@@ -73,6 +66,15 @@ test-orchestrator:
   {{orch-test}} pytest packages/orchestrator/tests/ -m "not requires_llm"
 
 test: test-pipeline test-orchestrator
+
+verify-results:
+  {{orch-test}} python -m aidmi_orchestrator.scripts.verify_results
+
+snapshot-results:
+  {{orch-test}} python -m aidmi_orchestrator.scripts.verify_results --snapshot
+
+verify-fixtures *ARGS:
+  {{orch-py}} python -m aidmi_orchestrator.scripts.verify_fixtures {{ARGS}}
 
 # --- Campaigns ---
 
@@ -126,12 +128,6 @@ sweep-verbose campaign:
 report campaign:
   {{orch}} report "{{benchmarks}}/{{campaign}}" --out "{{benchmarks}}/{{campaign}}/report"
 
-verify-results:
-  {{orch-test}} python -m aidmi_orchestrator.scripts.verify_results
-
-snapshot-results:
-  {{orch-test}} python -m aidmi_orchestrator.scripts.verify_results --snapshot
-
 sweep-demo:
   #!/usr/bin/env bash
   set -euo pipefail
@@ -172,13 +168,3 @@ repro run_id campaign:
 
 clean-workspace:
   rm -rf aidmi_workspace
-
-# Run the hard-fixture ISE campaign (needs the SSH tunnel up on :4000).
-# Depends on `up` (staging Postgres) and seeds the two fixtures first.
-bench-hard-ise: up (init-db "master" "messy_data")
-  #!/usr/bin/env bash
-  set -euo pipefail
-  test -f .env || cp -n .env.example .env
-  camp_id=$({{orch}} campaign new hard-ise | awk '{print $3}')
-  cp benchmarks/grids/hard-ise.yaml "{{benchmarks}}/$camp_id/grid.yaml"
-  {{orch}} sweep --campaign "{{benchmarks}}/$camp_id" --resume
