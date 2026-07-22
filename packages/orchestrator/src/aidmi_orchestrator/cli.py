@@ -32,9 +32,11 @@ from aidmi_orchestrator.campaign import (
 from aidmi_orchestrator.fixtures.base import get_fixture
 from aidmi_orchestrator.persistence import record_run
 from aidmi_orchestrator.progress import log_message
+from aidmi_orchestrator.provenance import attach_provenance
 from aidmi_orchestrator.repro import apply_recorded_run, evaluate_recorded_run
+from aidmi_orchestrator.scheduler import expand_jobs
 from aidmi_orchestrator.strategy.base import make_strategy
-from aidmi_orchestrator.sweep import attach_provenance
+from aidmi_orchestrator.sweep import SweepSettings, run_sweep
 
 app = typer.Typer(add_completion=False, help="aidmi orchestrator runner")
 
@@ -182,9 +184,6 @@ def sweep(
     ] = False,
 ):
     """Sweep cells from the campaign's grid.yaml."""
-    from aidmi_orchestrator.scheduler import expand_jobs
-    from aidmi_orchestrator.sweep import SweepSettings, run_sweep
-
     camp = resolve_campaign(campaign, benchmarks_root)
     camp.ensure_layout()
 

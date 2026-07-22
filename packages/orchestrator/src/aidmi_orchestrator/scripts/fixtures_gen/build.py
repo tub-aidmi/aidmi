@@ -1,9 +1,4 @@
-"""Fixture build orchestration: the per-problem config table and the entry point.
-
-`SEED` and `fake` are re-exported here for callers that expect the generator's
-knobs on one module; they are defined in the package `__init__` so the leaf
-modules can read them without importing this one.
-"""
+"""Fixture build orchestration: the per-problem config table and the entry point."""
 
 from __future__ import annotations
 
@@ -12,7 +7,6 @@ from pathlib import Path
 from typing import Any
 
 from aidmi_orchestrator.ddl_target_schema import parse_ddl_file
-from aidmi_orchestrator.scripts.fixtures_gen import SEED, fake  # noqa: F401
 from aidmi_orchestrator.scripts.fixtures_gen.dataset import gen_dataset
 from aidmi_orchestrator.scripts.fixtures_gen.destination import (
     DEST_DDL_PG,

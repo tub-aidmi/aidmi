@@ -321,7 +321,9 @@ def test_run_sweep_no_resume_clears_existing_results_and_runs_all(
     assert sorted(seen) == [("cell_a", "mock", 0), ("cell_b", "mock", 0)]
 
 
-def test_run_sweep_nothing_to_run_returns_empty_and_skips_bench(tmp_path, monkeypatch):
+def test_run_sweep_nothing_to_run_returns_empty_and_executes_no_runs(
+    tmp_path, monkeypatch
+):
     monkeypatch.setattr(
         "aidmi_orchestrator.sweep.make_strategy", lambda name, cfg: object()
     )

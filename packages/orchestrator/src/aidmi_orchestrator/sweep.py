@@ -13,7 +13,7 @@ from aidmi_orchestrator.campaign import Campaign
 from aidmi_orchestrator.domain import BenchmarkResult
 from aidmi_orchestrator.persistence import record_run
 from aidmi_orchestrator.progress import log_message
-from aidmi_orchestrator.provenance import file_sha256, make_run_provenance
+from aidmi_orchestrator.provenance import attach_provenance
 from aidmi_orchestrator.scheduler import (
     DEFAULT_EXCLUSIVE_PREFIXES,
     SweepJob,
@@ -31,35 +31,6 @@ def _as_list(value) -> list[str]:
     if isinstance(value, str):
         return [value]
     return list(value)
-
-
-def spec_repo_relative(path: Path) -> str:
-    try:
-        return str(path.resolve().relative_to(Path.cwd().resolve()))
-    except ValueError:
-        return str(path.resolve())
-
-
-def attach_provenance(
-    result,
-    *,
-    campaign_id: str,
-    strategy_spec_path: Path | None,
-    workspace_run_dir: Path,
-):
-    spec_rel = spec_repo_relative(strategy_spec_path) if strategy_spec_path else None
-    spec_hash = (
-        file_sha256(strategy_spec_path)
-        if strategy_spec_path and strategy_spec_path.is_file()
-        else None
-    )
-    prov = make_run_provenance(
-        campaign_id=campaign_id,
-        strategy_spec_path=spec_rel,
-        strategy_spec_sha256=spec_hash,
-        workspace_run_dir=workspace_run_dir,
-    )
-    return result.model_copy(update={"provenance": prov})
 
 
 @dataclass(frozen=True)

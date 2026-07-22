@@ -101,3 +101,32 @@ def make_run_provenance(
         dbt_project_sha256=dbt_hash,
         recorded_at=utc_now(),
     )
+
+
+def spec_repo_relative(path: Path) -> str:
+    try:
+        return str(path.resolve().relative_to(Path.cwd().resolve()))
+    except ValueError:
+        return str(path.resolve())
+
+
+def attach_provenance(
+    result,
+    *,
+    campaign_id: str,
+    strategy_spec_path: Path | None,
+    workspace_run_dir: Path,
+):
+    spec_rel = spec_repo_relative(strategy_spec_path) if strategy_spec_path else None
+    spec_hash = (
+        file_sha256(strategy_spec_path)
+        if strategy_spec_path and strategy_spec_path.is_file()
+        else None
+    )
+    prov = make_run_provenance(
+        campaign_id=campaign_id,
+        strategy_spec_path=spec_rel,
+        strategy_spec_sha256=spec_hash,
+        workspace_run_dir=workspace_run_dir,
+    )
+    return result.model_copy(update={"provenance": prov})
