@@ -67,9 +67,14 @@ test-orchestrator:
 
 test: test-pipeline test-orchestrator
 
+# Exactly what CI runs, so the CI selection is reproducible locally
+test-ci:
+  uv run --all-packages --extra plots pytest packages -m "not requires_llm and not requires_docker"
+
 verify-results:
   {{orch-test}} python -m aidmi_orchestrator.scripts.verify_results
 
+# Rewrites the published reports and figure digests; only run after a deliberate, reviewed output change
 snapshot-results:
   {{orch-test}} python -m aidmi_orchestrator.scripts.verify_results --snapshot
 
