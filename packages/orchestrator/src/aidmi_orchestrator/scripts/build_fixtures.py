@@ -11,85 +11,21 @@ from typing import Any
 from faker import Faker
 
 from aidmi_orchestrator.ddl_target_schema import parse_ddl_file
+from aidmi_orchestrator.scripts.fixtures_gen.variants import (
+    CURRENCY_VARIANTS,
+    INDUSTRY_VARIANTS,
+    LANG_VARIANTS,
+    ROLE_VARIANTS,
+    STAGE_VARIANTS,
+    STATUS_VARIANTS,
+    TIER_VARIANTS,
+    typo,
+    variant,
+)
 
 FIXTURES_DIR = Path(__file__).resolve().parents[1] / "fixtures"
 SEED = 42
 fake = Faker("de_DE")
-
-# ─────────────────────────────────────────────────────────────────────────────
-# CANONICAL ↔ VARIANT TABLES
-# ─────────────────────────────────────────────────────────────────────────────
-
-STAGE_VARIANTS = {
-    "Prospecting": [
-        "Prospecting",
-        "prospecting",
-        "PROSPECTING",
-        "Prospect",
-        "In Kontakt",
-    ],
-    "Qualification": [
-        "Qualification",
-        "Qualifikation",
-        "qualification",
-        "Quali",
-        "In Prüfung",
-    ],
-    "Closed Won": [
-        "Closed Won",
-        "closed won",
-        "Gewonnen",
-        "Won",
-        "Abgeschlossen (Gewonnen)",
-    ],
-    "Closed Lost": [
-        "Closed Lost",
-        "Verloren",
-        "lost",
-        "Abgeschlossen (Verloren)",
-        "LOST",
-    ],
-}
-TIER_VARIANTS = {
-    "Gold": ["Gold", "gold", "GOLD"],
-    "Silver": ["Silver", "silver", "SILBER"],
-    "Bronze": ["Bronze", "bronze", "BRONZE"],
-    "Platinum": ["Platinum", "Platin", "platinum"],
-}
-INDUSTRY_VARIANTS = {
-    "Technology": ["Technology", "Technologie", "IT"],
-    "Finance": ["Finance", "Finanzen"],
-    "Healthcare": ["Healthcare", "Gesundheitswesen"],
-    "Manufacturing": ["Manufacturing", "Industrie"],
-}
-STATUS_VARIANTS = {
-    "Active": ["Active", "active", "Aktiv"],
-    "Completed": ["Completed", "completed", "Abgeschlossen"],
-    "In Planning": ["In Planning", "In Planung", "Planung"],
-    "On Hold": ["On Hold", "Pausiert", "on hold"],
-    "Cancelled": ["Cancelled", "Storniert", "cancelled"],
-}
-ROLE_VARIANTS = {
-    "Decision Maker": ["Decision Maker", "Entscheider", "decision maker"],
-    "End User": ["End User", "Endanwender", "end user"],
-    "Technical Contact": [
-        "Technical Contact",
-        "Technischer Ansprechpartner",
-        "Techniker",
-    ],
-    "Executive Sponsor": ["Executive Sponsor", "Sponsor"],
-}
-LANG_VARIANTS = {
-    "DE": ["DE", "de", "Deutsch", "deutsch", "German"],
-    "EN": ["EN", "en", "English", "englisch", "Englisch"],
-    "FR": ["FR", "fr", "Französisch", "French"],
-}
-CURRENCY_VARIANTS = {
-    "EUR": ["EUR", "eur", "€", "Euro"],
-    "USD": ["USD", "Dollar", "usd", "$"],
-    "GBP": ["GBP", "gbp", "£"],
-    "CHF": ["CHF", "chf"],
-}
 
 DEST_DDL_PG = """
 CREATE TABLE "Account" ( "Id" text PRIMARY KEY, "Name" text NOT NULL, "ERP_Number__c" text UNIQUE, "Customer_Tier__c" text CHECK ("Customer_Tier__c" IN ('Gold','Silver','Bronze','Platinum')), "Region__c" text, "Industry" text, "Website" text, "BillingCity" text, "BillingCountry" text, "Legacy_Customer_ID__c" text UNIQUE, "CreatedDate" text DEFAULT CURRENT_TIMESTAMP, "LastModifiedDate" text DEFAULT CURRENT_TIMESTAMP, "IsDeleted" integer DEFAULT 0 );
@@ -135,10 +71,6 @@ def dest_id(prefix: str) -> str:
     return f"{prefix}{_id_counters[prefix]:012d}"
 
 
-def variant(canon: str, table: dict[str, list[str]]) -> str:
-    return random.choice(table[canon])
-
-
 def uniq(gen: Callable[[], str], seen: set[str]) -> str:
     while True:
         v = gen()
@@ -151,14 +83,6 @@ def survivor(acc: dict[str, Any]) -> dict[str, Any]:
     while acc.get("dup_of"):
         acc = acc["dup_of"]
     return acc
-
-
-def typo(s: str) -> str:
-    s = str(s)
-    if len(s) < 3:
-        return s
-    i = random.randint(1, len(s) - 2)
-    return s[:i] + s[i + 1] + s[i] + s[i + 2 :]
 
 
 def sql_val(v: Any) -> str:
