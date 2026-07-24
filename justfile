@@ -72,6 +72,11 @@ test: test-pipeline test-orchestrator
 test-ci:
   uv run --all-packages --extra plots pytest packages -m "not requires_llm"
 
+# test-ci inside an ubuntu/2-CPU container, matching the GitHub runner's shape.
+# Catches concurrency failures that a many-core dev machine hides.
+test-ci-container *ARGS:
+  ./scripts/test-ci-container.sh {{ARGS}}
+
 verify-results:
   {{orch-test}} python -m aidmi_orchestrator.scripts.verify_results
 
