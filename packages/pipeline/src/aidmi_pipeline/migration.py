@@ -1,3 +1,4 @@
+import threading
 from typing import Literal
 
 import dlt
@@ -105,6 +106,20 @@ def _overall_status(
     return "error"
 
 
+# Serializes the whole dbt phase because two parts of it are process-global and
+# not thread-safe, and concurrent sweep jobs run transform() in worker threads:
+#   1. get_venv() restores the current venv via venv.EnvBuilder.ensure_directories(),
+#      whose os.makedirs() has no exist_ok — two jobs racing to create the same
+#      dirs kill one another (reliably on Linux, where uv venvs lack include/pythonX).
+#   2. dlt's _run_dbt_command is wrapped in @with_custom_environ, which clears and
+#      restores os.environ around the run, while it spawns the dbt subprocess with
+#      no env= — so Popen's fork/exec reads that same global os.environ. One job
+#      clearing environ mid-exec of another corrupts the child's envp:
+#      OSError(14, 'Bad address') on the interpreter path.
+# Only the strategy/LLM phase needs to run in parallel; dbt exec does not.
+_DBT_VENV_LOCK = threading.Lock()
+
+
 def _dbt_run_params(fail_fast: bool) -> list[str]:
     return ["--fail-fast"] if fail_fast else []
 
@@ -130,15 +145,16 @@ def transform(run: MigrationRun) -> TransformResult:
         destination=dlt.destinations.postgres(run.staging.db_url),
         dataset_name=run.staging.out_schema,
     )
-    venv = dlt.dbt.get_venv(pipeline, venv_path="")
-    runner = dlt.dbt.package(pipeline, str(run.dbt_project_path), venv=venv)
-    try:
-        outcomes = runner.run_all(run_params=_dbt_run_params(run.fail_fast))
-    except Exception as err:
-        if DBTProcessingError is not None and isinstance(err, DBTProcessingError):
-            outcomes = err.run_results
-        else:
-            raise
+    with _DBT_VENV_LOCK:
+        venv = dlt.dbt.get_venv(pipeline, venv_path="")
+        runner = dlt.dbt.package(pipeline, str(run.dbt_project_path), venv=venv)
+        try:
+            outcomes = runner.run_all(run_params=_dbt_run_params(run.fail_fast))
+        except Exception as err:
+            if DBTProcessingError is not None and isinstance(err, DBTProcessingError):
+                outcomes = err.run_results
+            else:
+                raise
     models = [_outcome_to_model(o) for o in outcomes]
     return TransformResult(models=models, overall_status=_overall_status(models))
 
